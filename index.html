@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Reportes PYR · Grupo Pro</title>
+<title>Reportes Prevención de Riesgos (EHS) · Grupo Pro</title>
 <meta name="description" content="Flash Report y Declaración de accidente o incidente · Prevención de Riesgos Grupo Pro">
 <meta name="theme-color" content="#1d1d1b">
 <link rel="manifest" href="manifest.webmanifest">
@@ -52,14 +52,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 <body>
 <header class="top">
   <div class="row"><div class="logo"><img src="logo.png" alt="Grupo Pro"></div></div>
-  <h1>Reportes de Prevención de Riesgos</h1>
+  <h1>Reportes Prevención de Riesgos (EHS)</h1>
   <p>Elige el formulario. Al enviarlo llega al equipo PYR, te llega una copia y queda respaldado en SharePoint.</p>
 </header>
 <main class="wrap">
   <div class="cards">
-    <button class="card" data-f="rapido"><span class="t">Flash Report rápido</span><span class="d">Primer aviso de un accidente o incidente, desde el lugar y dentro del turno.</span><span class="go">Abrir →</span></button>
-    <button class="card" data-f="declaracion"><span class="t">Declaración de accidente o incidente</span><span class="d">Declaración del accidentado o de testigos, con DIAT oficial.</span><span class="go">Abrir →</span></button>
-    <button class="card" data-f="detallado"><span class="t">Flash Report detallado</span><span class="d">Análisis preliminar, acciones y fotos de evidencia.</span><span class="go">Abrir →</span></button>
+    <button class="card" data-f="rapido"><span class="t">Flash Report Accident/Incident</span><span class="d">Primer aviso de un accidente o incidente, desde el lugar y dentro del turno.</span><span class="go">Abrir →</span></button>
+    <button class="card" data-f="declaracion"><span class="t">Accident/Incident Statement</span><span class="d">Declaración del accidentado o de testigos, con DIAT oficial.</span><span class="go">Abrir →</span></button>
+    <button class="card" data-f="detallado"><span class="t">Flash Report Event</span><span class="d">Análisis preliminar, acciones y fotos de evidencia.</span><span class="go">Abrir →</span></button>
   </div>
 
   <div class="install" id="install">
@@ -88,7 +88,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 <script>
 // Los formularios y el envío siguen en Google Apps Script (misma URL de siempre).
 const BASE = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec';
-const NAMES = {rapido:'Flash Report rápido', declaracion:'Declaración de accidente o incidente', detallado:'Flash Report detallado'};
+const NAMES = {rapido:'Flash Report Accident/Incident', declaracion:'Accident/Incident Statement', detallado:'Flash Report Event'};
 const view = document.getElementById('view'), frame = document.getElementById('frame');
 
 function openForm(f, push){
