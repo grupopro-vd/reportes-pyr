@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Reportes PYR">
 <style>
 :root{--red:#bd0926;--red-dark:#8e0719;--black:#1d1d1b;--bg:#f2f2f2;--muted:#5c5c5c}
@@ -26,10 +26,13 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 .wrap{max-width:820px;margin:0 auto;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
 .cards{display:grid;gap:12px}
 @media(min-width:720px){.cards{grid-template-columns:repeat(3,1fr)}}
-.card{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;background:#fff;border:0;border-radius:14px;border-top:4px solid var(--red);padding:16px 16px 14px;box-shadow:0 3px 12px rgba(0,0,0,.08);font:inherit;color:inherit;cursor:pointer}
+.card{text-decoration:none;display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;background:#fff;border:0;border-radius:14px;border-top:4px solid var(--red);padding:16px 16px 14px;box-shadow:0 3px 12px rgba(0,0,0,.08);font:inherit;color:inherit;cursor:pointer}
 .card:active{transform:scale(.99)}
 .card .t{font-weight:bold;font-size:17px}
 .card .d{color:var(--muted);font-size:14px;line-height:1.4}
+.card .draft{align-self:flex-start;margin-top:2px;background:#fff8e4;border:1px solid #ecd9a4;color:#5b4b1c;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:bold}
+.outbox{display:none;margin-bottom:12px;background:#fff8e4;border:1px solid #ecd9a4;color:#5b4b1c;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45}
+.outbox.on{display:block}.outbox button{margin-top:8px;background:#1d1d1b;color:#fff;border:0;border-radius:8px;padding:9px 12px;font-weight:bold;font-size:13px}
 .card .go{margin-top:4px;color:var(--red);font-weight:bold;font-size:14px}
 .links{margin-top:18px;display:grid;gap:8px}
 .links a{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:12px 14px;color:var(--black);text-decoration:none;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -38,15 +41,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 .install{display:none;margin-top:14px;background:#fff6f7;border:1px solid #f0c2ca;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45}
 .install b{color:var(--red-dark)}
 .install button{margin-top:8px;background:var(--red);color:#fff;border:0;border-radius:8px;padding:10px 14px;font-weight:bold;font-size:14px}
-/* Vista de formulario dentro de la app */
-.view{position:fixed;inset:0;display:none;flex-direction:column;background:#fff;z-index:10}
-.view.open{display:flex}
-.bar{display:flex;align-items:center;gap:8px;background:var(--black);color:#fff;padding:calc(8px + env(safe-area-inset-top)) 8px 8px}
-.bar button,.bar a{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:8px;padding:9px 12px;font:inherit;font-size:14px;font-weight:bold;text-decoration:none;white-space:nowrap}
-.bar .title{flex:1;min-width:0;font-weight:bold;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.frame{flex:1;position:relative}
-.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
@@ -56,10 +50,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
   <p>Elige el formulario. Al enviarlo llega al equipo PYR, te llega una copia y queda respaldado en SharePoint.</p>
 </header>
 <main class="wrap">
+  <div class="outbox" id="outbox"><b id="outboxText"></b><br><span>Se enviará solo cuando haya señal. No borres los datos del navegador.</span><br><button type="button" id="outboxBtn">Reintentar ahora</button></div>
   <div class="cards">
-    <button class="card" data-f="rapido"><span class="t">Flash Report Accident/Incident</span><span class="d">Primer aviso de un accidente o incidente, desde el lugar y dentro del turno.</span><span class="go">Abrir →</span></button>
-    <button class="card" data-f="declaracion"><span class="t">Accident/Incident Statement</span><span class="d">Declaración del accidentado o de testigos, con DIAT oficial.</span><span class="go">Abrir →</span></button>
-    <button class="card" data-f="detallado"><span class="t">Flash Report Event</span><span class="d">Análisis preliminar, acciones y fotos de evidencia.</span><span class="go">Abrir →</span></button>
+    <a class="card" href="rapido.html" data-f="rapido"><span class="t">Flash Report Accident/Incident</span><span class="d">Primer aviso de un accidente o incidente, desde el lugar y dentro del turno.</span><span class="go">Abrir →</span><span class="draft" hidden>Borrador guardado · continuar</span></a>
+    <a class="card" href="declaracion.html" data-f="declaracion"><span class="t">Accident/Incident Statement</span><span class="d">Declaración del accidentado o de testigos, con DIAT oficial.</span><span class="go">Abrir →</span><span class="draft" hidden>Borrador guardado · continuar</span></a>
+    <a class="card" href="detallado.html" data-f="detallado"><span class="t">Flash Report Event</span><span class="d">Análisis preliminar, acciones y fotos de evidencia.</span><span class="go">Abrir →</span><span class="draft" hidden>Borrador guardado · continuar</span></a>
   </div>
 
   <div class="install" id="install">
@@ -73,38 +68,23 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
   </div>
 
   <p class="note"><b>Accidente grave o fatal:</b> avisa primero por teléfono a tu supervisor y al equipo PYR. Estos formularios no reemplazan las notificaciones obligatorias.</p>
-  <p class="note">Para generar el PDF o descargar el Word, usa «Abrir en navegador» dentro del formulario.</p>
+  <p class="note">Los formularios funcionan sin señal: lo que escribes se guarda en este teléfono y, si envías sin conexión, el reporte sale solo cuando vuelve la señal.</p>
 </main>
 
-<section class="view" id="view" aria-modal="true" role="dialog">
-  <div class="bar">
-    <button id="back" type="button">← Volver</button>
-    <div class="title" id="viewTitle"></div>
-    <a id="ext" href="#" target="_blank" rel="noopener">Abrir en navegador ↗</a>
-  </div>
-  <div class="frame"><div class="loading">Cargando formulario…</div><iframe id="frame" title="Formulario" allow="camera; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-</section>
 
 <script>
-// Los formularios y el envío siguen en Google Apps Script (misma URL de siempre).
-const BASE = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec';
-const NAMES = {rapido:'Flash Report Accident/Incident', declaracion:'Accident/Incident Statement', detallado:'Flash Report Event'};
-const view = document.getElementById('view'), frame = document.getElementById('frame');
-
-function openForm(f, push){
-  const url = BASE + '?f=' + f;
-  document.getElementById('viewTitle').textContent = NAMES[f] || 'Formulario';
-  document.getElementById('ext').href = url;
-  if (frame.dataset.f !== f){ frame.src = url; frame.dataset.f = f; }
-  view.classList.add('open'); document.body.style.overflow = 'hidden';
-  if (push) history.pushState({f}, '', '#' + f);
-}
-function closeForm(){ view.classList.remove('open'); document.body.style.overflow = ''; }
-
-document.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => openForm(b.dataset.f, true)));
-document.getElementById('back').addEventListener('click', () => history.length > 1 && location.hash ? history.back() : closeForm());
-window.addEventListener('popstate', e => { const f = (e.state && e.state.f) || location.hash.slice(1); NAMES[f] ? openForm(f, false) : closeForm(); });
-if (NAMES[location.hash.slice(1)]) openForm(location.hash.slice(1), false);
+// Los formularios están en esta misma app; el envío sigue por Google Apps Script.
+document.addEventListener('gp-outbox', e => {
+  const n = e.detail.count, box = document.getElementById('outbox');
+  box.classList.toggle('on', n > 0);
+  document.getElementById('outboxText').textContent = n === 1 ? '1 reporte esperando señal para enviarse' : n + ' reportes esperando señal para enviarse';
+});
+document.getElementById('outboxBtn').addEventListener('click', () => window.gpFlushOutbox && gpFlushOutbox());
+window.addEventListener('load', () => {
+  if (!window.gpDB) return;
+  document.querySelectorAll('.card').forEach(c => gpDB.get('drafts', 'draft:' + c.dataset.f).then(d => { if (d) c.querySelector('.draft').hidden = false; }).catch(()=>{}));
+  window.gpUpdateOutboxUI && gpUpdateOutboxUI();
+});
 
 // Ayuda para instalar en la pantalla de inicio
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -118,5 +98,6 @@ if (!standalone){
 }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<script src="gp-app.js"></script>
 </body>
 </html>
