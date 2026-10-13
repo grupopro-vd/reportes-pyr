@@ -1221,8 +1221,8 @@ window.gpSendReport=async function(opts){
   opts=opts||{};
   if(sending)return;
   var rep=readReporter(), eEl=$('#gpReporterEmail'), xEl=$('#gpExtraCc');
-  flagInvalid(eEl,!validEmail(rep.email));flagInvalid(xEl,rep.cc&&!validEmail(rep.cc));
-  if(!validEmail(rep.email)){
+  var emailOk=validEmail(rep.email)||(window.GP_EMAIL_OPTIONAL&&!rep.email);flagInvalid(eEl,!emailOk);flagInvalid(xEl,rep.cc&&!validEmail(rep.cc));
+  if(!emailOk){
     status(opts.auto?'No se envió automáticamente: ingresa el correo de quien reporta y vuelve a generar el documento o presiona «Enviar».':'Ingresa un correo válido de quien reporta para recibir la copia.', opts.auto?'warn':'error');
     if(!opts.auto){$('#gpSendPanel').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){eEl&&eEl.focus()},350)}
     return;
@@ -1256,12 +1256,13 @@ window.gpSendReport=async function(opts){
       openMailApp(subject,textBody,rep,files);return;
     }
     var isPA=/powerplatform\.com|logic\.azure\.com|powerautomate|flow\.microsoft/i.test(GP_MAIL.endpoint);
-    status('Enviando a '+GP_MAIL.team+' y copia a '+rep.email+'…','busy');
+    status('Enviando…','busy');
     var attachments=[],total=0;
     for(var i=0;i<files.length;i++){var b64=await blobToB64(files[i].blob);total+=b64.length;attachments.push({name:files[i].name,mimeType:files[i].blob.type||'application/octet-stream',base64:b64})}
     if(total>24*1024*1024){attachments=[];status('Los adjuntos superan el límite de correo; se enviará solo el resumen.','warn')}
     var payload={key:GP_MAIL.key,form:GP_MAIL.form,formCode:GP_MAIL.formCode,recordId:id,subject:subject,reporterName:rep.name,reporterEmail:rep.email,cc:rep.cc,
       htmlBody:emailHtml(summary,info,rep,isPA),textBody:textBody,logo:isPA?'':logoB64(),attachments:attachments,sentAt:new Date().toISOString()};
+    payload.notify=typeof window.gpNotify==='function'?!!window.gpNotify():true;payload.emailOptional=!!window.GP_EMAIL_OPTIONAL;
     {
       var fISO=info.fechaISO||new Date().toISOString().slice(0,10);
       var base=fISO+'_'+slug(id)+(info.persona?'_'+slug(info.persona):'');
@@ -1293,7 +1294,7 @@ window.gpSendReport=async function(opts){
     if(!data2||!data2.ok)throw new Error((data2&&data2.error)||('respuesta '+res.status));
     LS.set('gpSent:'+id,sig);
     if(typeof window.gpOnSent==='function')window.gpOnSent(id,false);
-    status('✔ Reporte enviado el '+nowCL()+' a '+GP_MAIL.team+' con copia a '+rep.email+(rep.cc?' y '+rep.cc:'')+'.','ok');
+    status(typeof window.gpSentText==='function'?window.gpSentText(rep):('✔ Reporte enviado el '+nowCL()+' a '+GP_MAIL.team+(rep.email?' con copia a '+rep.email:'')+(rep.cc?' y '+rep.cc:'')+'.'),'ok');
   }catch(e){
     console.error(e);
     status('No fue posible enviar automáticamente ('+(e.message||e)+'). Revisa tu conexión e intenta otra vez, o envíalo desde tu aplicación de correo. ','error',' <button type="button" class="btn btn-small btn-mailapp" onclick="gpOpenMailApp()">Abrir mi correo</button>');

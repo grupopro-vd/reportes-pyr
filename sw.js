@@ -1,7 +1,8 @@
 // Guarda la app y los formularios en el teléfono para que abran rápido y funcionen sin señal.
-const CACHE = 'reportes-ehs-v3';
+const CACHE = 'reportes-ehs-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'gp-app.js', 'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png',
-  'rapido.html', 'declaracion.html', 'detallado.html'];
+  'rapido.html', 'declaracion.html', 'detallado.html',
+  'check_list_equipos.html', 'permiso_trabajo.html', 'entrega_epp.html'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 // Red primero (para recibir actualizaciones); si no hay señal o tarda más de 4 s, usa la copia guardada.

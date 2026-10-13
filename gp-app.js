@@ -253,7 +253,7 @@
     ['#gpReporterName', 'name'], ['#gpReporterEmail', 'email'], ['#gpExtraCc', 'cc'],
     ['[name="reportante"]', 'name'],
     ['[name="nombre_prevencionista"]', 'prev'], ['[name="nombre_entrevistador"]', 'prev'],
-    ['input[list="empresasList"]', 'empresa'], ['input[list="areasList"]', 'area']
+    ['input[list="empresasList"][name="empresa"], input[list="empresasList"]:not([name])', 'empresa'], ['input[list="areasList"]', 'area']
   ];
   function getProfile() { try { return JSON.parse(LS.get('gpPerfil') || '{}'); } catch (e) { return {}; } }
   function saveProfile() {
