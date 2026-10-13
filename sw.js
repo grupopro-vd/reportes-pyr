@@ -1,5 +1,5 @@
 // Guarda la app y los formularios en el teléfono para que abran rápido y funcionen sin señal.
-const CACHE = 'reportes-ehs-v4';
+const CACHE = 'reportes-ehs-v5';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'gp-app.js', 'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png',
   'rapido.html', 'declaracion.html', 'detallado.html',
   'check_list_equipos.html', 'permiso_trabajo.html', 'entrega_epp.html'];
@@ -14,7 +14,8 @@ self.addEventListener('fetch', e => {
   e.respondWith(new Promise(resolve => {
     let done = false;
     const timer = setTimeout(() => fromCache().then(m => { if (m && !done) { done = true; resolve(m); } }), 4000);
-    fetch(e.request).then(r => {
+    // cache:'no-cache' obliga a revisar con GitHub y no usar una copia vieja del navegador
+    fetch(url.href, { cache: 'no-cache', credentials: 'same-origin' }).then(r => {
       if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
       if (!done) { done = true; clearTimeout(timer); resolve(r); }
     }).catch(() => fromCache().then(m => { if (!done) { done = true; clearTimeout(timer); resolve(m || Response.error()); } }));

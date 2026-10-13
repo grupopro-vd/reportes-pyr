@@ -104,7 +104,12 @@ if (!standalone){
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; box.style.display = 'block'; txt.innerHTML = '<b>Instálala en tu teléfono</b> para abrirla como una app, con el logo de Grupo Pro.'; btn.hidden = false; });
   btn.addEventListener('click', async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; box.style.display = 'none'; });
 }
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if ('serviceWorker' in navigator) {
+  // Busca siempre la versión nueva y recarga una vez cuando se instala una actualización
+  const hadController = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(()=>{});
+}
 </script>
 <script src="gp-app.js"></script>
 </body>
