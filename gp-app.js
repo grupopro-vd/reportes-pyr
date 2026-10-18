@@ -168,7 +168,8 @@
         var img = card.querySelector('img'), inp = card.querySelector('input');
         return { src: img ? img.getAttribute('src') : '', desc: inp ? inp.value : '' };
       }),
-      signatures: sigCanvases().map(function (c) { return canvasBlank(c) ? '' : c.toDataURL('image/png'); })
+      signatures: sigCanvases().map(function (c) { return canvasBlank(c) ? '' : c.toDataURL('image/png'); }),
+      extra: typeof window.gpDraftGet === 'function' ? window.gpDraftGet() : null
     };
   }
   function saveDraft() {
@@ -181,6 +182,8 @@
       }).catch(function () {});
     }, 900);
   }
+  // Para formularios con contenido propio (p. ej. fotos por ítem en auditorías)
+  window.gpSaveDraftNow = function () { dirty = true; saveDraft(); };
   window.gpOnSent = function (recordId, queued) {
     stopDrafts = true; clearTimeout(saving);
     idb.del('drafts', draftKey).catch(function () {});
@@ -261,6 +264,7 @@
       img.onload = function () { var ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); };
       img.src = src;
     });
+    if (saved.extra && typeof window.gpDraftSet === 'function') try { window.gpDraftSet(saved.extra); } catch (e) {}
     if (typeof window.updateProgress === 'function') try { window.updateProgress(); } catch (e) {}
   }
   function showBanner(saved) {

@@ -44,6 +44,10 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 .card .ic svg{width:22px;height:22px}
 .card .t{font-weight:bold;font-size:14.5px;line-height:1.25}
 .card .draft{position:absolute;top:8px;right:8px;background:#fff3cd;color:#6b5512;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:bold}
+.subopts{display:none;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 14px;padding:10px;border-radius:14px;background:var(--bgc)}
+.mod.open .subopts:not([hidden]){display:grid}
+.card.sub{background:#fff;min-height:96px}
+.card[data-sub].on{outline:2px solid var(--c);outline-offset:-2px}
 .outbox{display:none;margin-bottom:12px;background:#fff8e4;border:1px solid #ecd9a4;color:#5b4b1c;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45}
 .outbox.on{display:block}.outbox button{margin-top:8px;background:#1d1d1b;color:#fff;border:0;border-radius:8px;padding:9px 12px;font-weight:bold;font-size:13px}
 .links{margin-top:18px;display:grid;gap:8px}
@@ -93,9 +97,13 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
   <section class="mod gestion">
     <button type="button" class="mh" aria-expanded="false"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></svg></span><span class="mt">Gestión<small>2 formularios</small></span><span class="mdraft" hidden>Borrador</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button>
     <div class="cards gestion">
-    <a class="card" href="auditoria.html" data-f="auditoria"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-8"/></svg></span><span class="t">Carga de auditoría</span><span class="draft" hidden>Borrador</span></a>
+    <a class="card" href="#auditoria-interna" data-sub="audSub"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><circle cx="11.5" cy="12.5" r="2.5"/><path d="m13.5 14.5 2 2"/></svg></span><span class="t">Auditoría Interna</span><span class="draft" hidden>Borrador</span></a>
     <a class="card" href="comite.html" data-f="comite"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2z"/><path d="M18 9h1a2 2 0 0 1 2 2v10l-3-3h-6a2 2 0 0 1-2-2v-1"/></svg></span><span class="t">Comité Paritario</span><span class="draft" hidden>Borrador</span></a>
   </div>
+    <div class="subopts" id="audSub" hidden>
+      <a class="card sub" href="auditoria_mensual.html" data-f="auditoria_mensual"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="m9 15 2 2 4-4"/></svg></span><span class="t">Auditoría Mensual</span><span class="draft" hidden>Borrador</span></a>
+      <a class="card sub" href="pre_auditoria.html" data-f="pre_auditoria"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span><span class="t">Pre Auditoría</span><span class="draft" hidden>Borrador</span></a>
+    </div>
   </section>
   </div>
 
@@ -123,6 +131,11 @@ mods.forEach(m=>m.querySelector('.mh').addEventListener('click',()=>{
   if(open) setTimeout(()=>m.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
 }));
 try{ const k=localStorage.getItem('gpModAbierto'); const m=k&&document.querySelector('.mod.'+k); if(m) openMod(m,true); }catch(e){}
+// Auditoría Interna: abre las dos opciones (Mensual / Pre Auditoría)
+document.querySelectorAll('.card[data-sub]').forEach(c => c.addEventListener('click', e => {
+  e.preventDefault(); const p = document.getElementById(c.dataset.sub); const show = p.hidden;
+  p.hidden = !show; c.classList.toggle('on', show); if (show) setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}));
 // Los formularios están en esta misma app; el envío sigue por Google Apps Script.
 document.addEventListener('gp-outbox', e => {
   const n = e.detail.count, box = document.getElementById('outbox');
@@ -132,7 +145,7 @@ document.addEventListener('gp-outbox', e => {
 document.getElementById('outboxBtn').addEventListener('click', () => window.gpFlushOutbox && gpFlushOutbox());
 window.addEventListener('load', () => {
   if (!window.gpDB) return;
-  document.querySelectorAll('.card').forEach(c => gpDB.get('drafts', 'draft:' + c.dataset.f).then(d => { if (d) { c.querySelector('.draft').hidden = false; c.closest('.mod').querySelector('.mdraft').hidden = false; } }).catch(()=>{}));
+  document.querySelectorAll('.card[data-f]').forEach(c => gpDB.get('drafts', 'draft:' + c.dataset.f).then(d => { if (d) { c.querySelector('.draft').hidden = false; c.closest('.mod').querySelector('.mdraft').hidden = false; const sp = c.closest('.subopts'); if (sp) { const pc = document.querySelector('[data-sub="' + sp.id + '"] .draft'); if (pc) pc.hidden = false; } } }).catch(()=>{}));
   window.gpUpdateOutboxUI && gpUpdateOutboxUI();
 });
 
