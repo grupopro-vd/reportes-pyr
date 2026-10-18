@@ -86,7 +86,30 @@
   (document.head || document.documentElement).appendChild(css);
 
   /* ---------------- Cola de envío sin conexión ---------------- */
+  /* ---- Datos extra para el panel (actividad del programa) y el seguimiento de hallazgos ---- */
+  var actKey = function () { return 'gpAct:' + ((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')); };
+  function getAct() { try { return JSON.parse(sessionStorage.getItem(actKey()) || 'null'); } catch (e) { return null; } }
+  function augment(d) {
+    if (!d || typeof d !== 'object' || d.action || d.extra || !d.form) return d;
+    var rid = document.querySelector('.document-sheet [name="registro_id"]'); if (!rid || !rid.value || rid.value !== d.recordId) return d;
+    var v = function (n) { var el = document.querySelector('.document-sheet [name="' + n + '"]'); return el ? String(el.value || '').trim() : ''; };
+    var r = function (n) { var el = document.querySelector('.document-sheet [name="' + n + '"]:checked'); return el ? el.value : ''; };
+    d.extra = { descripcion: v('descripcion').slice(0, 400), criticidad: r('criticidad'), accion_correctiva: v('accion_correctiva').slice(0, 300), tipo_hallazgo: r('tipo_hallazgo') || v('tipo_otro'),
+      correo_responsable: v('correo_responsable'), tema: v('tema'), tipo_actividad: v('tipo_actividad'), area: v('area'), lugar: v('lugar') };
+    var act = getAct(); if (act && act.id) { d.programaId = String(act.id); d.programaTitle = act.title || ''; }
+    return d;
+  }
+  var _fetch = window.fetch;
+  window.fetch = function (url, opts) {
+    try {
+      if (typeof url === 'string' && url.indexOf('script.google.com/macros') >= 0 && opts && opts.method === 'POST' && typeof opts.body === 'string') {
+        var d = JSON.parse(opts.body); if (d && d.form && !d.action && !d.extra) { augment(d); if (d.extra) opts = Object.assign({}, opts, { body: JSON.stringify(d) }); }
+      }
+    } catch (e) {}
+    return _fetch.apply(this, [url, opts]);
+  };
   window.gpQueue = function (payload, recordId, sig, endpoint) {
+    try { augment(payload); } catch (e) {}
     return idb.put('outbox', { payload: payload, recordId: recordId, sig: sig, endpoint: endpoint, subject: payload.subject || '', queuedAt: Date.now() })
       .then(function () { if (typeof window.gpOnSent === 'function') window.gpOnSent(recordId, true); updateOutboxUI(); });
   };
@@ -185,6 +208,7 @@
   // Para formularios con contenido propio (p. ej. fotos por ítem en auditorías)
   window.gpSaveDraftNow = function () { dirty = true; saveDraft(); };
   window.gpOnSent = function (recordId, queued) {
+    try { sessionStorage.removeItem(actKey()); } catch (e) {}
     stopDrafts = true; clearTimeout(saving);
     idb.del('drafts', draftKey).catch(function () {});
     saveProfile();
@@ -216,6 +240,20 @@
     });
   }
 
+  /* ---- Formulario abierto desde el panel: actividad del programa ---- */
+  function applyAct() {
+    var q = new URLSearchParams(location.search);
+    if (q.get('act')) { try { sessionStorage.setItem(actKey(), JSON.stringify({ id: q.get('act'), title: q.get('t') || '', centro: q.get('c') || '', tipo: q.get('tipo') || '' })); } catch (e) {} }
+    var act = getAct(); if (!act || !document.querySelector('.document-sheet')) return;
+    var set = function (sel, val) { var el = document.querySelector(sel); if (el && val && !el.value) { el.value = val; fire(el); } };
+    set('.document-sheet [name="centro"]', act.centro);
+    set('.document-sheet [name="tema"]', act.title);
+    var ta = document.querySelector('.document-sheet select[name="tipo_actividad"]');
+    if (ta && !ta.value && act.tipo) { var op = [].filter.call(ta.options, function (o) { return o.value && (act.tipo === 'Charla' ? /charla/i.test(o.value) : o.value.toLowerCase().indexOf(act.tipo.toLowerCase().slice(0, 6)) === 0); })[0]; if (op) { ta.value = op.value; fire(ta); } }
+    var b = document.createElement('div'); b.className = 'gp-draft-banner hide-on-print hide-on-word';
+    b.innerHTML = '<span>📋 <b>Actividad del programa:</b> ' + String(act.title || '').replace(/</g, '&lt;') + (act.centro ? ' · ' + String(act.centro).replace(/</g, '&lt;') : '') + '. Al enviar, queda marcada en el panel.</span>';
+    var bar = $('.gp-appbar'); if (bar && bar.nextSibling) bar.parentNode.insertBefore(b, bar.nextSibling); else document.body.prepend(b);
+  }
   /* ---- Centro de trabajo: se agrega a los formularios que aún no lo tienen ---- */
   var CENTROS = ['Walmart Pudahuel', 'Walmart Peñón', 'Walmart Lo Aguirre', 'Líder Lo Barnechea', 'Líder La Reina', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
   function ensureCentrosList() {
@@ -319,6 +357,7 @@
 
   function initForm() {
     addCentroField(); addAppBar(); setNet();
+    try { applyAct(); } catch (e) {}
     idb.get('drafts', draftKey).then(function (saved) {
       if (saved && saved.values) { restore(saved); restored = true; showBanner(saved); }
       else if (applyProfile()) toast('Cargamos tus datos de la última vez', '', 2600);

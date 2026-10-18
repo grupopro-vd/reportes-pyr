@@ -203,6 +203,7 @@ async function loadMs(){
   var ph={};for(var c in pins)ph[c]=await sha(pinKey(c,pins[c]));
   var relay=await fetch(CFG.endpoint+'?panel=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now()).then(function(r){return r.json()}).catch(function(){return {}});
   DATA={items:items.map(fromSP),updatedAt:new Date().toISOString(),pending:(relay&&relay.pending)||[],pinHash:ph,pins:pins,live:true};
+  await autoApply();
   save();pushSnapshot();
 }
 function pushSnapshot(){
@@ -238,7 +239,7 @@ function mesTxt(m){return m?MES[+m.slice(5,7)-1]+' '+m.slice(0,4):'Sin mes'}
 function fd(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
 function setMsg(t,k){$('#sync').innerHTML='<div class="msg '+(k||'info')+'">'+t+'</div>'}
 function syncLine(){var u=DATA.updatedAt?new Date(DATA.updatedAt):null,t=u?u.toLocaleDateString('es-CL')+' '+u.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}):'';
-  $('#sync').innerHTML=(DATA.live?'En vivo desde SharePoint · '+t:(u?'Copia del '+t+' (se actualiza cada vez que alguien con cuenta abre el panel)':'Aún no hay copia del programa'))+' <button id="syncBtn" type="button">Actualizar</button>';
+  $('#sync').innerHTML=(DATA.autoDone?'<div class="msg ok" style="margin-bottom:6px">✔ '+DATA.autoDone+' actividad(es) marcadas como realizadas a partir de formularios enviados.</div>':'')+(DATA.live?'En vivo desde SharePoint · '+t:(u?'Copia del '+t+' (se actualiza cada vez que alguien con cuenta abre el panel)':'Aún no hay copia del programa'))+' <button id="syncBtn" type="button">Actualizar</button>';
   $('#syncBtn').onclick=function(){load()}}
 function authBar(){var a=$('#auth');
   if(MODE==='ms'){a.innerHTML='<div class="who">Conectado como <b>'+esc(ACCOUNT.name||ACCOUNT.username)+'</b><small>'+esc(ACCOUNT.username)+(isAdmin()?' · administrador':'')+'</small></div><button class="btn" id="outBtn" type="button">Salir</button>';
@@ -267,7 +268,7 @@ function render(){
   h+='</div>';
   if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return !c||q.centro===c});
     if(pend.length){h+='<h2>Por validar ('+pend.length+')</h2><div class="list">'+pend.map(function(q){var it=DATA.items.filter(function(x){return x.id===q.id})[0];
-      return '<div class="val"><div class="t">'+esc(q.title||(it&&it.Title)||'Actividad')+'</div><div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
+      return '<div class="val"><div class="t">'+(q.auto?'📋 ':'')+esc(q.title||(it&&it.Title)||'Actividad')+'</div>'+(q.auto?'<div class="lock">Desde un formulario enviado · revisa que corresponda a esta actividad</div>':'')+'<div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
       (q.comentario?'<div>'+esc(q.comentario)+'</div>':'')+(q.evidencia?'<div class="lock">Evidencia en SharePoint: '+esc(q.evidencia)+'</div>':'')+
       '<div class="btns"><button class="btn pri" type="button" data-ok="'+q.qid+'">Aprobar</button><button class="btn" type="button" data-no="'+q.qid+'">Rechazar</button></div></div>'}).join('')+'</div>'}}
   if(!c){var cs={};all.forEach(function(it){(cs[it.Centro]=cs[it.Centro]||[]).push(it)});var names=Object.keys(cs).sort();
@@ -297,7 +298,7 @@ function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=FORM[it.Tipo];
     (s.p?'<div class="av"><span class="pill st-Por-validar">Por validar</span> '+esc(s.p.estado)+' · '+esc(s.p.nombre||'')+(s.p.comentario?': '+esc(s.p.comentario):'')+'</div>':'')+
     (it.Avance?'<div class="av">'+esc(String(it.Avance).split('\n').slice(-2).join('\n'))+'</div>':(it.Observacion?'<div class="av">'+esc(it.Observacion)+'</div>':''))+
     (it.Evidencia?'<div class="ev-link">'+(/^https?:/.test(it.Evidencia)?'<a href="'+esc(it.Evidencia)+'" target="_blank" rel="noopener">📎 Ver evidencia</a>':'📎 '+esc(it.Evidencia))+'</div>':'')+
-    '<div class="btns"><button type="button" class="btn" data-ed="'+esc(it.id)+'">Actualizar estado</button>'+(f&&s.e!=='Realizada'?'<a class="btn" href="'+f+'">Abrir formulario</a>':'')+'</div></div>'}
+    '<div class="btns"><button type="button" class="btn" data-ed="'+esc(it.id)+'">Actualizar estado</button>'+(f&&s.e!=='Realizada'?'<a class="btn" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+'">Registrar con formulario</a>':'')+'</div></div>'}
 
 // ---------------- Actualizar estado ----------------
 var cur=null,evid=[];
@@ -359,6 +360,18 @@ async function sendEvidence(it,folder,est,com,nom){
     reporterName:nom,reporterEmail:'',cc:'',textBody:data.summary,htmlBody:esc(data.summary),attachments:[],sentAt:data.sentAt,notify:false,emailOptional:true,folderPath:folder+'/'+base,fileBase:base,
     fields:Object.assign({fecha_limite:'',responsable:it.Responsable||''},data.fields),grupo:'Gestion',backupFiles:backup})}).then(function(r){return r.json()});
   if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo enviar la evidencia');
+}
+// ---------------- Formularios con coincidencia clara: se marcan solos ----------------
+async function autoApply(){
+  var ok=DATA.pending.filter(function(q){return q.auto&&q.conf==='alta'}),done=[];
+  for(var i=0;i<ok.length;i++){var q=ok[i],it=DATA.items.filter(function(x){return x.id===q.id})[0];
+    try{if(it&&it.Estado!=='Realizada'){var fields={Estado:'Realizada',FechaRealizada:q.at.slice(0,10)+'T12:00:00Z',ReportadoPor:q.nombre||'Formulario',
+        Avance:((it.Avance?it.Avance+'\n':'')+new Date(q.at).toLocaleDateString('es-CL')+' · Realizada · '+q.comentario).slice(-4000)};
+      if(q.evidencia){try{fields.Evidencia=(await folderUrl(q.evidencia)).slice(0,255)}catch(e){}}
+      await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:fields});Object.assign(it,{Estado:'Realizada',Avance:fields.Avance,Evidencia:fields.Evidencia||it.Evidencia})}
+      done.push(q.qid)}catch(e){}}
+  if(done.length){await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelAck',qids:done})}).catch(function(){});
+    DATA.pending=DATA.pending.filter(function(x){return done.indexOf(x.qid)<0});DATA.autoDone=done.length}
 }
 // ---------------- Validar avances de quienes no tienen cuenta ----------------
 async function validar(qid,ok,btn){
