@@ -158,6 +158,7 @@
       title: document.title,
       actions: $$('#actionsTable tbody tr').length,
       witnesses: $$('#witnessList .witness-row').length,
+      dyn: $$('[data-dyn]').reduce(function (o, tb) { o[tb.id] = tb.rows.length; return o; }, {}),
       values: controls().map(function (el) {
         var o = { t: el.tagName + ':' + (el.type || '') + ':' + (el.name || '') };
         if (el.type === 'checkbox' || el.type === 'radio') o.c = el.checked; else o.v = el.value;
@@ -203,6 +204,33 @@
       var rows = $$('.witness-row', wl);
       while (rows.length > saved.witnesses) rows.pop().remove();
     }
+    // Filas que se agregan con un botón (asistentes, acuerdos…)
+    Object.keys(saved.dyn || {}).forEach(function (id) {
+      var t = document.getElementById(id), n = saved.dyn[id];
+      if (!t || typeof window.gpAddDynRow !== 'function') return;
+      while (t.rows.length < n) window.gpAddDynRow(id);
+      while (t.rows.length > n) t.rows[t.rows.length - 1].remove();
+    });
+  }
+
+  /* ---- Centro de trabajo: se agrega a los formularios que aún no lo tienen ---- */
+  var CENTROS = ['Walmart Pudahuel', 'Walmart Peñón', 'Walmart Lo Aguirre', 'Líder Lo Barnechea', 'Líder La Reina', 'Oficina Grupo Pro'];
+  function ensureCentrosList() {
+    if (document.getElementById('centrosList')) return;
+    var dl = document.createElement('datalist'); dl.id = 'centrosList';
+    dl.innerHTML = CENTROS.map(function (c) { return '<option>' + c + '</option>'; }).join('');
+    document.body.appendChild(dl);
+  }
+  function addCentroField() {
+    ensureCentrosList();
+    if ($('[name="centro"]')) return;
+    var idIn = $('.document-sheet [data-auto-id]'); if (!idIn) return;
+    var tr = idIn.closest('tr'); if (!tr) return;
+    var cols = 0; [].slice.call(tr.cells).forEach(function (c) { cols += +(c.getAttribute('colspan') || 1); });
+    var lab = Math.max(1, Math.round(cols / 3));
+    var row = document.createElement('tr');
+    row.innerHTML = '<td class="label" colspan="' + lab + '">Centro de trabajo</td><td colspan="' + Math.max(1, cols - lab) + '"><input name="centro" list="centrosList" required placeholder="Toca para seleccionar o escribe el centro"></td>';
+    tr.parentNode.insertBefore(row, tr.nextSibling);
   }
   function restore(saved) {
     reconcileRows(saved);
@@ -251,7 +279,7 @@
   /* ---- Datos de quien reporta (se recuerdan en este teléfono) ---- */
   var PROFILE = [
     ['#gpReporterName', 'name'], ['#gpReporterEmail', 'email'], ['#gpExtraCc', 'cc'],
-    ['[name="reportante"]', 'name'],
+    ['[name="reportante"]', 'name'], ['[name="centro"]', 'centro'],
     ['[name="nombre_prevencionista"]', 'prev'], ['[name="nombre_entrevistador"]', 'prev'],
     ['input[list="empresasList"][name="empresa"], input[list="empresasList"]:not([name])', 'empresa'], ['input[list="areasList"]', 'area']
   ];
@@ -285,7 +313,7 @@
   }
 
   function initForm() {
-    addAppBar(); setNet();
+    addCentroField(); addAppBar(); setNet();
     idb.get('drafts', draftKey).then(function (saved) {
       if (saved && saved.values) { restore(saved); restored = true; showBanner(saved); }
       else if (applyProfile()) toast('Cargamos tus datos de la última vez', '', 2600);

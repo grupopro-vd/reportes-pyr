@@ -1,7 +1,7 @@
 {
-  "name": "Reportes Prevención de Riesgos (EHS) · Grupo Pro",
-  "short_name": "Reportes PYR",
-  "description": "Flash Report y Declaración de accidente o incidente de Prevención de Riesgos Grupo Pro.",
+  "name": "PRO EHS · Grupo Pro",
+  "short_name": "PRO EHS",
+  "description": "Gestión de Prevención de Riesgos (EHS) de Grupo Pro: reportes, terreno, personas y gestión.",
   "lang": "es-CL",
   "start_url": "./",
   "scope": "./",
