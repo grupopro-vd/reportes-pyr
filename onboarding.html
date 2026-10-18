@@ -145,9 +145,9 @@ var CFG={clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e
   msal:'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',qr:'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
   form:'https://forms.office.com/Pages/ResponsePage.aspx?id='};
 var EV={
-  penon:{n:'OnBoarding Peñón',c:'Walmart Peñón',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9URFlNOUtSOENQUzFVVVFDQlZMSUk3UUREViQlQCN0PWcu',list:'85b9df20-1500-48f0-8f62-94ffb53b7411'},
-  loaguirre:{n:'OnBoarding Lo Aguirre',c:'Walmart Lo Aguirre',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9UMDhSUldZWENVTE5VUDVDTENJNjU1TEk5RCQlQCN0PWcu',list:'1687aef4-22c7-43c7-8ddc-f5eac801b66a'},
-  puertomadero:{n:'OnBoarding Puerto Madero',c:'Puerto Madero',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9UNDVNNzJSTVhFMDhNN1oxVUlTVTc1NVBKOCQlQCN0PWcu',list:'01454a96-1025-4e49-9c14-03c00984408b'}};
+  penon:{n:'OnBoarding Peñón',c:'Walmart Peñón',xlsx:'Walmart Peñon - San Bernardo/Evaluación Onboarding Prevención de Riesgos - Walmart Peñon (San Bernardo).xlsx',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9URFlNOUtSOENQUzFVVVFDQlZMSUk3UUREViQlQCN0PWcu',list:'85b9df20-1500-48f0-8f62-94ffb53b7411'},
+  loaguirre:{n:'OnBoarding Pudahuel (Lo Aguirre)',c:'Walmart Pudahuel (Lo Aguirre)',xlsx:'Walmart Pudahuel - Lo aguirre/Evaluación Onboarding Prevención de Riesgos - Walmart Pudahuel (Lo Aguirre).xlsx',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9UMDhSUldZWENVTE5VUDVDTENJNjU1TEk5RCQlQCN0PWcu',list:'1687aef4-22c7-43c7-8ddc-f5eac801b66a'},
+  puertomadero:{n:'OnBoarding Pudahuel (Puerto Madero)',c:'Walmart Pudahuel (Puerto Madero)',xlsx:'Walmart Pudahuel - Puerto Madero/Evaluación Onboarding Prevención de Riesgos - Walmart Pudahuel (Puerto Madero).xlsx',form:'JUoNRz4-xkmm9u1Z70mhw_auRMo1OV1Jr-iUb7KQ-o9UNDVNNzJSTVhFMDhNN1oxVUlTVTc1NVBKOCQlQCN0PWcu',list:'01454a96-1025-4e49-9c14-03c00984408b'}};
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var key=new URLSearchParams(location.search).get('e')||'penon',E=EV[key]||EV.penon,URL_F=CFG.form+E.form;
@@ -164,36 +164,83 @@ async function drawQr(){if(qrDone)return;$('#qrOpen').href=URL_F;
   catch(e){$('#qr').innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}}
 $('#qrCopy').onclick=function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(URL_F):Promise.reject()).then(function(){b.textContent='✔ Copiado'},function(){prompt('Copia el enlace:',URL_F)})};
 // ---------- Resultados (SharePoint, con cuenta Microsoft) ----------
+var RES_LIST='17414e74-834b-4269-bcde-dbab48a2a74d',XLS_DIR='General/Gestión SSO Grupo Pro/Carpeta G.4 - Formularios Prevención/';
 var PCA=null,ACC=null;
 async function token(){try{return (await PCA.acquireTokenSilent({scopes:CFG.scopes,account:ACC})).accessToken}catch(e){await PCA.acquireTokenRedirect({scopes:CFG.scopes,account:ACC});throw new Error('Redirigiendo a Microsoft…')}}
-async function g(p){var r=await fetch(p.indexOf('http')===0?p:'https://graph.microsoft.com/v1.0'+p,{headers:{Authorization:'Bearer '+(await token())}});var d=await r.json().catch(function(){return null});if(!r.ok)throw new Error((d&&d.error&&d.error.message)||('Microsoft respondió '+r.status));return d}
+async function g(p,o){o=o||{};var r=await fetch(p.indexOf('http')===0?p:'https://graph.microsoft.com/v1.0'+p,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+(await token())},o.body?{'Content-Type':'application/json'}:{}),body:o.body?JSON.stringify(o.body):undefined});
+  if(o.raw)return r;if(r.status===204)return null;var d=await r.json().catch(function(){return null});if(!r.ok)throw new Error((d&&d.error&&d.error.message)||('Microsoft respondió '+r.status));return d}
+// Lector de Excel (xlsx) sin librerías: zip + XML
+async function unzip(ab){var dv=new DataView(ab),u8=new Uint8Array(ab),e=ab.byteLength-22;while(e>0&&dv.getUint32(e,true)!==0x06054b50)e--;var cnt=dv.getUint16(e+10,true),p=dv.getUint32(e+16,true),out={};
+  for(var i=0;i<cnt;i++){(function(){var m=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    var name=new TextDecoder().decode(u8.slice(p+46,p+46+nl));p+=46+nl+xl+cl;var st=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true),data=u8.slice(st,st+cs);
+    out[name]=function(){return m===0?Promise.resolve(new TextDecoder().decode(data)):new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}})()}return out}
+async function sheetWithPoints(ab){var z=await unzip(ab),P=new DOMParser(),col=function(r){var n=0;r.replace(/\d+/g,'').split('').forEach(function(ch){n=n*26+ch.charCodeAt(0)-64});return n-1};
+  var ss=z['xl/sharedStrings.xml']?[].map.call(P.parseFromString(await z['xl/sharedStrings.xml'](),'text/xml').getElementsByTagName('si'),function(si){return [].map.call(si.getElementsByTagName('t'),function(t){return t.textContent}).join('')}):[];
+  var names=Object.keys(z).filter(function(n){return /^xl\/worksheets\/sheet\d+\.xml$/.test(n)});
+  for(var k=0;k<names.length;k++){var sh=P.parseFromString(await z[names[k]](),'text/xml'),rows=[];
+    [].forEach.call(sh.getElementsByTagName('row'),function(r){var row=[];[].forEach.call(r.getElementsByTagName('c'),function(c){var v=c.getElementsByTagName('v')[0],t=c.getElementsByTagName('t')[0],val=v?v.textContent:(t?t.textContent:'');if(c.getAttribute('t')==='s')val=ss[+val];row[col(c.getAttribute('r'))]=val});rows.push(Array.from(row,function(x){return x==null?'':x}))});
+    var hi=rows.findIndex(function(r){return r.indexOf('Total de puntos')>=0});if(hi>=0)return rows.slice(hi)}return null}
+var nz=function(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim()};
+function normAns(v){var a;if(Array.isArray(v))a=v;else{var s=String(v||'').trim();if(/^\[/.test(s)){try{a=JSON.parse(s)}catch(e){a=[s]}}else a=s.split(';')}return a.map(nz).filter(Boolean).sort().join('|')}
+function grade(p){return p==null?null:(p>=90?'Buena':p>=70?'Media':'Mala')}
+async function excelKey(){
+  var ck='gpOBkey:'+key;try{var c=JSON.parse(localStorage.getItem(ck)||'null');if(c&&Date.now()-c.at<6*3600e3)return c}catch(e){}
+  var drives=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value,dr=drives.filter(function(d){return /Documentos%20compartidos|Shared%20Documents/i.test(d.webUrl)})[0]||drives[0];
+  var r=await g('/drives/'+dr.id+'/root:/'+(XLS_DIR+E.xlsx).split('/').map(encodeURIComponent).join('/')+':/content',{raw:true});if(!r.ok)throw new Error('No se encontró el Excel del Forms');
+  var rows=await sheetWithPoints(await r.arrayBuffer());if(!rows)throw new Error('El Excel no trae la hoja de respuestas');
+  var h=rows[0],data=rows.slice(1).filter(function(r){return r.some(function(x){return String(x).trim()})});
+  var qs=[];h.forEach(function(t,i){var m=String(t).match(/^Puntos: (.*)$/);if(m){var qi=h.indexOf(m[1]);if(qi>=0&&!/RUT|Nombre/i.test(m[1]))qs.push({qi:qi,pi:i})}});
+  var pts={},opts={},max=0;qs.forEach(function(q){var mx=0;data.forEach(function(r){var a=normAns(r[q.qi]),p=parseFloat(r[q.pi])||0;if(a){opts[a]=1;if(p>(pts[a]||0))pts[a]=p;if(p>mx)mx=p}});max+=mx});
+  var ix=function(re){return h.findIndex(function(x){return re.test(x)&&!/^Puntos|^Comentarios/.test(x)})},ti=h.indexOf('Total de puntos'),ni=ix(/Nombre Completo/i),ri=ix(/RUT/i),fi=h.indexOf('Hora de finalización'),ii=h.indexOf('Id');
+  var rowsOut=data.map(function(r){var t=parseFloat(r[ti]),n=parseFloat(r[fi]);return {id:String(r[ii]),nombre:String(r[ni]||'').trim(),rut:String(r[ri]||'').trim(),puntos:t,fecha:isNaN(n)?null:new Date(Math.round((n-25569)*864e5)).toISOString()}});
+  var out={at:Date.now(),pts:pts,opts:opts,max:max,rows:rowsOut};try{localStorage.setItem(ck,JSON.stringify({at:out.at,pts:pts,opts:opts,max:max,rows:[]}))}catch(e){}return out}
+function scoreForms(json,K){var b;try{b=JSON.parse(json)}catch(e){return null}var p=0,rut='',name='';
+  Object.keys(b).forEach(function(k){if(!/^r[0-9a-f]{20,}/.test(k))return;var v=b[k],s=String(v==null?'':v).trim();if(!s)return;
+    if(/^\d{1,2}\.?\d{3}\.?\d{3}\s*-?\s*[\dkK]$/.test(s)){rut=s;return}var a=normAns(s);if(K.opts[a]){p+=K.pts[a]||0;return}if(/[a-záéíóúñ]/i.test(s)&&s.length>name.length&&s.length<80)name=s});
+  return {puntos:p,pct:K.max?Math.round(p/K.max*1000)/10:null,rut:rut,name:name}}
 async function results(){
   try{if(!PCA){await load(CFG.msal);PCA=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname.replace(/[^/]*$/,'')+'panel.html'},cache:{cacheLocation:'localStorage'}});
       try{await PCA.handleRedirectPromise()}catch(e){}ACC=PCA.getActiveAccount()||PCA.getAllAccounts()[0]||null}}
   catch(e){$('#auth').innerHTML='<div class="who">'+esc(e.message)+'</div>';return}
   if(!ACC){$('#auth').innerHTML='<div class="who"><b>Inicia sesión para ver los resultados</b><small>Los resultados vienen de SharePoint y se ven con tu cuenta @grupopro.cl. Inicia sesión en el Panel de control y vuelve aquí.</small></div><a class="btn dark" href="panel.html">Ir a iniciar sesión</a>';$('#view').innerHTML='';return}
-  $('#auth').innerHTML='<div class="who">Conectado como <b>'+esc(ACC.name||ACC.username)+'</b></div>';$('#sync').textContent='Leyendo respuestas…';
-  try{var items=[],url='/sites/'+CFG.site+'/lists/'+E.list+'/items?$expand=fields&$top=999&$orderby=createdDateTime desc';
-    while(url){var d=await g(url);items=items.concat(d.value||[]);url=d['@odata.nextLink']||null}
-    render(items)}catch(e){$('#sync').innerHTML='<div class="msg err">No se pudo leer SharePoint: '+esc(e.message)+'</div>'}
+  $('#auth').innerHTML='<div class="who">Conectado como <b>'+esc(ACC.name||ACC.username)+'</b></div>';$('#sync').textContent='Leyendo resultados…';
+  try{var items=[],url='/sites/'+CFG.site+'/lists/'+RES_LIST+'/items?$expand=fields&$top=999';
+    while(url){var d=await g(url);items=items.concat((d.value||[]).filter(function(it){return (it.fields||{}).Evaluacion===key}));url=d['@odata.nextLink']||null}
+    var L='/sites/'+CFG.site+'/lists/'+RES_LIST,K=null,changed=0;
+    var pend=items.filter(function(it){var f=it.fields;return f.Origen==='Forms'&&f.PuntajePct==null&&f.Respuestas});
+    try{K=await excelKey()}catch(e){K=null;$('#sync').innerHTML='<div class="msg err">No se pudo leer el Excel del Forms ('+esc(e.message)+'). Las notas nuevas se calcularán cuando esté disponible.</div>'}
+    if(K){
+      // 1) Notas de las respuestas nuevas (llegan del flujo con todas las respuestas)
+      for(var i=0;i<pend.length;i++){var it=pend[i],s=scoreForms(it.fields.Respuestas,K);if(!s||s.pct==null)continue;
+        var f={PuntajePct:s.pct,Puntos:s.puntos,PuntajeMax:K.max,Resultado:grade(s.pct)};if(s.name&&(!it.fields.Title||it.fields.Title==='Respuesta Forms'))f.Title=s.name.slice(0,255);if(s.rut)f.RUT=s.rut;
+        try{await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:f});Object.assign(it.fields,f);changed++}catch(e){}}
+      // 2) Respuestas que están en el Excel pero no en la lista (historial)
+      if(K.rows&&K.rows.length){var have={};items.forEach(function(it){have[it.fields.ResponseId]=1});
+        var miss=K.rows.filter(function(r){return !have[key+'-'+r.id]&&!isNaN(r.puntos)});
+        for(var j=0;j<miss.length;j+=20){var reqs=miss.slice(j,j+20).map(function(r,n){var pct=K.max?Math.round(r.puntos/K.max*1000)/10:null;
+            return {id:String(n),method:'POST',url:L+'/items',headers:{'Content-Type':'application/json'},body:{fields:{Title:(r.nombre||'Sin nombre').slice(0,255),RUT:r.rut,Evaluacion:key,Centro:E.c,Fecha:r.fecha,Puntos:r.puntos,PuntajeMax:K.max,PuntajePct:pct,Resultado:grade(pct),ResponseId:key+'-'+r.id,Origen:'Excel Forms'}}}});
+          var bd=await g('/$batch',{method:'POST',body:{requests:reqs}});(bd.responses||[]).forEach(function(x,n){if(x.status<300){var rr=reqs[+x.id].body.fields;items.push({createdDateTime:rr.Fecha,fields:rr});changed++}})}}
+    }
+    render(items,changed);
+  }catch(e){$('#sync').innerHTML='<div class="msg err">No se pudo leer SharePoint: '+esc(e.message)+'</div>'}
 }
-function grade(p){return p==null?null:(p>=90?'Buena':p>=70?'Media':'Mala')}
 function dayKey(iso){return new Date(iso).toLocaleDateString('sv-SE',{timeZone:'America/Santiago'})}
-function render(items){
+function render(items,changed){
   var today=dayKey(new Date().toISOString()),byDay={},rows=[];
-  items.forEach(function(it){var f=it.fields||{},k=dayKey(it.createdDateTime);byDay[k]=(byDay[k]||0)+1;
-    var pct=f.PuntajePct!=null?Number(f.PuntajePct):null;rows.push({k:k,at:it.createdDateTime,name:f.NombreCompleto||f.Title||'',pct:pct,g:grade(pct)})});
+  items.forEach(function(it){var f=it.fields||{},at=f.Fecha||it.createdDateTime,k=dayKey(at);byDay[k]=(byDay[k]||0)+1;
+    var pct=f.PuntajePct!=null?Number(f.PuntajePct):null;rows.push({k:k,at:at,name:f.Title==='Respuesta Forms'?'':(f.Title||''),pct:pct,g:f.Resultado||grade(pct)})});
   var days=Object.keys(byDay).sort().reverse(),last14=days.slice(0,14),max=Math.max.apply(null,last14.map(function(k){return byDay[k]}).concat([1]));
   var graded=rows.filter(function(r){return r.g}),cnt={Buena:0,Media:0,Mala:0};graded.forEach(function(r){cnt[r.g]++});
   var h='<div class="kpis"><div class="kpi main"><span>Respuestas</span><b>'+items.length+'</b><span style="font-weight:normal;margin-top:6px">Hoy: '+(byDay[today]||0)+'</span></div>'+
     '<div class="kpi"><b class="c-ok">'+cnt.Buena+'</b><span>Nota buena (90% o más)</span></div><div class="kpi"><b class="c-mid">'+cnt.Media+'</b><span>Nota media (70–89%)</span></div><div class="kpi"><b class="c-bad">'+cnt.Mala+'</b><span>Nota mala (menos de 70%)</span></div></div>';
-  h+='<h2>Respuestas por día (últimos días con respuestas)</h2><div class="days">'+last14.map(function(k){return '<div class="day"><span>'+k.slice(8,10)+'-'+k.slice(5,7)+'-'+k.slice(0,4)+'</span><i style="width:'+(byDay[k]/max*100)+'%"></i><b>'+byDay[k]+'</b></div>'}).join('')+'</div>';
-  if(graded.length){var ord={Mala:0,Media:1,Buena:2};graded.sort(function(a,b){return ord[a.g]-ord[b.g]||String(b.at).localeCompare(String(a.at))});
-    h+='<h2>Personas evaluadas</h2><div class="res">'+graded.slice(0,200).map(function(r){return '<div class="r"><span>'+esc(r.name||'Sin nombre')+'<br><small style="color:var(--muted)">'+r.k.split('-').reverse().join('-')+'</small></span><b>'+Math.round(r.pct)+'%</b><span class="pill g-'+r.g+'">'+r.g+'</span></div>'}).join('')+'</div>'}
-  else h+='<div class="empty" style="margin-top:14px">Las notas y los nombres aparecerán aquí cuando el flujo de este Forms empiece a guardarlos en SharePoint.</div>';
-  $('#view').innerHTML=h;$('#sync').textContent='En vivo desde SharePoint · '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  h+='<h2>Respuestas por día</h2><div class="days">'+last14.map(function(k){return '<div class="day"><span>'+k.slice(8,10)+'-'+k.slice(5,7)+'-'+k.slice(0,4)+'</span><i style="width:'+(byDay[k]/max*100)+'%"></i><b>'+byDay[k]+'</b></div>'}).join('')+'</div>';
+  if(graded.length){var ord={Mala:0,Media:1,Buena:2};graded.sort(function(a,b){return String(b.at).localeCompare(String(a.at))});
+    var fl=window.__obF||'';h+='<h2>Personas evaluadas</h2><div class="pills" style="display:flex;gap:6px;margin:0 0 8px">'+['','Mala','Media','Buena'].map(function(x){return '<button type="button" class="btn" data-g="'+x+'" style="height:34px'+(fl===x?';background:#1d1d1b;color:#fff':'')+'">'+(x||'Todas')+'</button>'}).join('')+'</div>';
+    h+='<div class="res">'+graded.filter(function(r){return !fl||r.g===fl}).slice(0,300).map(function(r){return '<div class="r"><span>'+esc(r.name||'Sin nombre')+'<br><small style="color:var(--muted)">'+r.k.split('-').reverse().join('-')+'</small></span><b>'+(r.pct==null?'—':Math.round(r.pct)+'%')+'</b><span class="pill g-'+r.g+'">'+r.g+'</span></div>'}).join('')+'</div>'}
+  $('#view').innerHTML=h;$('#sync').innerHTML=(changed?'<div class="msg ok" style="margin-bottom:6px">✔ '+changed+' resultado(s) actualizados en SharePoint.</div>':'')+'En vivo desde SharePoint · '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  [].forEach.call(document.querySelectorAll('[data-g]'),function(b){b.onclick=function(){window.__obF=b.dataset.g;render(items,0)}});
 }
-$('#note').textContent='Las respuestas del Forms se guardan en la lista «'+E.n+'» de SharePoint.';
+$('#note').textContent='Las notas se guardan en la lista «ResultadosOnboarding» de SharePoint. El puntaje de cada pregunta se toma del Excel de resultados del Forms.';
 var v=new URLSearchParams(location.search).get('v');if(v==='qr'||v==='res')show(v);
 })();
 </script>
