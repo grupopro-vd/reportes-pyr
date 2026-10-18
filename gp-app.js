@@ -217,9 +217,10 @@
   }
 
   /* ---- Centro de trabajo: se agrega a los formularios que aún no lo tienen ---- */
-  var CENTROS = ['Walmart Pudahuel', 'Walmart Peñón', 'Walmart Lo Aguirre', 'Líder Lo Barnechea', 'Líder La Reina', 'Oficina Grupo Pro'];
+  var CENTROS = ['Walmart Pudahuel', 'Walmart Peñón', 'Walmart Lo Aguirre', 'Líder Lo Barnechea', 'Líder La Reina', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
   function ensureCentrosList() {
-    if (document.getElementById('centrosList')) return;
+    var ex = document.getElementById('centrosList');
+    if (ex) { var have = [].map.call(ex.options, function (o) { return o.value; }); CENTROS.forEach(function (c) { if (have.indexOf(c) < 0) { var o = document.createElement('option'); o.value = c; ex.appendChild(o); } }); return; }
     var dl = document.createElement('datalist'); dl.id = 'centrosList';
     dl.innerHTML = CENTROS.map(function (c) { return '<option>' + c + '</option>'; }).join('');
     document.body.appendChild(dl);

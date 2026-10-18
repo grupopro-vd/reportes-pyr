@@ -1,5 +1,5 @@
 // Guarda la app y los formularios en el teléfono para que abran rápido y funcionen sin señal.
-const CACHE = 'pro-ehs-v10';
+const CACHE = 'pro-ehs-v11';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'gp-app.js', 'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png',
   'rapido.html', 'declaracion.html', 'detallado.html',
   'check_list_equipos.html', 'permiso_trabajo.html', 'entrega_epp.html',
