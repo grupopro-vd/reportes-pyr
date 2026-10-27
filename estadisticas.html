@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estadísticas · PRO EHS</title>
+<meta name="theme-color" content="#1d1d1b">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PRO EHS">
+<style>
+:root{--red:#bd0926;--red-dark:#8e0719;--black:#1d1d1b;--bg:#f2f2f2;--muted:#5c5c5c;--line:#e4e4e8;--ok:#16623f;--ok-bg:#e3f4ea;--bad:#b3261e;--bad-bg:#fde4e2;--mid:#9a6700;--mid-bg:#fdf0d5;
+  --c1:#8e0719;--c2:#1f4e6b;--c3:#16623f;--c4:#b45309;--c5:#5b4a8b;--c6:#0e7490;--c7:#9a3412;--c8:#475569}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--black);font-family:Arial,Helvetica,sans-serif;-webkit-tap-highlight-color:transparent}
+.top{background:linear-gradient(120deg,var(--black) 0%,var(--black) 52%,var(--red-dark) 82%,var(--red) 100%);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 18px}
+.top .in{max-width:1180px;margin:0 auto}
+.back{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-size:14px;font-weight:bold;background:rgba(255,255,255,.12);padding:7px 12px;border-radius:9px}
+.top h1{margin:12px 0 2px;font-size:22px}.top p{margin:0;color:#e3e3e3;font-size:13px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom))}
+select,button,input{font:inherit}
+.auth{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:13.5px}
+.auth .who{flex:1;min-width:180px;line-height:1.35}.auth .who small{display:block;color:var(--muted);font-size:12px}
+.btn{border:1.5px solid #d4d4d8;background:#fff;border-radius:10px;height:40px;padding:0 14px;font-size:14px;font-weight:bold;cursor:pointer;color:var(--black);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.dark{background:var(--black);border-color:var(--black);color:#fff}.btn.pri{background:var(--red);border-color:var(--red);color:#fff}.btn.sm{height:32px;padding:0 10px;font-size:12.5px}
+.ms i{display:grid;grid-template-columns:7px 7px;gap:1px}.ms i b{width:7px;height:7px;display:block}
+.views{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.views button{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font-weight:bold;font-size:13.5px;cursor:pointer;color:var(--black)}
+.views button.on{background:var(--black);border-color:var(--black);color:#fff}
+.views button.macro{border-color:#e7c2c9}.views button.macro.on{background:var(--red-dark);border-color:var(--red-dark)}
+.filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px}
+@media(min-width:720px){.filters{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1050px){.filters{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:bold;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);min-width:0}
+.filters select{height:36px;border:1px solid #d4d4d8;border-radius:9px;padding:0 8px;background:#fff;font-size:13.5px;color:var(--black);text-transform:none;letter-spacing:0;font-weight:normal;min-width:0;width:100%}
+.filters select.set{border-color:var(--red);background:#fff5f6}
+.act{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 2px 12px;font-size:12px;color:var(--muted)}
+.act .chip{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #e7c2c9;color:var(--red-dark);border-radius:99px;padding:4px 9px;font-weight:bold;cursor:pointer}
+.act a{color:var(--red);font-weight:bold;cursor:pointer;text-decoration:underline}
+.sync{font-size:12px;color:var(--muted);margin:0 2px 10px}.sync button{border:0;background:none;color:var(--red);font-weight:bold;cursor:pointer;padding:0;font-size:12px}
+.dsa{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(120deg,#2a0a10,var(--red-dark) 70%,var(--red));color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.dsa .n{font-size:46px;font-weight:bold;line-height:1;color:#7dffb0}.dsa .n small{font-size:18px;color:#c9ffd9;margin-left:4px}
+.dsa .l{font-size:13px;font-weight:bold;letter-spacing:.8px;text-transform:uppercase}
+.dsa .r{margin-left:auto;font-size:12.5px;line-height:1.5;color:#ffe2e7;text-align:right}
+@media(max-width:600px){.dsa .r{margin-left:0;text-align:left}}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+@media(min-width:720px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1050px){.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.kpi{background:#fff;border:1px solid var(--line);border-top:4px solid var(--k,#1d1d1b);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font-size:28px;line-height:1.1}.kpi span{font-size:12px;color:var(--muted);font-weight:bold}.kpi small{display:block;font-size:11px;color:#888;margin-top:2px}
+h2{font-size:13px;letter-spacing:.7px;text-transform:uppercase;color:var(--red-dark);margin:20px 2px 10px}
+.grid{display:grid;gap:12px}
+@media(min-width:760px){.grid.g2{grid-template-columns:1fr 1fr}.grid.g3{grid-template-columns:1fr 1fr}}
+@media(min-width:1050px){.grid.g3{grid-template-columns:1fr 1fr 1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0}
+.card h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}.card h3 small{font-weight:normal;color:var(--muted);font-size:11.5px}
+.card h3 .seg{margin-left:auto;display:flex;gap:4px}.card h3 .seg button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 8px;font-size:11.5px;font-weight:bold;cursor:pointer}.card h3 .seg button.on{background:var(--black);color:#fff;border-color:var(--black)}
+.ch{position:relative;height:260px}.ch.tall{height:320px}
+.span2{grid-column:1/-1}
+.empty{background:#fff;border:1px dashed #ccc;border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
+.nodata{display:grid;place-items:center;height:100%;color:#999;font-size:13px}
+.tbl{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 8px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:#f6f6f7;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);z-index:1}
+td.num,th.num{text-align:right}
+.tag{display:inline-block;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:bold;background:#eee;white-space:nowrap}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}.tag.bad{background:var(--bad-bg);color:var(--bad)}.tag.mid{background:var(--mid-bg);color:var(--mid)}
+.det{min-width:260px;max-width:460px}
+.search{height:38px;border:1px solid #d4d4d8;border-radius:9px;padding:0 10px;width:100%;max-width:320px;margin-bottom:8px}
+.plan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:900px){.plan{grid-template-columns:1.2fr repeat(3,minmax(0,1fr))}}
+.plan .big{grid-row:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:14px;padding:14px;font-weight:bold}
+.plan .big b{font-size:24px}.plan .big.ok{background:var(--ok-bg);color:var(--ok)}.plan .big.bad{background:var(--bad-bg);color:var(--bad)}
+.msg{font-size:13.5px;border-radius:10px;padding:10px 12px;line-height:1.45}.msg.err{background:var(--bad-bg);color:var(--bad)}.msg.info{background:#fff;border:1px solid var(--line)}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:16px}
+.admin{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.admin summary{padding:14px;font-weight:bold;cursor:pointer}
+.admin .in{padding:0 14px 14px;font-size:13.5px;display:grid;gap:10px}
+.acc td,.acc th{text-align:center}.acc td:first-child,.acc th:first-child{text-align:left}
+.acc input[type=checkbox]{width:18px;height:18px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}.addrow input{flex:1 1 220px;height:38px;border:1px solid #d4d4d8;border-radius:9px;padding:0 10px}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;padding:20px}
+.spin{width:18px;height:18px;border:3px solid #ddd;border-top-color:var(--red);border-radius:50%;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+@media print{.top,.auth,.views,.filters,.act,.sync,.admin,.note,.search{display:none!important}body{background:#fff}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="back" href="./">← Inicio</a>
+  <h1>Estadísticas</h1>
+  <p>Accidentabilidad por centro · Report HSE</p>
+</div></header>
+<main class="wrap">
+  <div class="auth" id="auth"></div>
+  <div id="app"></div>
+  <details class="admin" id="admin" hidden>
+    <summary>Accesos por persona (solo administrador)</summary>
+    <div class="in" id="adminIn"></div>
+  </details>
+  <p class="note">Los datos se leen de los Excel de cada centro en SharePoint (Gestión SSO › Carpeta B.6 - Estadistica › B. Data Reporte Informes PPRR). Para actualizar las estadísticas, actualiza el Excel de tu centro: no hay que subir nada a la app. Por privacidad, los datos no quedan guardados en el teléfono.</p>
+</main>
+<script>
+(function(){
+var CFG={clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e-49c6-a6f6-ed59ef49a1c3',
+  site:'grupoprocl.sharepoint.com,32881a9e-1d10-427d-8d81-a8e638a346f4,8c2de84d-d5d6-4c85-8258-7ffb421c081f',
+  base:'/General/Gestión SSO Grupo Pro/Carpeta B.6 - Estadistica/B. Data Reporte Informes PPRR',
+  accesos:'PRO_EHS/Config/accesos_estadisticas.json',
+  admins:['vdiaz@grupopro.cl'],scopes:['Sites.ReadWrite.All'],
+  msal:'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',
+  xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  chart:'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+  dl:'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js'};
+// Centros: carpeta en SharePoint, cómo reconocer la sucursal en el Excel y quién lo ve
+var CENTROS=[
+  {k:'penon',n:'Walmart Peñón',folder:'Data Reporte Peñon',re:/pe[ñn]on|ecmm\s*p[ñn](?![a-z])|ecmm\s*sb\b|san bernardo/i,emails:['afuentes@grupopro.cl']},
+  {k:'puerto',n:'Walmart Puerto (PS)',folder:'Data Reporte Puerto',re:/ecmm\s*ps\b|puerto|\bps\b/i,emails:['milize.basaure@walmart.com','karen.donoso@walmart.com']},
+  {k:'farfana',n:'Walmart La Farfana',folder:'Data Reporte Farfana',re:/farfana|delivery/i,emails:['squisbert@grupopro.cl']},
+  {k:'loaguirre',n:'Walmart Lo Aguirre',folder:'Data Reporte Lo Aguirre',re:/aguirre|\bloa\b/i,emails:['nliquitay@grupopro.cl']},
+  {k:'reina',n:'Líder La Reina (Local 95)',folder:'Data Reporte 95',re:/\b95\b|reina|lr95/i,emails:['squisbert@grupopro.cl']},
+  {k:'barnechea',n:'Líder Lo Barnechea (Local 97)',folder:'Data Reporte 97',re:/\b97\b|barnechea/i,emails:[]},
+  {k:'icb',n:'ICB Food Service',folder:'Data Reporte ICB',re:/\bicb\b/i,emails:[]}];
+var MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],MESL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var PAL=['#8e0719','#1f4e6b','#16623f','#b45309','#5b4a8b','#0e7490','#9a3412','#475569','#be185d','#4d7c0f','#a16207','#334155'];
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var norm=function(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim()};
+var cap=function(s){s=String(s||'').trim().replace(/\s+/g,' ');return s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():''};
+var PCA=null,ACC=null,DRIVE=null,REP=null,ACCESOS=null,isAdmin=false;
+var SRC={},ROWS=[],PLAN=[],VIEW=null,F={},CH={},detQ='',trimMode='trim';
+
+function loadScript(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=function(){ko(new Error('No se pudo cargar '+src.split('/').pop()))};document.head.appendChild(s)})}
+async function token(){try{return (await PCA.acquireTokenSilent({scopes:CFG.scopes,account:ACC})).accessToken}
+  catch(e){try{sessionStorage.setItem('gpVolver','estadisticas.html')}catch(_){}await PCA.acquireTokenRedirect({scopes:CFG.scopes,account:ACC});throw new Error('Redirigiendo a Microsoft…')}}
+async function g(p,o){o=o||{};var r=await fetch(p.indexOf('http')===0?p:'https://graph.microsoft.com/v1.0'+p,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+(await token())},o.ct?{'Content-Type':o.ct}:{}),body:o.body});
+  if(o.raw)return r;if(r.status===204)return null;var d=await r.json().catch(function(){return null});if(!r.ok){var e=new Error((d&&d.error&&d.error.message)||('Error '+r.status));e.status=r.status;throw e}return d}
+var encPath=function(p){return p.split('/').map(encodeURIComponent).join('/')};
+
+// ---------- Sesión ----------
+async function init(){
+  try{await loadScript(CFG.msal)}catch(e){$('#auth').innerHTML='<div class="who">'+esc(e.message)+'</div>';return}
+  PCA=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname.replace(/[^/]*$/,'')+'panel.html'},cache:{cacheLocation:'localStorage'}});
+  try{await PCA.handleRedirectPromise()}catch(e){}
+  ACC=PCA.getActiveAccount()||PCA.getAllAccounts()[0]||null;
+  if(!ACC){$('#auth').innerHTML='<div class="who"><b>Inicia sesión para ver tus estadísticas</b><small>Usa tu cuenta Microsoft (@grupopro.cl o tu cuenta Walmart invitada). Cada persona ve solo los centros que tiene asignados.</small></div><button class="btn dark ms" id="inBtn" type="button"><i><b style="background:#f25022"></b><b style="background:#7fba00"></b><b style="background:#00a4ef"></b><b style="background:#ffb900"></b></i>Iniciar sesión</button>';
+    $('#inBtn').onclick=function(){try{sessionStorage.setItem('gpVolver','estadisticas.html')}catch(e){}PCA.loginRedirect({scopes:CFG.scopes,prompt:'select_account'})};return}
+  PCA.setActiveAccount(ACC);var me=String(ACC.username||'').toLowerCase();isAdmin=CFG.admins.indexOf(me)>=0;
+  $('#auth').innerHTML='<div class="who">Conectado como <b>'+esc(ACC.name||ACC.username)+'</b><small>'+esc(ACC.username)+(isAdmin?' · administrador':'')+'</small></div><button class="btn" id="outBtn" type="button">Salir</button>';
+  $('#outBtn').onclick=function(){PCA.logoutRedirect({account:ACC,postLogoutRedirectUri:location.href})};
+  $('#app').innerHTML='<div class="loading"><span class="spin"></span>Leyendo los Excel de SharePoint…</div>';
+  try{await Promise.all([loadScript(CFG.xlsx),loadScript(CFG.chart).then(function(){return loadScript(CFG.dl)})]);
+    var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;
+    DRIVE=(ds.filter(function(d){return /Documentos%20compartidos|Shared%20Documents/i.test(d.webUrl)})[0]||ds.filter(function(d){return d.name==='Documentos'})[0]).id;
+    REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;
+    await loadAccesos();
+    var mine=misCentros(me);
+    if(!isAdmin&&!mine.length){$('#app').innerHTML='<div class="empty">Tu cuenta aún no tiene centros asignados.<br>Pídele acceso a Valentín Díaz (Prevención de Riesgos).</div>';return}
+    buildViews(mine);if(isAdmin)adminUI();
+  }catch(e){$('#app').innerHTML='<div class="msg err">No se pudieron leer las estadísticas: '+esc(e.message)+'</div>'}
+}
+async function loadAccesos(){ACCESOS=null;if(!REP)return;
+  try{var r=await g('/drives/'+REP+'/root:/'+encPath(CFG.accesos)+':/content',{raw:true});if(r.ok)ACCESOS=await r.json()}catch(e){}}
+function accesoMap(){var m={};CENTROS.forEach(function(c){m[c.k]=(ACCESOS&&ACCESOS.centros&&ACCESOS.centros[c.k])||c.emails});return m}
+function misCentros(me){var m=accesoMap();return CENTROS.filter(function(c){return isAdmin||(m[c.k]||[]).map(function(x){return String(x).toLowerCase()}).indexOf(me)>=0})}
+
+// ---------- Lectura de Excel ----------
+var COLS={rs:['razon social'],suc:['sucursal'],nom:['nombre'],rut:['rut'],area:['area','área'],tipo:['tipo accidente','tipo de accidente'],estado:['estado calif'],det:['detalle','descripcion diat','descripcion'],
+  parte:['parte lesionada'],clas:['clasificacion'],fecha:['dia, mes, ano','dia mes ano','fecha'],ini:['inicio reposo'],fin:['termino reposo'],ctp:['ctp'],nacc:['n° accidentes','no accidentes','n accidentes','nº accidentes'],dias:['dias licencia','dias perdidos']};
+function toDate(v){if(v instanceof Date&&!isNaN(v)){var d=new Date(v.getTime()+12*3600e3);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  if(typeof v==='number'&&v>20000&&v<80000){var d2=new Date(Math.round((v-25569)*864e5)+12*3600e3);return d2.getUTCFullYear()+'-'+String(d2.getUTCMonth()+1).padStart(2,'0')+'-'+String(d2.getUTCDate()).padStart(2,'0')}
+  var s=String(v||'').trim(),m;if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  if((m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/)))return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return ''}
+function num(v){if(typeof v==='number')return v;var n=parseFloat(String(v||'').replace(',','.'));return isNaN(n)?0:n}
+function normTipo(t){var s=norm(t);if(/trayecto/.test(s))return 'Trayecto';if(/enfermedad prof/.test(s))return 'Enfermedad Profesional';if(/enfermedad/.test(s))return 'Enfermedad común';if(/trabajo/.test(s))return 'Trabajo';return cap(t)||'Sin dato'}
+function normEstado(t){var s=norm(t);if(/parcial/.test(s))return 'Con cobertura parcial';if(/^con cob/.test(s))return 'Con cobertura';if(/sin cob/.test(s))return 'Sin cobertura';if(/estudio/.test(s))return 'En estudio';if(/rechaz/.test(s))return 'Rechazado';return cap(t)||'Sin dato'}
+function parseSheet(ws,file,sheet){var a=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+  var hi=a.findIndex(function(r){var h=r.map(norm);return h.some(function(x){return x.indexOf('rut')===0})&&h.some(function(x){return x.indexOf('tipo accidente')===0||x.indexOf('tipo de accidente')===0})});
+  if(hi<0)return null;var H=a[hi].map(norm),I={};
+  Object.keys(COLS).forEach(function(k){I[k]=H.findIndex(function(h){return h&&COLS[k].some(function(p){return h.indexOf(p)===0})})});
+  if(I.ctp<0)I.ctp=H.findIndex(function(h){return /ctp|stp/.test(h)});
+  var out=[];a.slice(hi+1).forEach(function(r){var v=function(k){return I[k]>=0?r[I[k]]:''};var rut=String(v('rut')).trim(),nom=String(v('nom')).trim(),fe=toDate(v('fecha'));
+    if(!rut&&!nom)return;if(!fe&&!String(v('tipo')).trim())return;
+    var ctp=String(v('ctp')).toUpperCase().indexOf('CTP')>=0?'CTP':(String(v('ctp')).toUpperCase().indexOf('STP')>=0?'STP':'Sin dato');
+    out.push({rs:String(v('rs')).trim()||'Sin dato',suc:String(v('suc')).trim().replace(/\s+/g,' ')||'Sin dato',nom:nom,rut:rut,area:cap(v('area'))||'',tipo:normTipo(v('tipo')),estado:normEstado(v('estado')),
+      det:String(v('det')).trim(),parte:cap(v('parte')),clas:cap(v('clas')),fecha:fe,ctp:ctp,nacc:I.nacc>=0?num(v('nacc')):1,dias:num(v('dias')),src:file+' › '+sheet})});
+  return {rows:out,hasDet:I.det>=0,hasParte:I.parte>=0,hasClas:I.clas>=0,hasArea:I.area>=0}}
+function parsePlan(ws,rs){var a=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});var hi=a.findIndex(function(r){return r.map(norm).some(function(x){return /^mes/.test(x)})});if(hi<0)return [];
+  var H=a[hi].map(norm),ix=function(re){return H.findIndex(function(h){return re.test(h)})};
+  var I={m:ix(/^mes/),pa:ix(/^(plan acc|lacc)/),pd:ix(/^(plan dp|ldp)/),ca:ix(/^ctrl acc/),cd:ix(/^ctrl dp/),rs:ix(/^razon/)};
+  if(I.pa<0||I.ca<0)return [];
+  return a.slice(hi+1).map(function(r){var m=toDate(r[I.m]);if(!m)return null;return {mes:m.slice(0,7),pa:num(r[I.pa]),pd:I.pd>=0?num(r[I.pd]):0,ca:num(r[I.ca]),cd:I.cd>=0?num(r[I.cd]):0,rs:(I.rs>=0&&String(r[I.rs]).trim())||rs||''}}).filter(Boolean)}
+async function readFile(item){var r=await g('/drives/'+DRIVE+'/items/'+item.id+'/content',{raw:true});if(!r.ok)throw new Error('sin acceso');
+  var wb=XLSX.read(await r.arrayBuffer(),{type:'array',cellDates:true});var res={rows:[],plan:[],flags:{}};
+  wb.SheetNames.forEach(function(n){var p=parseSheet(wb.Sheets[n],item.name,n);if(p){res.rows=res.rows.concat(p.rows);['hasDet','hasParte','hasClas','hasArea'].forEach(function(f){if(p[f])res.flags[f]=1})}
+    else if(/plan|kpi/i.test(n)){res.plan=res.plan.concat(parsePlan(wb.Sheets[n],n.replace(/^kpi\s*/i,'').trim()))}});
+  return res}
+async function listXlsx(path){try{var d=await g('/drives/'+DRIVE+'/root:'+encPath(CFG.base+(path?'/'+path:''))+':/children?$select=id,name,file,lastModifiedDateTime&$top=200');
+  return (d.value||[]).filter(function(x){return x.file&&/\.xlsx$/i.test(x.name)&&!/^~\$/.test(x.name)})}catch(e){return null}}
+async function source(key){if(SRC[key])return SRC[key];
+  var c=CENTROS.filter(function(x){return x.k===key})[0],files=await listXlsx(c?c.folder:''),res={rows:[],plan:[],flags:{},files:[],denied:files===null};
+  var seen={},key=function(r){return norm(r.rut).replace(/[^0-9k]/g,'')+'|'+r.fecha+'|'+r.tipo};
+  for(var i=0;i<(files||[]).length;i++){try{var r=await readFile(files[i]);var nu=r.rows.filter(function(x){return !seen[key(x)]});nu.forEach(function(x){seen[key(x)]=1});
+    res.rows=res.rows.concat(nu);res.plan=res.plan.concat(r.plan);Object.assign(res.flags,r.flags);res.files.push(files[i])}catch(e){}}
+  var lab={};res.rows.forEach(function(r){var k=norm(r.suc);if(!lab[k])lab[k]=r.suc;r.suc=lab[k]});
+  return SRC[key]=res}
+
+// ---------- Vistas ----------
+function buildViews(mine){var v=(isAdmin?[{k:'macro',n:'Macro HSE · Todos'}]:[]).concat(mine.map(function(c){return {k:c.k,n:c.n}}));
+  var last=null;try{last=sessionStorage.getItem('gpEstView')}catch(e){}
+  VIEW=v.some(function(x){return x.k===last})?last:v[0].k;
+  $('#app').innerHTML=(v.length>1?'<div class="views" id="views">'+v.map(function(x){return '<button type="button" data-k="'+x.k+'" class="'+(x.k==='macro'?'macro':'')+'">'+esc(x.n)+'</button>'}).join('')+'</div>':'')+'<div id="dash"></div>';
+  [].forEach.call(document.querySelectorAll('#views button'),function(b){b.onclick=function(){VIEW=b.dataset.k;F={};try{sessionStorage.setItem('gpEstView',VIEW)}catch(e){}open()}});
+  open()}
+async function open(){[].forEach.call(document.querySelectorAll('#views button'),function(b){b.classList.toggle('on',b.dataset.k===VIEW)});
+  $('#dash').innerHTML='<div class="loading"><span class="spin"></span>Leyendo datos…</div>';
+  try{var c=CENTROS.filter(function(x){return x.k===VIEW})[0],s;
+    if(VIEW==='macro'){s=await source('macro');ROWS=s.rows;PLAN=s.plan;META={flags:s.flags,files:s.files,titulo:'Todos los centros',macro:true}}
+    else{s=await source(c.k);var rows=s.rows.filter(function(r){return c.re.test(r.suc)}),flags=s.flags,files=s.files,plan=s.plan,fb='';
+      if(!rows.length){var m=await source('macro');var mr=m.rows.filter(function(r){return c.re.test(r.suc)});if(mr.length){rows=mr;flags=m.flags;files=m.files;plan=[];fb='Datos del Excel general (la carpeta del centro no tiene datos)'}}
+      ROWS=rows;PLAN=plan;META={flags:flags,files:files,titulo:c.n,macro:false,fb:fb,denied:s.denied}}
+    F=F||{};if(!F.anio){var ys=uniq(ROWS.map(function(r){return r.fecha.slice(0,4)}).filter(Boolean)).sort();F.anio=ys.indexOf(String(new Date().getFullYear()))>=0?String(new Date().getFullYear()):(ys[ys.length-1]||'')}
+    render()}
+  catch(e){$('#dash').innerHTML='<div class="msg err">No se pudieron leer los datos: '+esc(e.message)+'</div>'}}
+var META={};
+function uniq(a){var s={},o=[];a.forEach(function(x){if(x!==''&&x!=null&&!s[x]){s[x]=1;o.push(x)}});return o}
+var FDEF=[['rs','Razón social'],['anio','Año'],['trim','Trimestre'],['mes','Mes'],['tipo','Tipo accidente'],['ctp','CTP / STP'],['estado','Estado calificación'],['suc','Sucursal'],['area','Área'],['parte','Parte lesionada'],['clas','Clasificación']];
+function val(r,k){if(k==='anio')return r.fecha.slice(0,4);if(k==='mes')return r.fecha.slice(5,7);if(k==='trim')return r.fecha?'Q'+Math.ceil(+r.fecha.slice(5,7)/3):'';return r[k]}
+function filtered(skip){return ROWS.filter(function(r){for(var k in F){if(k===skip||!F[k])continue;if(String(val(r,k))!==String(F[k]))return false}return true})}
+function label(k,v){if(k==='mes')return MESL[+v-1]||v;if(k==='trim')return {Q1:'Q1 (Ene–Mar)',Q2:'Q2 (Abr–Jun)',Q3:'Q3 (Jul–Sep)',Q4:'Q4 (Oct–Dic)'}[v]||v;return v}
+function filtersUI(){var keys=FDEF.filter(function(d){var k=d[0];if(k==='suc')return META.macro||uniq(ROWS.map(function(r){return r.suc})).length>1;if(k==='area')return META.flags.hasArea&&uniq(ROWS.map(function(r){return r.area})).length>1;
+    if(k==='parte')return META.flags.hasParte;if(k==='clas')return META.flags.hasClas;return true});
+  return '<div class="filters">'+keys.map(function(d){var k=d[0],opts=uniq(ROWS.map(function(r){return String(val(r,k))})).sort();if(k==='anio')opts.reverse();
+    return '<label>'+d[1]+'<select data-f="'+k+'" class="'+(F[k]?'set':'')+'"><option value="">Todos</option>'+opts.map(function(o){return '<option value="'+esc(o)+'"'+(String(F[k])===o?' selected':'')+'>'+esc(label(k,o))+'</option>'}).join('')+'</select></label>'}).join('')+'</div>'+
+    '<div class="act">'+(Object.keys(F).filter(function(k){return F[k]}).map(function(k){var d=FDEF.filter(function(x){return x[0]===k})[0];return '<span class="chip" data-x="'+k+'">'+esc(d?d[1]:k)+': '+esc(label(k,F[k]))+' ✕</span>'}).join('')||'<span>Sin filtros</span>')+
+    (Object.keys(F).some(function(k){return F[k]})?' <a id="clr">Limpiar todo</a>':'')+'</div>'}
+
+// ---------- Render ----------
+function sum(a,f){return a.reduce(function(s,r){return s+f(r)},0)}
+function group(a,key,fn){var m={};a.forEach(function(r){var k=typeof key==='function'?key(r):r[key];if(k===''||k==null)k='Sin dato';m[k]=(m[k]||0)+(fn?fn(r):1)});return Object.keys(m).map(function(k){return [k,m[k]]}).sort(function(x,y){return y[1]-x[1]})}
+function render(){
+  Object.keys(CH).forEach(function(k){CH[k].destroy()});CH={};
+  var R=filtered(),hoy=new Date(),T=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate());
+  var ctpDias=ROWS.filter(function(r){return (!F.suc||r.suc===F.suc)&&(!F.rs||r.rs===F.rs)&&(!F.area||r.area===F.area)&&r.tipo==='Trabajo'&&/^con cob/i.test(r.estado)&&r.dias>0&&r.fecha}).sort(function(a,b){return b.fecha.localeCompare(a.fecha)}),ult=ctpDias[0],dsa=ult?Math.max(0,Math.round((T-new Date(ult.fecha+'T00:00:00'))/864e5)):null;
+  var nAcc=sum(R,function(r){return r.nacc}),dias=sum(R,function(r){return r.dias});
+  var k=function(t,ctp){return R.filter(function(r){return r.tipo===t&&(!ctp||r.ctp===ctp)}).length};
+  var h='<div class="sync">'+esc(META.titulo)+' · '+ROWS.length+' registros'+(META.files&&META.files.length?' · '+META.files.map(function(f){return esc(f.name)+' (act. '+new Date(f.lastModifiedDateTime).toLocaleDateString('es-CL')+')'}).join(', '):'')+(META.fb?' · '+esc(META.fb):'')+' · <button id="reload" type="button">Actualizar</button></div>';
+  if(!ROWS.length){$('#dash').innerHTML=h+'<div class="empty">'+(META.denied?'No tienes acceso a la carpeta de este centro en SharePoint.':'No hay datos de accidentes para este centro todavía.')+'<br>Carpeta: B.6 - Estadistica › B. Data Reporte Informes PPRR'+(META.macro?'':' › '+esc((CENTROS.filter(function(c){return c.k===VIEW})[0]||{}).folder||''))+'</div>';bindTop();return}
+  h+=filtersUI();
+  h+='<div class="dsa"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><div><div class="n">'+(dsa==null?'—':dsa)+'<small>días</small></div><div class="l">Sin accidentes con tiempo perdido</div></div>'+
+    '<div class="r">'+(ult?'Último: '+fmt(ult.fecha)+'<br>'+esc(ult.suc)+(META.macro?'':'')+' · '+ult.dias+' días de licencia':'Sin accidentes del trabajo con días perdidos')+'<br><small>Trabajo · Con cobertura · Días licencia &gt; 0</small></div></div>';
+  h+='<div class="kpis">'+[['N° accidentes',nAcc,'#1d1d1b',R.length+' registros'],['Días licencia',dias,'#1f4e6b',nAcc?'Promedio '+(dias/Math.max(1,nAcc)).toFixed(1)+' por accidente':''],['Trabajo CTP',k('Trabajo','CTP'),'#8e0719','Con tiempo perdido'],['Trabajo STP',k('Trabajo','STP'),'#b45309','Sin tiempo perdido'],['Trayecto',k('Trayecto'),'#5b4a8b',''],['Enf. profesional',k('Enfermedad Profesional'),'#0e7490','']].map(function(x){return '<div class="kpi" style="--k:'+x[2]+'"><b>'+x[1]+'</b><span>'+x[0]+'</span>'+(x[3]?'<small>'+x[3]+'</small>':'')+'</div>'}).join('')+'</div>';
+  h+='<h2>Distribución de accidentes</h2><div class="grid g3">'+card('cTipo','N° accidentes por tipo')+card('cCtp','CTP / STP')+card('cEst','Estado calificación')+'</div>';
+  h+='<div class="grid g2" style="margin-top:12px">'+card('cTiempo','Accidentes y días de licencia','<span class="seg"><button data-tm="trim" class="'+(trimMode==='trim'?'on':'')+'">Trimestre</button><button data-tm="mes" class="'+(trimMode==='mes'?'on':'')+'">Mes</button></span>',true)+
+    (META.macro||uniq(ROWS.map(function(r){return r.suc})).length>1?card('cSuc','N° accidentes por sucursal','',true):(META.flags.hasArea?card('cArea','N° accidentes por área','',true):''))+'</div>';
+  if(META.macro)h+='<div class="grid" style="margin-top:12px">'+card('cSucD','Días de licencia por sucursal','',true)+'</div>';
+  if(META.flags.hasParte||META.flags.hasClas)h+='<h2>Análisis de lesiones</h2><div class="grid g2">'+(META.flags.hasParte?card('cParte','Parte lesionada','',true):'')+(META.flags.hasClas?card('cClas','Clasificación','',true):'')+'</div>'+
+    (META.flags.hasClas?'<div class="grid" style="margin-top:12px">'+card('cPareto','Pareto 80/20 · clasificación','<small>índice = 40% frecuencia + 60% días perdidos</small>',true)+'</div>':'');
+  h+='<h2>Detalle de accidentes</h2><div class="card"><input class="search" id="q" type="search" placeholder="Buscar nombre, RUT o detalle" value="'+esc(detQ)+'"><div class="tbl" id="tbl"></div></div>';
+  if(PLAN.length)h+=planHTML();
+  $('#dash').innerHTML=h;bindTop();
+  [].forEach.call(document.querySelectorAll('.filters select'),function(s){s.onchange=function(){F[s.dataset.f]=s.value;if(s.dataset.f==='anio'&&!s.value)F.anio='';render()}});
+  [].forEach.call(document.querySelectorAll('.act .chip'),function(c){c.onclick=function(){F[c.dataset.x]='';render()}});
+  if($('#clr'))$('#clr').onclick=function(){F={anio:''};render()};
+  [].forEach.call(document.querySelectorAll('[data-tm]'),function(b){b.onclick=function(){trimMode=b.dataset.tm;render()}});
+  $('#q').oninput=function(){detQ=this.value;table(R)};
+  charts(R);table(R);if(PLAN.length)planCharts();
+}
+function bindTop(){if($('#reload'))$('#reload').onclick=function(){SRC={};open()}}
+function fmt(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
+function card(id,t,extra,tall){return '<div class="card"><h3>'+t+(extra||'')+'</h3><div class="ch'+(tall?' tall':'')+'"><canvas id="'+id+'"></canvas></div></div>'}
+function setF(k,v){F[k]=F[k]===v?'':v;render()}
+function mk(id,cfg){var el=document.getElementById(id);if(!el)return;CH[id]=new Chart(el,cfg)}
+var DL={color:'#fff',font:{weight:'bold',size:11},formatter:function(v,c){var t=c.dataset.data.reduce(function(a,b){return a+b},0);return v&&t?v+(v/t>=.06?' ('+Math.round(v/t*100)+'%)':''):''},display:function(c){var v=c.dataset.data[c.dataIndex],t=c.dataset.data.reduce(function(a,b){return a+b},0);return t&&v/t>=.04}};
+function pie(id,data,key,donut,colors){if(!data.length){document.getElementById(id).parentNode.innerHTML='<div class="nodata">Sin datos</div>';return}
+  mk(id,{type:donut?'doughnut':'pie',plugins:[ChartDataLabels],data:{labels:data.map(function(d){return d[0]}),datasets:[{data:data.map(function(d){return d[1]}),backgroundColor:data.map(function(d,i){return (colors&&colors[d[0]])||PAL[i%PAL.length]}),borderColor:'#fff',borderWidth:2}]},
+    options:{maintainAspectRatio:false,cutout:donut?'55%':0,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11.5}}},datalabels:DL},onClick:function(e,el){if(el.length)setF(key,data[el[0].index][0])}}})}
+function hbar(id,data,key,color,lbl){if(!data.length){document.getElementById(id).parentNode.innerHTML='<div class="nodata">Sin datos</div>';return}
+  data=data.slice(0,14);mk(id,{type:'bar',plugins:[ChartDataLabels],data:{labels:data.map(function(d){return d[0]}),datasets:[{label:lbl||'Accidentes',data:data.map(function(d){return d[1]}),backgroundColor:color||'#1f4e6b',borderRadius:5}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#333',font:{size:11,weight:'bold'},formatter:function(v){return v||''}}},scales:{x:{beginAtZero:true,grace:'12%',ticks:{precision:0}},y:{ticks:{font:{size:11}}}},onClick:function(e,el){if(el.length&&key)setF(key,data[el[0].index][0])}}})}
+function charts(R){
+  pie('cTipo',group(R,'tipo'),'tipo',false,{'Trabajo':'#8e0719','Trayecto':'#1f4e6b','Enfermedad Profesional':'#b45309','Enfermedad común':'#475569'});
+  pie('cCtp',group(R,'ctp'),'ctp',true,{CTP:'#16623f',STP:'#8e0719','Sin dato':'#9ca3af'});
+  pie('cEst',group(R,'estado'),'estado',false,{'Con cobertura':'#16623f','Sin cobertura':'#8e0719','En estudio':'#b45309','Con cobertura parcial':'#0e7490','Rechazado':'#475569'});
+  // tiempo
+  var Ry=F.anio?R:R;var keys,lab;if(trimMode==='trim'){keys=['Q1','Q2','Q3','Q4'];lab=keys}else{keys=['01','02','03','04','05','06','07','08','09','10','11','12'];lab=MES}
+  var kf=trimMode==='trim'?function(r){return 'Q'+Math.ceil(+r.fecha.slice(5,7)/3)}:function(r){return r.fecha.slice(5,7)};
+  var acc=keys.map(function(q){return sum(Ry.filter(function(r){return r.fecha&&kf(r)===q}),function(r){return r.nacc})}),dd=keys.map(function(q){return sum(Ry.filter(function(r){return r.fecha&&kf(r)===q}),function(r){return r.dias})});
+  mk('cTiempo',{type:'bar',plugins:[ChartDataLabels],data:{labels:lab,datasets:[{type:'bar',label:'Accidentes',data:acc,backgroundColor:'#8e0719',borderRadius:5,yAxisID:'y'},{type:'line',label:'Días licencia',data:dd,borderColor:'#1f4e6b',backgroundColor:'#1f4e6b',tension:.35,yAxisID:'y2',pointRadius:4}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12}},datalabels:{anchor:'end',align:'top',color:'#333',font:{size:10.5,weight:'bold'},formatter:function(v){return v||''}}},
+      scales:{y:{beginAtZero:true,grace:'15%',ticks:{precision:0},title:{display:true,text:'Accidentes'}},y2:{position:'right',beginAtZero:true,grace:'15%',grid:{display:false},title:{display:true,text:'Días'}}},
+      onClick:function(e,el){if(el.length){var q=keys[el[0].index];if(trimMode==='trim')setF('trim',q);else setF('mes',q)}}}});
+  if(document.getElementById('cSuc'))hbar('cSuc',group(R,'suc',function(r){return r.nacc}),'suc','#8e0719');
+  if(document.getElementById('cArea'))hbar('cArea',group(R,'area',function(r){return r.nacc}),'area','#1f4e6b');
+  if(document.getElementById('cSucD'))hbar('cSucD',group(R.filter(function(r){return r.dias>0}),'suc',function(r){return r.dias}),'suc','#1f4e6b','Días');
+  if(document.getElementById('cParte'))hbar('cParte',group(R.filter(function(r){return r.parte&&!/^n\/?a$/i.test(r.parte)}),'parte'),'parte','#5b4a8b');
+  if(document.getElementById('cClas'))hbar('cClas',group(R.filter(function(r){return r.clas}),'clas'),'clas','#b45309');
+  if(document.getElementById('cPareto')){var cl=group(R.filter(function(r){return r.clas}),'clas'),dc={};R.forEach(function(r){if(r.clas)dc[r.clas]=(dc[r.clas]||0)+r.dias});
+    var tA=sum(cl,function(x){return x[1]})||1,tD=sum(cl,function(x){return dc[x[0]]||0})||1;
+    var p=cl.map(function(x){return [x[0],Math.round((0.4*x[1]/tA+0.6*(dc[x[0]]||0)/tD)*1000)/10]}).sort(function(a,b){return b[1]-a[1]}).slice(0,12);
+    var tot=sum(p,function(x){return x[1]})||1,ac=0,cum=p.map(function(x){ac+=x[1];return Math.round(ac/tot*100)});
+    if(!p.length){document.getElementById('cPareto').parentNode.innerHTML='<div class="nodata">Sin datos</div>'}else
+    mk('cPareto',{type:'bar',plugins:[ChartDataLabels],data:{labels:p.map(function(x){return x[0]}),datasets:[{label:'Índice de impacto',data:p.map(function(x){return x[1]}),backgroundColor:cum.map(function(c,i){return i===0||cum[i-1]<80?'#8e0719':'#16623f'}),borderRadius:5,yAxisID:'y'},
+      {type:'line',label:'% acumulado',data:cum,borderColor:'#0e7490',backgroundColor:'#0e7490',yAxisID:'y2',tension:.3,pointRadius:3}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12}},datalabels:{anchor:'end',align:'top',font:{size:10},color:'#333',formatter:function(v,c){return c.datasetIndex?v+'%':v}}},
+        scales:{y:{beginAtZero:true,grace:'15%'},y2:{position:'right',min:0,max:100,grid:{display:false},ticks:{callback:function(v){return v+'%'}}},x:{ticks:{font:{size:10.5}}}},onClick:function(e,el){if(el.length)setF('clas',p[el[0].index][0])}}})}
+}
+function table(R){var q=norm(detQ),L=R.filter(function(r){return !q||norm(r.nom+' '+r.rut+' '+r.det+' '+r.suc+' '+r.area).indexOf(q)>=0}).sort(function(a,b){return b.fecha.localeCompare(a.fecha)});
+  var showSuc=META.macro||uniq(ROWS.map(function(r){return r.suc})).length>1;
+  $('#tbl').innerHTML='<table><thead><tr><th>Fecha</th><th>Nombre</th><th>RUT</th>'+(showSuc?'<th>Sucursal</th>':'')+(META.flags.hasArea?'<th>Área</th>':'')+'<th>Tipo</th><th>CTP/STP</th><th>Estado</th>'+(META.flags.hasDet?'<th>Detalle</th>':'')+(META.flags.hasClas?'<th>Clasificación</th>':'')+'<th class="num">Días</th></tr></thead><tbody>'+
+    L.slice(0,400).map(function(r){return '<tr><td>'+fmt(r.fecha)+'</td><td><b>'+esc(r.nom)+'</b></td><td>'+esc(r.rut)+'</td>'+(showSuc?'<td>'+esc(r.suc)+'</td>':'')+(META.flags.hasArea?'<td>'+esc(r.area||'—')+'</td>':'')+'<td><span class="tag">'+esc(r.tipo)+'</span></td><td><span class="tag '+(r.ctp==='CTP'?'bad':'')+'">'+r.ctp+'</span></td><td>'+esc(r.estado)+'</td>'+(META.flags.hasDet?'<td class="det">'+esc(r.det)+'</td>':'')+(META.flags.hasClas?'<td>'+esc(r.clas)+(r.parte?' · <small>'+esc(r.parte)+'</small>':'')+'</td>':'')+'<td class="num"><b>'+r.dias+'</b></td></tr>'}).join('')+
+    (L.length?'':'<tr><td colspan="11" style="text-align:center;color:#888;padding:18px">Sin resultados</td></tr>')+'</tbody></table>'+(L.length>400?'<div style="padding:8px;font-size:12px;color:#888">Mostrando 400 de '+L.length+'. Usa los filtros.</div>':'')}
+// ---------- Plan PPRR ----------
+var PF={};
+function planRows(){var rs=F.rs||'';var m={};PLAN.forEach(function(p){if(META.macro&&rs&&norm(p.rs).indexOf(norm(rs).split(' ').slice(0,2).join(' '))<0)return;if(F.anio&&p.mes.slice(0,4)!==F.anio)return;if(F.mes&&p.mes.slice(5,7)!==F.mes)return;if(F.trim&&'Q'+Math.ceil(+p.mes.slice(5,7)/3)!==F.trim)return;
+    var x=m[p.mes]||(m[p.mes]={mes:p.mes,pa:0,pd:0,ca:0,cd:0});x.pa+=p.pa;x.pd+=p.pd;x.ca+=p.ca;x.cd+=p.cd});return Object.keys(m).sort().map(function(k){return m[k]})}
+function kpi(plan,ctrl){return plan>0?(1-ctrl/plan):(ctrl>0?-1:1)}
+function planHTML(){var P=planRows();if(!P.length)return '<h2>KPI Plan Control Prevención (PPRR)</h2><div class="empty">Sin datos del plan para los filtros elegidos.</div>';
+  var pa=sum(P,function(p){return p.pa}),pd=sum(P,function(p){return p.pd}),ca=sum(P,function(p){return p.ca}),cd=sum(P,function(p){return p.cd}),ka=kpi(pa,ca),kd=kpi(pd,cd),ok=ca<=pa&&cd<=pd;
+  var f=function(n){return Math.round(n*100)/100};
+  return '<h2>KPI Plan Control Prevención (PPRR)'+(META.macro?' · '+(F.rs?esc(F.rs):'todas las razones sociales'):'')+'</h2><div class="plan"><div class="big '+(ok?'ok':'bad')+'"><b>'+(ok?'✔ Cumple':'✕ No cumple')+'</b>Estado del plan</div>'+
+    [['Plan accidentes',f(pa),'#1f4e6b'],['Control accidentes',f(ca),'#8e0719'],['KPI accidentes',Math.round(ka*100)+'%',ka>=0?'#16623f':'#b3261e'],['Plan días perdidos',f(pd),'#1f4e6b'],['Control días perdidos',f(cd),'#8e0719'],['KPI días perdidos',Math.round(kd*100)+'%',kd>=0?'#16623f':'#b3261e']].map(function(x){return '<div class="kpi" style="--k:'+x[2]+'"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'}).join('')+'</div>'+
+    '<div class="grid g2" style="margin-top:12px">'+card('pAcc','Accidentes · plan vs control','',false)+card('pDp','Días perdidos · plan vs control','',false)+'</div>'+
+    '<div class="card" style="margin-top:12px"><div class="tbl" style="max-height:380px"><table><thead><tr><th>Mes</th><th class="num">Plan acc</th><th class="num">Ctrl acc</th><th class="num">KPI acc</th><th>Estado</th><th class="num">Plan días</th><th class="num">Ctrl días</th><th class="num">KPI días</th><th>Estado</th></tr></thead><tbody>'+
+    P.map(function(p){var a=kpi(p.pa,p.ca),d=kpi(p.pd,p.cd);return '<tr><td>'+MESL[+p.mes.slice(5,7)-1]+' '+p.mes.slice(0,4)+'</td><td class="num">'+f(p.pa)+'</td><td class="num">'+f(p.ca)+'</td><td class="num">'+Math.round(a*100)+'%</td><td><span class="tag '+(p.ca<=p.pa?'ok':'bad')+'">'+(p.ca<=p.pa?'Cumple':'No cumple')+'</span></td><td class="num">'+f(p.pd)+'</td><td class="num">'+f(p.cd)+'</td><td class="num">'+Math.round(d*100)+'%</td><td><span class="tag '+(p.cd<=p.pd?'ok':'bad')+'">'+(p.cd<=p.pd?'Cumple':'No cumple')+'</span></td></tr>'}).join('')+'</tbody></table></div></div>'}
+function planCharts(){var P=planRows();if(!P.length)return;var lab=P.map(function(p){return MES[+p.mes.slice(5,7)-1]+' '+p.mes.slice(2,4)});
+  var ln=function(id,a,b){mk(id,{type:'line',data:{labels:lab,datasets:[{label:'Plan',data:P.map(function(p){return p[a]}),borderColor:'#1f4e6b',backgroundColor:'rgba(31,78,107,.12)',fill:true,tension:.35,pointRadius:3},{label:'Control',data:P.map(function(p){return p[b]}),borderColor:'#8e0719',backgroundColor:'#8e0719',tension:.35,pointRadius:3}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12}}},scales:{y:{beginAtZero:true}}}})};
+  ln('pAcc','pa','ca');ln('pDp','pd','cd')}
+
+// ---------- Administración de accesos ----------
+function adminUI(){$('#admin').hidden=false;var m=accesoMap(),emails=uniq([].concat.apply([],CENTROS.map(function(c){return m[c.k]||[]})).map(function(e){return String(e).toLowerCase()}).concat(['afuentes@grupopro.cl','nliquitay@grupopro.cl','squisbert@grupopro.cl','milize.basaure@walmart.com','karen.donoso@walmart.com'])).sort();
+  var draw=function(){$('#adminIn').innerHTML='<div>Marca qué centros ve cada persona. Tú (administrador) ves todo, incluida la vista Macro HSE.</div><div class="tbl" style="max-height:none"><table class="acc"><thead><tr><th>Persona</th>'+CENTROS.map(function(c){return '<th>'+esc(c.n.replace(/^(Walmart|Líder) /,''))+'</th>'}).join('')+'</tr></thead><tbody>'+
+    emails.map(function(e){return '<tr><td>'+esc(e)+'</td>'+CENTROS.map(function(c){var on=(m[c.k]||[]).map(function(x){return x.toLowerCase()}).indexOf(e)>=0;return '<td><input type="checkbox" data-e="'+esc(e)+'" data-c="'+c.k+'"'+(on?' checked':'')+'></td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'+
+    '<div class="addrow"><input id="newMail" type="email" placeholder="correo@grupopro.cl o correo Walmart"><button class="btn" id="addMail" type="button">Agregar persona</button></div><div><button class="btn pri" id="saveAcc" type="button">Guardar accesos</button> <span id="accMsg" style="font-size:12.5px"></span></div>'+
+    '<div class="msg info"><b>Importante:</b> la app muestra a cada persona solo sus centros, pero el bloqueo real está en SharePoint. En la carpeta «B. Data Reporte Informes PPRR», deja el Excel general solo para ti y da acceso a cada carpeta de centro solo a su encargado.</div>';
+    [].forEach.call(document.querySelectorAll('.acc input'),function(i){i.onchange=function(){var a=m[i.dataset.c]=(m[i.dataset.c]||[]).filter(function(x){return x.toLowerCase()!==i.dataset.e});if(i.checked)a.push(i.dataset.e)}});
+    $('#addMail').onclick=function(){var v=String($('#newMail').value||'').trim().toLowerCase();if(/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(v)&&emails.indexOf(v)<0){emails.push(v);draw()}};
+    $('#saveAcc').onclick=async function(){var b=this;b.disabled=true;$('#accMsg').textContent='Guardando…';
+      try{await g('/drives/'+REP+'/root:/'+encPath(CFG.accesos)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify({centros:m,actualizado:new Date().toISOString(),por:ACC.username},null,2)});ACCESOS={centros:m};$('#accMsg').textContent='✔ Accesos guardados.'}
+      catch(e){$('#accMsg').textContent='No se pudo guardar: '+e.message}b.disabled=false}};
+  draw()}
+init();
+})();
+</script>
+<script src="gp-app.js"></script>
+</body>
+</html>

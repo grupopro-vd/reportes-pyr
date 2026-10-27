@@ -182,7 +182,7 @@ async function initMsal(){
   if(!configured)return;
   try{await loadScript(CFG.msal)}catch(e){return}
   PCA=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});
-  try{var r=await PCA.handleRedirectPromise();if(r&&r.account)PCA.setActiveAccount(r.account)}catch(e){setMsg('No se pudo iniciar sesión: '+e.message,'err')}
+  try{var r=await PCA.handleRedirectPromise();if(r&&r.account)PCA.setActiveAccount(r.account);var vv=null;try{vv=sessionStorage.getItem('gpVolver');sessionStorage.removeItem('gpVolver')}catch(_){}if(r&&vv&&/^[a-z_]+\.html$/.test(vv)){location.replace(vv);return}}catch(e){setMsg('No se pudo iniciar sesión: '+e.message,'err')}
   ACCOUNT=PCA.getActiveAccount()||PCA.getAllAccounts()[0]||null;
   if(ACCOUNT){PCA.setActiveAccount(ACCOUNT);MODE='ms'}
 }
