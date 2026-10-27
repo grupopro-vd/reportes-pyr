@@ -112,7 +112,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
   <details class="admin" id="admin" hidden>
     <summary>Cargar programa (Excel)</summary>
     <div class="in">
-      <div>Sube la planilla del programa. Las actividades nuevas se agregan y las que ya existen (mismo centro, programa, actividad, dirigido a y mes) se actualizan sin perder su estado.</div>
+      <div>Sube la planilla del programa. Las actividades nuevas se agregan y las que ya existen (mismo centro, programa, actividad, dirigido a y fecha o mes) se actualizan sin perder su estado.</div>
       <label class="btn dark" style="width:max-content">📄 Elegir Excel<input id="xlsIn" type="file" accept=".xlsx,.xls" hidden></label>
       <div id="xlsMsg"></div>
       <div class="prev" id="xlsPrev" hidden></div>
@@ -161,7 +161,7 @@ var CFG={
 var GRAPH='https://graph.microsoft.com/v1.0';
 var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder Lo Barnechea','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas'];
 var FORM={'Charla':'charlas.html','Capacitación':'charlas.html','Inducción':'charlas.html','Comité Paritario':'comite.html','Auditoría Mensual':'auditoria_mensual.html',
-  'Pre Auditoría':'pre_auditoria.html','Check list de equipos':'check_list_equipos.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html'};
+  'Pre Auditoría':'pre_auditoria.html','Check list de equipos':'check_list_equipos.html','Check list de arnés':'check_list_arnes.html','Check list de EPP':'check_list_epp.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html'};
 var MES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var $=function(s){return document.querySelector(s)}, $$=function(s){return [].slice.call(document.querySelectorAll(s))};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
@@ -208,7 +208,7 @@ async function loadMs(){
 }
 function pushSnapshot(){
   var items=DATA.items.map(function(it){return {id:it.id,Title:it.Title,Centro:it.Centro,Programa:it.Programa,Tipo:it.Tipo,DirigidoA:it.DirigidoA,Responsable:it.Responsable,Mes:it.Mes,Fecha:it.Fecha,
-    Estado:it.Estado,Avance:String(it.Avance).slice(-400),Evidencia:it.Evidencia,EvidenciaRequerida:it.EvidenciaRequerida,Observacion:String(it.Observacion).slice(0,300)}});
+    Estado:it.Estado,Avance:String(it.Avance).slice(-200),Evidencia:it.Evidencia,EvidenciaRequerida:it.EvidenciaRequerida,Observacion:String(it.Observacion).slice(0,120)}});
   fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelSnapshot',items:items,pins:DATA.pinHash,by:ACCOUNT?ACCOUNT.username:''})}).catch(function(){});
 }
 var DRIVE=null;
@@ -303,7 +303,7 @@ function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=FORM[it.Tipo];
 // ---------------- Actualizar estado ----------------
 var cur=null,evid=[];
 function unlocked(c){if(isAdmin())return true;var u=J('gpPanelPins',{});return !!u[c]&&u[c]===DATA.pinHash[c]}
-function openSheet(it){cur=it;evid=[];var s=st(it);$('#shSub').textContent=it.Title+' · '+it.Centro+(it.Mes?' · '+mesTxt(it.Mes):'');
+function openSheet(it){cur=it;evid=[];var s=st(it);$('#shSub').textContent=it.Title+' · '+it.Centro+(it.Fecha?' · '+fd(it.Fecha):it.Mes?' · '+mesTxt(it.Mes):'');
   $$('[name=shEst]').forEach(function(r){r.checked=r.value===s.e});$('#shCom').value='';$('#shMsg').innerHTML='';$('#shPin').value='';
   $('#shPinBox').hidden=unlocked(it.Centro);$('#shNomBox').hidden=MODE==='ms';$('#shNom').value=prof().name||'';drawEv();$('#sheet').classList.add('on');$('#shGo').disabled=false}
 function slug(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,50)}
@@ -393,7 +393,8 @@ function toISO(v){if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+Str
   if((m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/)))return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return ''}
 function toMes(v){if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0');var s=String(v||'').trim(),m;
   if((m=s.match(/^(\d{4})[-\/.](\d{1,2})$/)))return m[1]+'-'+m[2].padStart(2,'0');if((m=s.match(/^(\d{1,2})[-\/.](\d{4})$/)))return m[2]+'-'+m[1].padStart(2,'0');var i=toISO(s);return i?i.slice(0,7):''}
-var clave=function(r){return norm([r.Centro,r.Programa,r.Title,r.DirigidoA,r.Mes].join('|')).slice(0,255)};
+var clave=function(r){return norm([r.Centro,r.Programa,r.Title,r.DirigidoA,r.Fecha||r.Mes].join('|')).slice(0,255)};
+var clave2=function(r){return norm([r.Centro,r.Title,r.DirigidoA,r.Mes].join('|')).slice(0,255)};
 $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)return;var M=$('#xlsMsg');M.innerHTML='<div class="msg info">Leyendo '+esc(f.name)+'…</div>';$('#xlsPrev').hidden=true;$('#xlsSend').hidden=true;
   try{if(!window.XLSX)await loadScript(CFG.xlsx);var wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});
     var ws=wb.Sheets['Programa']||wb.Sheets[wb.SheetNames.filter(function(n){return !/instruc|lista|resumen/i.test(n)})[0]];
@@ -405,11 +406,13 @@ $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)re
     rows=aoa.slice(hi+1).filter(function(r){return String(get(r,'a')).trim()}).map(function(r){var fe=toISO(get(r,'f'));
       var o={Centro:String(get(r,'c')).trim(),Programa:String(get(r,'p')).trim(),Tipo:String(get(r,'t')).trim()||'Otro',Title:String(get(r,'a')).trim().slice(0,255),DirigidoA:String(get(r,'d')).trim(),
         Responsable:String(get(r,'r')).trim(),Mes:toMes(get(r,'m'))||(fe?fe.slice(0,7):''),Fecha:fe,Estado:EST[norm(get(r,'e'))]||'Pendiente',EvidenciaRequerida:String(get(r,'v')).trim(),Observacion:String(get(r,'o')).trim()};
-      o.Clave=clave(o);o.err=!o.Centro?'Falta centro':'';var ex=DATA.items.filter(function(x){return (x.Clave||clave(x))===o.Clave})[0];o.exId=ex?ex.id:'';return o});
+      o.Clave=clave(o);o.err=!o.Centro?'Falta centro':'';return o});
+    var used={};rows.forEach(function(o){var ex=DATA.items.filter(function(x){return !used[x.id]&&((x.Clave||clave(x))===o.Clave||clave(x)===o.Clave)})[0];if(ex){used[ex.id]=1;o.exId=ex.id}});
+    rows.forEach(function(o){if(o.exId)return;var k=clave2(o);var ex=DATA.items.filter(function(x){return !used[x.id]&&!x.Fecha&&clave2(x)===k})[0];if(ex){used[ex.id]=1;o.exId=ex.id}});
     if(!rows.length)throw new Error('La planilla no tiene actividades.');
     var ok=rows.filter(function(r){return !r.err}),nuevos=ok.filter(function(r){return !r.exId}).length,byC={};ok.forEach(function(r){byC[r.Centro]=(byC[r.Centro]||0)+1});
     M.innerHTML='<div class="msg '+(rows.length-ok.length?'err':'ok')+'">'+ok.length+' actividades: '+nuevos+' nuevas y '+(ok.length-nuevos)+' para actualizar'+(rows.length-ok.length?' · '+(rows.length-ok.length)+' fila(s) sin centro (no se cargan)':'')+'<br><small>'+Object.keys(byC).map(function(c){return esc(c)+': '+byC[c]}).join(' · ')+'</small></div>';
-    $('#xlsPrev').innerHTML='<table><thead><tr><th>Centro</th><th>Actividad</th><th>Programa</th><th>Mes</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr class="'+(r.err?'err':'')+'"><td>'+esc(r.Centro)+'</td><td>'+esc(r.Title)+(r.DirigidoA?' <small>('+esc(r.DirigidoA)+')</small>':'')+(r.err?'<br><b>'+esc(r.err)+'</b>':'')+'</td><td>'+esc(r.Programa)+'</td><td>'+(r.Mes?mesTxt(r.Mes):'—')+'</td><td>'+esc(r.Estado)+'</td><td>'+(r.exId?'Actualiza':'Nueva')+'</td></tr>'}).join('')+'</tbody></table>';
+    $('#xlsPrev').innerHTML='<table><thead><tr><th>Centro</th><th>Actividad</th><th>Programa</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr class="'+(r.err?'err':'')+'"><td>'+esc(r.Centro)+'</td><td>'+esc(r.Title)+(r.DirigidoA?' <small>('+esc(r.DirigidoA)+')</small>':'')+(r.err?'<br><b>'+esc(r.err)+'</b>':'')+'</td><td>'+esc(r.Programa)+'</td><td>'+(r.Fecha?fd(r.Fecha):r.Mes?mesTxt(r.Mes):'—')+'</td><td>'+esc(r.Estado)+'</td><td>'+(r.exId?'Actualiza':'Nueva')+'</td></tr>'}).join('')+'</tbody></table>';
     $('#xlsPrev').hidden=false;$('#xlsSend').hidden=!ok.length;
   }catch(e){M.innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}};
 $('#xlsGo').onclick=async function(){var ok=rows.filter(function(r){return !r.err}),M=$('#xlsMsg'),btn=this;btn.disabled=true;
@@ -431,7 +434,7 @@ async function load(){
   catch(e){render();$('#sync').insertAdjacentHTML('afterbegin','<div class="msg err" style="margin-bottom:6px">No se pudo actualizar: '+esc(e.message)+(DATA.items.length?'. Se muestra la última copia guardada.':'')+'</div>')}
 }
 initFilters();
-initMsal().then(load);
+initMsal().then(load).then(function(){var id=new URLSearchParams(location.search).get('id');if(!id)return;var it=DATA.items.filter(function(x){return x.id===id})[0];if(it){if(it.Centro&&$('#fCentro').value&&$('#fCentro').value!==it.Centro){$('#fCentro').value='';render()}openSheet(it)}});
 })();
 </script>
 <script src="gp-app.js"></script>
