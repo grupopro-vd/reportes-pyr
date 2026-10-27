@@ -123,7 +123,7 @@ select,button{font:inherit}
 <script>
 (function(){
 var ENDPOINT='https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', KEY='GP-PYR-2026';
-var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder Lo Barnechea','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas'];
+var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder Lo Barnechea','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas','Walmart La Farfana'];
 var CAT=[
   {k:'Comité Paritario',l:'Comité Paritario',c:'#7e22ce',m:/comit/},
   {k:'Subcontrataley',l:'Charlas Subcontrataley',c:'#1d4ed8',m:/subcontrat/},
@@ -132,9 +132,10 @@ var CAT=[
   {k:'Check list de arnés',l:'Check list de arnés',c:'#be185d',m:/arnes/},
   {k:'Protocolos',l:'Protocolos',c:'#0e7490',m:/protocolo/},
   {k:'Estadística',l:'Estadística',c:'#475569',m:/estadistic/},
+  {k:'Inspecciones',l:'Inspecciones y observaciones',c:'#0f766e',m:/inspecc|observac/},
   {k:'Otros',l:'Otros',c:'#9ca3af',m:/./}];
 var FORM={'Charla':'charlas.html','Capacitación':'charlas.html','Inducción':'charlas.html','Comité Paritario':'comite.html','Auditoría Mensual':'auditoria_mensual.html','Pre Auditoría':'pre_auditoria.html',
-  'Check list de equipos':'check_list_equipos.html','Check list de arnés':'check_list_arnes.html','Check list de EPP':'check_list_epp.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html','Observación de conducta':'observacion_conducta.html'};
+  'Check list de equipos':'check_list_equipos.html','Check list de arnés':'check_list_arnes.html','Check list de EPP':'check_list_epp.html','Inspección':'hallazgos.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html','Observación de conducta':'observacion_conducta.html'};
 var MES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var DIA=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 var $=function(s){return document.querySelector(s)};
@@ -154,7 +155,8 @@ function st(it){var e=it.Estado||'Pendiente';if(e!=='Realizada'&&e!=='En proceso
   if(e!=='Realizada'&&pend(it))return 'Por validar';
   if(e!=='Realizada'&&((it.Fecha&&it.Fecha<HOY)||(!it.Fecha&&it.Mes&&it.Mes<THIS)))return 'Atrasada';return e}
 function corto(it){var c=cat(it).k,t=it.Title||'';
-  if(c==='Check list de equipos')return 'Check list equipos';if(c==='Check list de arnés')return 'Check list arnés';
+  if(c==='Check list de equipos')return /semanal de equipos/i.test(t)?'Check list equipos':t.replace(/^Check list (mensual |bimensual )?(de )?/i,'CL ');
+  if(c==='Inspecciones')return t.replace(/^Observación (de )?/i,'Obs. ').replace(/^Hallazgo semanal.*/i,'Hallazgo semanal');if(c==='Check list de arnés')return 'Check list arnés';
   if(c==='Comité Paritario'&&/reuni/i.test(t))return 'Reunión Comité';if(c==='Estadística')return 'Estadística mensual';
   if(c==='Protocolos')return 'Protocolo: '+t.replace(/^.*?:\s*/,'');return t}
 function fdl(s){var d=new Date(s+'T12:00:00');return DIA[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()].toLowerCase()}
@@ -209,7 +211,7 @@ function abrir(it){if(!it)return;var s=st(it),k=cat(it),f=FORM[it.Tipo];
     ['Dirigido a',it.DirigidoA],['Responsable',it.Responsable],['Evidencia',it.EvidenciaRequerida],['Observación',it.Observacion]].filter(function(r){return r[1]});
   $('#shDl').innerHTML=dl.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+(r[0]==='Estado'?r[1]:esc(r[1]))+'</dd>'}).join('');
   $('#shBtns').innerHTML='<button type="button" class="btn" id="shX">Cerrar</button><a class="btn" href="panel.html?id='+encodeURIComponent(it.id)+'">Actualizar estado</a>'+
-    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+'">Registrar con formulario</a>':'');
+    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(it.Tipo==='Observación de conducta'?(/pare/i.test(it.Title)?'&modo=pare':/apilador/i.test(it.Title)?'&modo=almac':'&modo=conducta'):'')+'">Registrar con formulario</a>':'');
   $('#sheet').classList.add('on');$('#shX').onclick=cerrar}
 function cerrar(){$('#sheet').classList.remove('on')}
 $('#sheet').onclick=function(e){if(e.target===this)cerrar()};
