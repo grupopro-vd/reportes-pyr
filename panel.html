@@ -204,6 +204,7 @@ async function loadMs(){
   var relay=await fetch(CFG.endpoint+'?panel=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now()).then(function(r){return r.json()}).catch(function(){return {}});
   DATA={items:items.map(fromSP),updatedAt:new Date().toISOString(),pending:(relay&&relay.pending)||[],pinHash:ph,pins:pins,live:true};
   await autoApply();
+  await applyMoves((relay&&relay.moves)||{});
   save();pushSnapshot();
 }
 function pushSnapshot(){
@@ -224,7 +225,7 @@ async function folderUrl(path){var dr=await drive();var d=await g('/drives/'+dr+
 async function loadPin(){
   var d=await fetch(CFG.endpoint+'?panel=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()});
   if(!d||!d.ok)throw new Error((d&&d.error)||'sin datos');
-  DATA={items:(d.items||[]).map(function(x){x.id=String(x.id);return x}),updatedAt:d.updatedAt,pending:d.pending||[],pinHash:d.pins||{},pins:{},live:false};save();
+  var mv=d.moves||{};DATA={items:(d.items||[]).map(function(x){x.id=String(x.id);var m=mv[x.id];if(m){x.Fecha=m.fecha;x.Mes=m.fecha.slice(0,7)}return x}),updatedAt:d.updatedAt,pending:d.pending||[],pinHash:d.pins||{},pins:{},live:false};save();
 }
 function save(){var c=Object.assign({},DATA);delete c.pins;LS.set('gpPanelData2',JSON.stringify(c))}
 
@@ -364,6 +365,9 @@ async function sendEvidence(it,folder,est,com,nom){
   if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo enviar la evidencia');
 }
 // ---------------- Formularios con coincidencia clara: se marcan solos ----------------
+async function applyMoves(mv){var ids=[],fe={};for(var id in mv){var it=DATA.items.filter(function(x){return x.id===String(id)})[0],m=mv[id];if(!it){ids.push(id);fe[id]=m.fecha;continue}
+    try{if(it.Fecha!==m.fecha){await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:{FechaProgramada:m.fecha+'T12:00:00Z',Mes:m.fecha.slice(0,7),Avance:((it.Avance?it.Avance+'\n':'')+todayISO.split('-').reverse().join('-')+' · Día cambiado a '+m.fecha.split('-').reverse().join('-')+(m.nombre?' por '+m.nombre:'')).slice(-4000)}});it.Fecha=m.fecha;it.Mes=m.fecha.slice(0,7)}ids.push(id);fe[id]=m.fecha}catch(e){}}
+  if(ids.length)await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'calMoveAck',ids:ids,fechas:fe})}).catch(function(){})}
 async function autoApply(){
   var ok=DATA.pending.filter(function(q){return q.auto&&q.conf==='alta'}),done=[];
   for(var i=0;i<ok.length;i++){var q=ok[i],it=DATA.items.filter(function(x){return x.id===q.id})[0];
@@ -396,6 +400,7 @@ function toISO(v){if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+Str
 function toMes(v){if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0');var s=String(v||'').trim(),m;
   if((m=s.match(/^(\d{4})[-\/.](\d{1,2})$/)))return m[1]+'-'+m[2].padStart(2,'0');if((m=s.match(/^(\d{1,2})[-\/.](\d{4})$/)))return m[2]+'-'+m[1].padStart(2,'0');var i=toISO(s);return i?i.slice(0,7):''}
 var clave=function(r){return norm([r.Centro,r.Programa,r.Title,r.DirigidoA,r.Fecha||r.Mes].join('|')).slice(0,255)};
+function lunes(s){var x=new Date(s+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-(x.getUTCDay()+6)%7);return x.toISOString().slice(0,10)}
 var clave2=function(r){return norm([r.Centro,r.Title,r.DirigidoA,r.Mes].join('|')).slice(0,255)};
 $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)return;var M=$('#xlsMsg');M.innerHTML='<div class="msg info">Leyendo '+esc(f.name)+'…</div>';$('#xlsPrev').hidden=true;$('#xlsSend').hidden=true;
   try{if(!window.XLSX)await loadScript(CFG.xlsx);var wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});
@@ -409,8 +414,10 @@ $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)re
       var o={Centro:String(get(r,'c')).trim(),Programa:String(get(r,'p')).trim(),Tipo:String(get(r,'t')).trim()||'Otro',Title:String(get(r,'a')).trim().slice(0,255),DirigidoA:String(get(r,'d')).trim(),
         Responsable:String(get(r,'r')).trim(),Mes:toMes(get(r,'m'))||(fe?fe.slice(0,7):''),Fecha:fe,Estado:EST[norm(get(r,'e'))]||'Pendiente',EvidenciaRequerida:String(get(r,'v')).trim(),Observacion:String(get(r,'o')).trim()};
       o.Clave=clave(o);o.err=!o.Centro?'Falta centro':'';return o});
-    var used={};rows.forEach(function(o){var ex=DATA.items.filter(function(x){return !used[x.id]&&((x.Clave||clave(x))===o.Clave||clave(x)===o.Clave)})[0];if(ex){used[ex.id]=1;o.exId=ex.id}});
+    var used={};rows.forEach(function(o){var ex=DATA.items.filter(function(x){return !used[x.id]&&((x.Clave||clave(x))===o.Clave||clave(x)===o.Clave)})[0];if(ex){used[ex.id]=1;o.exId=ex.id;o.exFecha=ex.Fecha||''}});
     rows.forEach(function(o){if(o.exId)return;var k=clave2(o);var ex=DATA.items.filter(function(x){return !used[x.id]&&!x.Fecha&&clave2(x)===k})[0];if(ex){used[ex.id]=1;o.exId=ex.id}});
+    var c2={};rows.forEach(function(o){var k=clave2(o);c2[k]=(c2[k]||0)+1});
+    rows.forEach(function(o){if(o.exId||c2[clave2(o)]!==1)return;var k=clave2(o);var ex=DATA.items.filter(function(x){return !used[x.id]&&clave2(x)===k});if(ex.length===1){used[ex[0].id]=1;o.exId=ex[0].id;o.exFecha=ex[0].Fecha||''}});
     if(!rows.length)throw new Error('La planilla no tiene actividades.');
     var ok=rows.filter(function(r){return !r.err}),nuevos=ok.filter(function(r){return !r.exId}).length,byC={};ok.forEach(function(r){byC[r.Centro]=(byC[r.Centro]||0)+1});
     M.innerHTML='<div class="msg '+(rows.length-ok.length?'err':'ok')+'">'+ok.length+' actividades: '+nuevos+' nuevas y '+(ok.length-nuevos)+' para actualizar'+(rows.length-ok.length?' · '+(rows.length-ok.length)+' fila(s) sin centro (no se cargan)':'')+'<br><small>'+Object.keys(byC).map(function(c){return esc(c)+': '+byC[c]}).join(' · ')+'</small></div>';
@@ -419,7 +426,7 @@ $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)re
   }catch(e){M.innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}};
 $('#xlsGo').onclick=async function(){var ok=rows.filter(function(r){return !r.err}),M=$('#xlsMsg'),btn=this;btn.disabled=true;
   try{var reqs=ok.map(function(r,i){var f={Title:r.Title,Centro:r.Centro,Programa:r.Programa,Tipo:r.Tipo,DirigidoA:r.DirigidoA,Responsable:r.Responsable,Mes:r.Mes,EvidenciaRequerida:r.EvidenciaRequerida,Observacion:r.Observacion,Clave:r.Clave};
-      if(r.Fecha)f.FechaProgramada=r.Fecha+'T12:00:00Z';
+      var keepDay=r.exFecha&&r.Fecha&&r.exFecha!==r.Fecha&&lunes(r.exFecha)===lunes(r.Fecha);if(keepDay){delete f.Mes}else if(r.Fecha)f.FechaProgramada=r.Fecha+'T12:00:00Z';
       if(r.exId)return {id:String(i),method:'PATCH',url:L+'/items/'+r.exId+'/fields',headers:{'Content-Type':'application/json'},body:f};
       f.Estado=r.Estado;return {id:String(i),method:'POST',url:L+'/items',headers:{'Content-Type':'application/json'},body:{fields:f}}});
     var fail=[];for(var i=0;i<reqs.length;i+=20){M.innerHTML='<div class="msg info">Cargando '+Math.min(i+20,reqs.length)+' de '+reqs.length+'…</div>';
