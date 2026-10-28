@@ -291,14 +291,16 @@ function render(){
   $('#note').innerHTML=MODE==='ms'?'Los cambios se guardan directo en SharePoint (lista ProgramaActividades)'+(isAdmin()?' · <a href="'+CFG.spList+'" target="_blank" rel="noopener">Abrir la lista ↗</a>':'')+'.':
     'Sin cuenta Microsoft, tus cambios quedan «Por validar» hasta que alguien del equipo PYR con cuenta los apruebe.';
 }
-function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=FORM[it.Tipo];
+function formFor(it){var f=FORM[it.Tipo];if(it.Tipo==='Check list de equipos'&&/emergencia|anden/i.test(it.Title||''))return null;return f||null}
+var FLAB={'hallazgos.html':'🔍 Registrar hallazgo','check_list_equipos.html':'✅ Hacer check list','check_list_arnes.html':'✅ Hacer check list','check_list_epp.html':'✅ Hacer check list','observacion_conducta.html':'👁 Hacer observación','charlas.html':'🗣 Registrar charla','comite.html':'📝 Registrar acta','auditoria_mensual.html':'📋 Hacer auditoría','pre_auditoria.html':'📋 Hacer pre auditoría','entrega_epp.html':'🦺 Registrar entrega'};
+function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=formFor(it);
   var meta=[it.Mes?'📅 '+(it.Fecha?fd(it.Fecha):mesTxt(it.Mes)):'',it.Tipo?'🏷 '+esc(it.Tipo):'',it.Programa?'📚 '+esc(it.Programa):'',it.DirigidoA?'👥 '+esc(it.DirigidoA):'',it.Responsable?'👤 '+esc(it.Responsable):'',!$('#fCentro').value?'📍 '+esc(it.Centro):''].filter(Boolean);
   return '<div class="act'+(s.late?' late':'')+'"><div class="t">'+esc(it.Title)+'</div><span class="pill st-'+lab.replace(/ /g,'-')+'">'+esc(lab)+(s.late&&s.e!=='Pendiente'?' · '+esc(s.e):'')+'</span>'+
     '<div class="m">'+meta.map(function(x){return '<span>'+x+'</span>'}).join('')+'</div>'+
     (s.p?'<div class="av"><span class="pill st-Por-validar">Por validar</span> '+esc(s.p.estado)+' · '+esc(s.p.nombre||'')+(s.p.comentario?': '+esc(s.p.comentario):'')+'</div>':'')+
     (it.Avance?'<div class="av">'+esc(String(it.Avance).split('\n').slice(-2).join('\n'))+'</div>':(it.Observacion?'<div class="av">'+esc(it.Observacion)+'</div>':''))+
     (it.Evidencia?'<div class="ev-link">'+(/^https?:/.test(it.Evidencia)?'<a href="'+esc(it.Evidencia)+'" target="_blank" rel="noopener">📎 Ver evidencia</a>':'📎 '+esc(it.Evidencia))+'</div>':'')+
-    '<div class="btns"><button type="button" class="btn" data-ed="'+esc(it.id)+'">Actualizar estado</button>'+(f&&s.e!=='Realizada'?'<a class="btn" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(it.Tipo==='Observación de conducta'?(/pare/i.test(it.Title)?'&modo=pare':/apilador/i.test(it.Title)?'&modo=almac':'&modo=conducta'):'')+'">Registrar con formulario</a>':'')+'</div></div>'}
+    '<div class="btns"><button type="button" class="btn" data-ed="'+esc(it.id)+'">Actualizar estado</button>'+(f&&s.e!=='Realizada'?'<a class="btn" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(it.Tipo==='Observación de conducta'?(/pare/i.test(it.Title)?'&modo=pare':/apilador/i.test(it.Title)?'&modo=almac':'&modo=conducta'):'')+'">'+(FLAB[f]||'Registrar con formulario')+'</a>':'')+'</div></div>'}
 
 // ---------------- Actualizar estado ----------------
 var cur=null,evid=[];

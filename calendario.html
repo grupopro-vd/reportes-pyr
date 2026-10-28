@@ -205,13 +205,15 @@ function render(){
 function row(it){var s=st(it),k=cat(it),c=$('#fCentro').value,d=it.Fecha?new Date(it.Fecha+'T12:00:00'):null;
   return '<button type="button" class="it'+(s==='Realizada'?' done':'')+'" style="--k:'+k.c+'" data-id="'+esc(it.id)+'"><span class="d">'+(d?DIA[d.getDay()].slice(0,3)+'<br>'+d.getDate():'—')+'</span><span class="t">'+esc(it.Title)+'</span><span class="pill st-'+s.replace(' ','-')+'">'+esc(s)+'</span>'+
     '<span class="m">'+esc(k.l)+(it.DirigidoA?' · '+esc(it.DirigidoA):'')+(c?'':' · 📍 '+esc(it.Centro))+'</span></button>'}
-function abrir(it){if(!it)return;var s=st(it),k=cat(it),f=FORM[it.Tipo];
+function formFor(it){var f=FORM[it.Tipo];if(it.Tipo==='Check list de equipos'&&/emergencia|anden/i.test(it.Title||''))return null;return f||null}
+var FLAB={'hallazgos.html':'🔍 Registrar hallazgo','check_list_equipos.html':'✅ Hacer check list','check_list_arnes.html':'✅ Hacer check list','check_list_epp.html':'✅ Hacer check list','observacion_conducta.html':'👁 Hacer observación','charlas.html':'🗣 Registrar charla','comite.html':'📝 Registrar acta','auditoria_mensual.html':'📋 Hacer auditoría','pre_auditoria.html':'📋 Hacer pre auditoría','entrega_epp.html':'🦺 Registrar entrega'};
+function abrir(it){if(!it)return;var s=st(it),k=cat(it),f=formFor(it);
   $('#shTag').style.setProperty('--k',k.c);$('#shTag').innerHTML='<i></i>'+esc(k.l);$('#shT').textContent=it.Title;
   var dl=[['Fecha',it.Fecha?fdl(it.Fecha)+' '+it.Fecha.slice(0,4):(it.Mes?MES[+it.Mes.slice(5,7)-1]+' '+it.Mes.slice(0,4)+' (sin día fijo)':'Sin fecha')],['Centro',it.Centro],['Estado','<span class="pill st-'+s.replace(' ','-')+'">'+esc(s)+'</span>'],
     ['Dirigido a',it.DirigidoA],['Responsable',it.Responsable],['Evidencia',it.EvidenciaRequerida],['Observación',it.Observacion]].filter(function(r){return r[1]});
   $('#shDl').innerHTML=dl.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+(r[0]==='Estado'?r[1]:esc(r[1]))+'</dd>'}).join('');
   $('#shBtns').innerHTML='<button type="button" class="btn" id="shX">Cerrar</button><a class="btn" href="panel.html?id='+encodeURIComponent(it.id)+'">Actualizar estado</a>'+
-    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(it.Tipo==='Observación de conducta'?(/pare/i.test(it.Title)?'&modo=pare':/apilador/i.test(it.Title)?'&modo=almac':'&modo=conducta'):'')+'">Registrar con formulario</a>':'');
+    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(it.Tipo==='Observación de conducta'?(/pare/i.test(it.Title)?'&modo=pare':/apilador/i.test(it.Title)?'&modo=almac':'&modo=conducta'):'')+'">'+(FLAB[f]||'Registrar con formulario')+'</a>':'');
   $('#sheet').classList.add('on');$('#shX').onclick=cerrar}
 function cerrar(){$('#sheet').classList.remove('on')}
 $('#sheet').onclick=function(e){if(e.target===this)cerrar()};
