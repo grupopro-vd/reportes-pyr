@@ -226,7 +226,7 @@ function moveBox(it){var box=$('#shMove');box.innerHTML='';if(!it.Fecha||!semana
     if(!pin){msg.innerHTML='<span style="color:var(--bad)">Escribe el PIN de '+esc(it.Centro)+'.</span>';return}
     var h=await sha('gp|'+it.Centro+'|'+pin);if((DATA.pins||{})[it.Centro]&&h!==DATA.pins[it.Centro]){msg.innerHTML='<span style="color:var(--bad)">PIN incorrecto para '+esc(it.Centro)+'.</span>';return}
     btn.disabled=true;msg.textContent='Guardando…';
-    try{var r=await fetch(ENDPOINT,{method:'POST',body:JSON.stringify({key:KEY,action:'calMover',id:it.id,centro:it.Centro,pin:pin,fecha:pick,nombre:(J('gpPerfil',{}).name||'')})}).then(function(r){return r.json()});
+    try{var r=await fetch(ENDPOINT,{method:'POST',body:JSON.stringify({key:KEY,action:'panelMover',id:it.id,centro:it.Centro,pin:pin,fecha:pick,nombre:(J('gpPerfil',{}).name||'')})}).then(function(r){return r.json()});
       if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo guardar');
       var uu=J('gpPanelPins',{});uu[it.Centro]=h;LS.set('gpPanelPins',JSON.stringify(uu));var rr=J('gpPanelPinRaw',{});rr[it.Centro]=pin;LS.set('gpPanelPinRaw',JSON.stringify(rr));
       DATA.moves=DATA.moves||{};DATA.moves[it.id]={fecha:pick,original:base,nombre:J('gpPerfil',{}).name||''};applyMv();view=pick.slice(0,7);sel=pick;render();abrir(it);$('#mvMsg').innerHTML='<span style="color:var(--ok)">✔ Movida al '+fdl(pick)+'.</span>'}

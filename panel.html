@@ -367,7 +367,7 @@ async function sendEvidence(it,folder,est,com,nom){
 // ---------------- Formularios con coincidencia clara: se marcan solos ----------------
 async function applyMoves(mv){var ids=[],fe={};for(var id in mv){var it=DATA.items.filter(function(x){return x.id===String(id)})[0],m=mv[id];if(!it){ids.push(id);fe[id]=m.fecha;continue}
     try{if(it.Fecha!==m.fecha){await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:{FechaProgramada:m.fecha+'T12:00:00Z',Mes:m.fecha.slice(0,7),Avance:((it.Avance?it.Avance+'\n':'')+todayISO.split('-').reverse().join('-')+' · Día cambiado a '+m.fecha.split('-').reverse().join('-')+(m.nombre?' por '+m.nombre:'')).slice(-4000)}});it.Fecha=m.fecha;it.Mes=m.fecha.slice(0,7)}ids.push(id);fe[id]=m.fecha}catch(e){}}
-  if(ids.length)await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'calMoveAck',ids:ids,fechas:fe})}).catch(function(){})}
+  if(ids.length)await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelMoveAck',ids:ids,fechas:fe})}).catch(function(){})}
 async function autoApply(){
   var ok=DATA.pending.filter(function(q){return q.auto&&q.conf==='alta'}),done=[];
   for(var i=0;i<ok.length;i++){var q=ok[i],it=DATA.items.filter(function(x){return x.id===q.id})[0];
