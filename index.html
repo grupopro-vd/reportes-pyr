@@ -13,6 +13,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="PRO EHS">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--red:#bd0926;--red-dark:#8e0719;--black:#1d1d1b;--bg:#f2f2f2;--muted:#5c5c5c}
 *{box-sizing:border-box}
@@ -63,20 +65,120 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 .install{display:none;margin-top:14px;background:#fff6f7;border:1px solid #f0c2ca;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.45}
 .install b{color:var(--red-dark)}
 .install button{margin-top:8px;background:var(--red);color:#fff;border:0;border-radius:8px;padding:10px 14px;font-weight:bold;font-size:14px}
+
+/* ===== Inicio con avance (E2 / E1 / W1) ===== */
+body{font-family:Manrope,Arial,Helvetica,sans-serif;background:#f7f7f8}
+.shell{min-height:100%}
+.dside{display:none}
+.dash{max-width:820px;margin:0 auto;padding:0 0 4px;color:#18181b}
+.dash h2{margin:0;font-size:15px;font-weight:800}
+.dash a{color:inherit;text-decoration:none}
+.lg{background:#fff;border-radius:9px;padding:4px 8px;display:inline-flex}.lg img{height:22px;display:block}
+.hero{background:#18181b;color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;border-radius:0 0 24px 24px;display:flex;flex-direction:column;gap:12px}
+.htop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.who{font-size:12px;font-weight:700;color:#a1a1aa;display:flex;align-items:center;gap:8px;text-align:right}
+.sw{border:1px solid #3f3f46;background:transparent;color:#e4e4e7;border-radius:99px;padding:4px 9px;font:700 11px Manrope,Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.sw.lt{border-color:#d4d4d8;color:#3f3f46}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;height:34px;padding:0 13px;border-radius:99px;border:1px solid #3f3f46;background:transparent;color:#e4e4e7;font:700 12.5px Manrope,Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{background:#fff;border-color:#fff;color:#18181b}
+.kpis{display:grid;grid-template-columns:auto repeat(2,minmax(0,1fr));gap:10px 14px;align-items:center}
+.kpis .ring{grid-row:span 2}
+.kp b{display:block;font-size:22px;font-weight:800;line-height:1}.kp small{font-size:11px;color:#a1a1aa;font-weight:600}
+.ring{position:relative;flex:none}.ring svg{display:block}
+.rv{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.05}.rv b{display:block;font-size:19px;font-weight:800}.rv small{display:block;font-size:10px;color:#a1a1aa;font-weight:600}
+.sync{font-size:11px;color:#a1a1aa;font-weight:600}.sync .off{color:#fbbf24}
+.thead{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 0}
+.csel{margin-left:auto;min-width:0}.csel select{max-width:200px;height:34px;border:1px solid #e4e4e7;border-radius:99px;background:#fff;padding:0 12px;font:700 13px Manrope,Arial,sans-serif;color:#18181b}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.hero.card{margin:12px 16px 0;border-radius:20px;padding:16px 18px}
+.team .kpis .rv b{font-size:22px}
+.pick b{display:block;font-size:17px;margin-bottom:4px}.pick span{font-size:13px;color:#d4d4d8}
+.dgrid{display:flex;flex-direction:column;gap:12px;padding:14px 16px 0}
+.dcard{background:#fff;border:1px solid #e4e4e7;border-radius:18px;padding:12px 16px;display:flex;flex-direction:column;gap:9px}
+.dh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.muted{color:#71717a;font-size:12.5px;font-weight:700}.sm{font-size:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#f1f1f3;border-radius:10px;padding:3px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:8px;font:800 12px Manrope,Arial,sans-serif;cursor:pointer;background:transparent;color:#52525b}
+.seg button[aria-selected=true]{background:#18181b;color:#fff}
+.rango{font-size:11.5px;color:#71717a;font-weight:600;margin-top:-4px}
+.bar{display:grid;grid-template-columns:100px minmax(0,1fr) 80px;align-items:center;gap:10px;font-size:13px}
+.bn{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt{height:8px;border-radius:99px;background:#f0f0f2;overflow:hidden;display:block}.bt span{display:block;height:100%;border-radius:99px}
+.bp{text-align:right;line-height:1.1}.bp b{font-weight:800}.bp small{display:block;font-size:10.5px;color:#71717a;font-weight:600;white-space:nowrap}
+.dcent{display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));gap:6px}
+.dcent button{background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;font-family:inherit}
+.dcent b{display:block;font-size:15px;font-weight:800}.dcent span{display:block;font-size:10.5px;font-weight:700;color:#52525b;line-height:1.15}
+.dcentw{display:none}
+.dhoy{gap:0}.dhoy .dh{margin-bottom:6px}
+.hrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f0f0f2}
+.hrow.done .ht b{color:#71717a}
+.dot{width:8px;height:8px;border-radius:99px;flex:none}
+.ht{flex:1;min-width:0;line-height:1.25}.ht b{display:block;font-size:13.5px;font-weight:700}.ht small{font-size:11.5px;color:#71717a}.ht small.lt{color:#b3261e;font-weight:700}
+.hcta{flex:none;height:32px;padding:0 12px;border-radius:9px;background:#f4f4f5;font-size:12px;font-weight:800;display:flex;align-items:center}
+.hcta.dark{background:#18181b;color:#fff!important}
+.hempty{font-size:13px;color:#52525b;padding:8px 0;border-top:1px solid #f0f0f2;line-height:1.45}
+.more{display:block;font-size:12px;font-weight:700;color:#b3261e!important;padding:6px 0 0}
+.lnk{display:block;margin-top:8px;font-size:12.5px;font-weight:800;color:#bd0926!important}
+.lnk0{font-size:12.5px;font-weight:700;color:#bd0926!important}
+.dacts{display:flex;gap:10px}
+.dacc,.dcal{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:14px;font-weight:800;font-size:15px}
+.dacc{background:#bd0926;color:#fff!important}.dcal{background:#fff;border:1px solid #e4e4e7}
+.dquick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:4px 6px;gap:0}
+.dquick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;text-align:center;font-size:11px;font-weight:700;color:#3f3f46!important}
+.dquick svg{color:#18181b}
+.dtabla,.dval{display:none}
+.dforms{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 16px 0;height:42px;border-radius:12px;border:1px dashed #d4d4d8;font-size:13px;font-weight:800;color:#3f3f46!important}
+.fhead{margin:6px 2px 12px;font-size:17px;font-weight:800}
+.mh .mt{font-family:Manrope,Arial,sans-serif}
+@media(min-width:720px){
+ .kpis{grid-template-columns:auto repeat(4,minmax(0,1fr))}.kpis .ring{grid-row:auto}
+ .dgrid{display:grid;grid-template-columns:1fr 1fr}
+ .dgrid>.dcent,.dgrid>.dacts,.dgrid>.dquick{grid-column:1/-1}
+ .dquick{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .dforms{display:none}
+}
+@media(min-width:1024px){
+ body.has-side .dside{display:flex;flex-direction:column;gap:2px;position:fixed;inset:0 auto 0 0;width:236px;background:#18181b;color:#e4e4e7;padding:18px 12px;overflow-y:auto}
+ body.has-side .content{margin-left:236px}
+ .dside .sl{display:flex;align-items:center;gap:10px;color:#fff;font-size:17px;padding:0 6px 14px}
+ .dside .sh{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#71717a;padding:14px 8px 6px}
+ .dside button,.dside a{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;color:#d4d4d8;font:600 13.5px Manrope,Arial,sans-serif;padding:8px 10px;border-radius:9px;cursor:pointer;text-decoration:none}
+ .dside button:hover,.dside a:hover{background:#27272a}
+ .dside button.on{background:#fff;color:#18181b;font-weight:800}
+ body.has-side .dash,body.has-side .wrap{max-width:1280px;padding-left:24px;padding-right:24px}
+ .dash.admin .hero{border-radius:20px;margin-top:18px;padding:18px 22px}
+ .dash.admin .htop .lg,.dash.admin .tabs{display:none}
+ .dash.admin .dgrid{padding:16px 0 0;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+ .dash.admin .dgrid>*{grid-column:span 6}
+ .dash.admin .dgrid>.dcent{display:none}
+ .dash.admin .dgrid>.dcentw{display:flex}
+ .dash.admin .dgrid>.dhoy{grid-column:span 7;order:3}
+ .dash.admin .dgrid>.dval{display:flex;grid-column:span 5;order:4}
+ .dash.admin .dgrid>.dtabla{display:flex;grid-column:span 12;order:5}
+ .dash.admin .dgrid>.dacts{grid-column:span 4;order:6}
+ .dash.admin .dgrid>.dacts a{height:auto;min-height:64px}
+ .dash.admin .dgrid>.dquick{grid-column:span 8;order:7}
+ .bar{grid-template-columns:150px minmax(0,1fr) 70px}
+ .tw{overflow-x:auto}
+ table{width:100%;border-collapse:collapse;font-size:13px}
+ th{text-align:left;font-size:11px;text-transform:uppercase;color:#71717a;font-weight:800;padding:6px 8px;border-bottom:1px solid #e4e4e7}
+ td{padding:8px;border-bottom:1px solid #f0f0f2}td a{font-weight:700}
+ .pill{border-radius:99px;padding:2px 8px;font-size:11.5px;font-weight:800;white-space:nowrap}.pill.late{background:#fee2e2;color:#b3261e}.pill.val{background:#dbeafe;color:#1d4ed8}.pill.todo{background:#f4f4f5;color:#52525b}
+ .cnt{background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:2px 8px;font-size:12px}
+ .vrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid #f0f0f2;font-size:13px}
+ .vrow small{grid-column:1;color:#71717a;font-size:12px}.vrow span{grid-row:1/3;grid-column:2;align-self:center;background:#18181b;color:#fff;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:800}
+}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="row"><div class="logo"><img src="logo.png" alt="Grupo Pro"></div></div>
-  <h1 style="letter-spacing:1px">PRO EHS</h1>
-  <p>Prevención de Riesgos · Grupo Pro</p>
-</header>
+<div class="shell"><aside class="dside" id="dside"></aside><div class="content">
+<div id="dash" class="dash"></div>
+
 <main class="wrap">
   <div class="outbox" id="outbox"><b id="outboxText"></b><br><span>Se enviará solo cuando haya señal. No borres los datos del navegador.</span><br><button type="button" id="outboxBtn">Reintentar ahora</button></div>
+  <h2 class="fhead" id="formularios">Formularios</h2>
   <div class="mods">
-  <a class="mod panelmod" href="panel.html"><span class="mh"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="mt">Panel de control<small>Resumen de actividades por centro</small></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span></a>
-  <a class="mod panelmod calmod" href="calendario.html"><span class="mh"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 3v3M16 3v3"/><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"/></svg></span><span class="mt">Calendario<small>Actividades del programa por mes</small></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span></a>
-  <a class="mod panelmod estmod" href="estadisticas.html"><span class="mh"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="6.5" y="12" width="3" height="6" rx=".6"/><rect x="11.5" y="8" width="3" height="10" rx=".6"/><rect x="16.5" y="5" width="3" height="13" rx=".6"/></svg></span><span class="mt">Estadísticas<small>Accidentabilidad de tu centro</small></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span></a>
   <section class="mod eventos">
     <button type="button" class="mh" aria-expanded="false"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18v-6a6 6 0 0 1 12 0v6"/><path d="M4 18h16v3H4z"/><path d="M12 2v2"/><path d="m4.2 5.2 1.4 1.4"/><path d="m19.8 5.2-1.4 1.4"/></svg></span><span class="mt">Eventos<small>3 formularios</small></span><span class="mdraft" hidden>Borrador</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button>
     <div class="cards eventos">
@@ -146,6 +248,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--black);font-fami
 
   <p class="note"><b>Accidente grave o fatal:</b> llama primero a tu supervisor y al equipo PYR.</p>
 </main>
+</div></div>
 
 
 <script>
@@ -193,6 +296,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(()=>{});
 }
 </script>
+<script src="home-dash.js"></script>
 <script src="gp-app.js"></script>
 </body>
 </html>
