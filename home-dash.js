@@ -161,7 +161,7 @@
     fechas();
     var admin = vista() === 'admin';
     root.className = 'dash ' + (admin ? 'admin' : 'team');
-    document.body.classList.toggle('has-side', admin);
+    document.body.classList.toggle('has-side', admin); document.body.classList.toggle('team-d', !admin);
     PENDSET = {}; ((DATA && DATA.pending) || []).forEach(function (p) { PENDSET[p.id] = 1; });
     var all = (DATA && DATA.items) || [];
     var centros = ORDEN.filter(function (c) { return all.some(function (it) { return it.Centro === c; }); });
@@ -178,6 +178,7 @@
     var lun = new Date(LUN + 'T12:00:00'), dom = new Date(DOM + 'T12:00:00');
     var rango = per === 'semana' ? 'Semana del ' + lun.getDate() + (lun.getMonth() !== dom.getMonth() ? ' de ' + MES[lun.getMonth()] : '') + ' al ' + dom.getDate() + ' de ' + MES[dom.getMonth()]
       : MES[new Date(HOY + 'T12:00:00').getMonth()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + HOY.slice(0, 4);
+    if (!admin) { if (side) side.innerHTML = ''; root.innerHTML = vistaD(items, centros, centro, R); filtrarD(); marcarBorradores(); return; }
     var h = '';
 
     // Cabecera + panel negro
@@ -245,6 +246,71 @@
         '<div class="sh">Herramientas</div><a href="calendario.html">' + svg('cal', 18) + 'Calendario</a><a href="panel.html">' + svg('panel', 18) + 'Panel de control</a><a href="estadisticas.html">' + svg('est', 18) + 'Estadísticas</a><a href="panel.html">' + svg('up', 18) + 'Cargar programa</a><a href="#formularios">' + svg('forms', 18) + 'Formularios</a>' : '';
     }
   }
+
+  // ---- Vista D (encargado): lista agrupada
+  var QD = '';
+  function formsDOM() {
+    return [].map.call(document.querySelectorAll('.mods > section.mod'), function (m) {
+      var cs = getComputedStyle(m).getPropertyValue('--c').trim() || '#bd0926';
+      var t = m.querySelector('.mt'); var title = t ? (t.childNodes[0].textContent || '').trim() : '';
+      var rows = [];
+      [].forEach.call(m.querySelectorAll('.cards > a.card'), function (a) {
+        if (a.dataset.sub) { [].forEach.call(m.querySelectorAll('#' + a.dataset.sub + ' a.card'), function (b) { rows.push(rowOf(b, (a.querySelector('.t') || a).textContent.trim() + ' · ')); }); return; }
+        rows.push(rowOf(a, ''));
+      });
+      return { title: title, c: cs, rows: rows };
+    });
+  }
+  function rowOf(a, pre) { var ic = a.querySelector('.ic svg'); return { href: a.getAttribute('href'), f: a.dataset.f || '', label: pre + (a.querySelector('.t') || a).textContent.trim(), svg: ic ? ic.outerHTML : '' }; }
+  function dRow(r, color, badge, badgeBg, sub) {
+    return '<a class="drow" href="' + esc(r.href) + '"' + (r.f ? ' data-df="' + esc(r.f) + '"' : '') + ' data-q="' + esc(norm(r.label + ' ' + (sub || ''))) + '"><span class="dic" style="background:' + color + '">' + (r.svg || svg(r.i || 'forms', 17, 2.1)) + '</span>' +
+      '<span class="dl">' + esc(r.label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + (badge ? '<span class="dbg" style="background:' + (badgeBg || '#bd0926') + '">' + esc(badge) + '</span>' : '') +
+      '<span class="dbr" hidden>Borrador</span><svg class="dch" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b0b5" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>';
+  }
+  function dGroup(title, rows, cls) { return rows.length ? '<section class="dgrp' + (cls ? ' ' + cls : '') + '"><div class="dgt">' + esc(title) + '</div><div class="dbox">' + rows.join('') + '</div></section>' : ''; }
+  function vistaD(items, centros, centro, R) {
+    var opts = '<option value="">Elige tu centro</option>' + (centros.length ? centros : ORDEN).map(function (c) { return '<option' + (c === centro ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
+    var h = '<header class="dtop"><div><label class="dcs"><span class="sr">Mi centro</span><select id="dCentro">' + opts + '</select></label><div class="dtt">PRO EHS</div></div>' +
+      '<div class="dtr"><img src="logo.png" alt="Grupo Pro">' + (ES_ADMIN ? '<button type="button" class="sw lt" data-vista="admin">Vista admin</button>' : '') + '</div></header>' +
+      '<label class="dsearch">' + svg('hallazgo', 16, 2.2) + '<span class="sr">Buscar</span><input id="dQ" type="search" placeholder="Buscar formulario o actividad" value="' + esc(QD) + '" autocomplete="off"></label>';
+    var hoyN = 0, lateN = 0;
+    if (centro) {
+      var hoy = items.filter(function (it) { return it.Fecha === HOY && estado(it) !== 'ok'; });
+      var late = items.filter(function (it) { return estado(it) === 'late' && it.Fecha; }).sort(function (a, b) { return a.Fecha < b.Fecha ? 1 : -1; });
+      hoyN = hoy.filter(function (it) { return estado(it) !== 'val'; }).length; lateN = late.length;
+      var pc = R.p == null ? '' : R.p + '%';
+      h += dGroup('Mi centro', [
+        dRow({ href: 'panel.html', label: 'Panel de control', i: 'panel' }, '#18181b', pc, R.p == null ? '' : col(R.p), 'Avance de esta semana: ' + R.ok + ' de ' + R.t),
+        dRow({ href: 'calendario.html', label: 'Calendario', i: 'cal' }, '#18181b', hoyN ? String(hoyN) : '', '#b45309', hoyN ? hoyN + ' para hoy' : 'Nada pendiente hoy'),
+        dRow({ href: 'estadisticas.html', label: 'Estadísticas', i: 'est' }, '#18181b')
+      ], 'dmine');
+      var d = new Date(HOY + 'T12:00:00');
+      var rows = hoy.map(function (it) { var f = formHref(it); return dRow({ href: f || 'calendario.html', label: it.Title, i: 'check' }, dotColor(it), estado(it) === 'val' ? 'Por validar' : '', '#1d4ed8', it.Programa || it.Tipo); })
+        .concat(late.slice(0, 5).map(function (it) { var f = formHref(it); return dRow({ href: f || 'calendario.html', label: it.Title, i: 'warn' }, '#b3261e', 'Atrasada', '#b3261e', (it.Programa || '') + ' · ' + fcorta(it.Fecha)); }));
+      if (late.length > 5) rows.push('<a class="drow more2" href="calendario.html" data-q=""><span class="dl">+' + (late.length - 5) + ' atrasadas más en el calendario</span></a>');
+      h += dGroup('Hoy · ' + DIA[d.getDay()] + ' ' + d.getDate() + (hoyN || lateN ? '' : ' · sin pendientes'), rows.length ? rows : ['<div class="drow" data-q=""><span class="dl muted2">No tienes actividades pendientes para hoy.</span></div>'], 'dhoy2');
+    } else {
+      h += '<div class="dpick">Elige tu centro arriba para ver tu avance y lo que te toca hoy.</div>';
+    }
+    formsDOM().forEach(function (g) { h += dGroup(g.title, g.rows.map(function (r) { return dRow(r, g.c); })); });
+    h += '<div class="dnone" hidden>No hay resultados para tu búsqueda.</div>';
+    return h;
+  }
+  function filtrarD() {
+    var q = norm(QD).trim(); if (!root.classList.contains('team')) return;
+    var any = false;
+    [].forEach.call(root.querySelectorAll('.dgrp'), function (g) {
+      var vis = 0; [].forEach.call(g.querySelectorAll('.drow'), function (r) { var ok = !q || (r.dataset.q && r.dataset.q.indexOf(q) >= 0); r.hidden = !ok; if (ok) vis++; });
+      g.hidden = !vis; if (vis) any = true;
+    });
+    var n = root.querySelector('.dnone'); if (n) n.hidden = any;
+  }
+  function marcarBorradores() {
+    if (!window.gpDB) return;
+    [].forEach.call(root.querySelectorAll('.drow[data-df]'), function (r) { gpDB.get('drafts', 'draft:' + r.dataset.df).then(function (d) { if (d) r.querySelector('.dbr').hidden = false; }).catch(function () {}); });
+  }
+  document.addEventListener('input', function (e) { if (e.target && e.target.id === 'dQ') { QD = e.target.value; filtrarD(); } });
+  window.addEventListener('load', function () { if (root.classList.contains('team')) marcarBorradores(); });
   function addDays(s, n) { var d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return iso(d); }
   function hace(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'recién' : m < 60 ? 'hace ' + m + ' min' : m < 1440 ? 'hace ' + Math.round(m / 60) + ' h' : 'hace ' + Math.round(m / 1440) + ' d'; }
 
