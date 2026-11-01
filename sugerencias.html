@@ -150,7 +150,7 @@ async function bandeja(){
     for(const q of ['SUG-','datos.json','imagen.jpg']){var u='/drives/'+REP+"/root/search(q='"+q+"')?$select=id,name&$top=500";
       try{while(u){var d=await g(u);(d.value||[]).forEach(function(f){if(!seen[f.id]&&/^\d{4}-\d{2}-\d{2}_SUG-/.test(f.name)){seen[f.id]=1;files.push(f)}});u=d['@odata.nextLink']||null}}catch(e){if(e.status!==404)throw e}}
     var js=files.filter(function(f){return /_datos\.json$/i.test(f.name)}),imgs={};files.forEach(function(f){if(/_imagen\.jpg$/i.test(f.name))imgs[f.name.replace(/_imagen\.jpg$/i,'')]=f.id});
-    ITEMS=[];for(var i=0;i<js.length;i+=20){var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:js.slice(i,i+20).map(function(f,k){return {id:String(k),method:'GET',url:'/drives/'+REP+'/items/'+f.id+'?$select=id,name,@microsoft.graph.downloadUrl'}})})});
+    ITEMS=[];for(var i=0;i<js.length;i+=20){var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:js.slice(i,i+20).map(function(f,k){return {id:String(k),method:'GET',url:'/drives/'+REP+'/items/'+f.id+''}})})});
       var got=await Promise.all((b.responses||[]).map(function(x){var u2=x.body&&x.body['@microsoft.graph.downloadUrl'];return u2?fetch(u2).then(function(r){return r.json()}).then(function(o){o._base=x.body.name.replace(/_datos\.json$/i,'');return o}).catch(function(){return null}):null}));
       got.forEach(function(o){if(o&&o.sug){o.sug.id=o.recordId;o.sug.img=imgs[o._base]||'';ITEMS.push(o.sug)}})}
     ITEMS.sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});pintar();
@@ -167,7 +167,7 @@ function pintar(){var n={};ITEMS.forEach(function(s){var e=est(s);n[e]=(n[e]||0)
   $$('.tabs button').forEach(function(b){b.onclick=function(){filtro=b.dataset.t;pintar()}});
   $$('.it [data-e]').forEach(function(b){b.onclick=async function(){var id=b.closest('.it').dataset.id;b.disabled=true;try{var cur={};try{var r=await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{raw:true});if(r.ok)cur=await r.json()||{}}catch(_){}
     cur[id]={estado:b.dataset.e,at:new Date().toISOString(),by:ACC.name||ACC.username};await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});EST=cur;pintar()}catch(e){b.disabled=false;alertBox(e.message)}}});
-  $$('.it .im button').forEach(function(b){b.onclick=async function(){var w=b.parentNode;b.disabled=true;try{var r=await g('/drives/'+REP+'/items/'+w.dataset.img+'?$select=@microsoft.graph.downloadUrl');w.innerHTML='<img src="'+esc(r['@microsoft.graph.downloadUrl'])+'" alt="Imagen adjunta">'}catch(e){b.disabled=false}}});
+  $$('.it .im button').forEach(function(b){b.onclick=async function(){var w=b.parentNode;b.disabled=true;try{var r=await g('/drives/'+REP+'/items/'+w.dataset.img+'');w.innerHTML='<img src="'+esc(r['@microsoft.graph.downloadUrl'])+'" alt="Imagen adjunta">'}catch(e){b.disabled=false}}});
 }
 function alertBox(t){var d=document.createElement('div');d.className='msg err';d.textContent='No se pudo guardar: '+t;$('#bx').prepend(d);setTimeout(function(){d.remove()},6000)}
 
