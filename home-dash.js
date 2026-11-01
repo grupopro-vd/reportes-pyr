@@ -271,7 +271,7 @@
   function vistaD(items, centros, centro, R) {
     var opts = '<option value="">Elige tu centro</option>' + (centros.length ? centros : ORDEN).map(function (c) { return '<option' + (c === centro ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
     var h = '<header class="dtop"><div><label class="dcs"><span class="sr">Mi centro</span><select id="dCentro">' + opts + '</select></label><div class="dtt">PRO EHS</div></div>' +
-      '<div class="dtr"><img src="logo.png" alt="Grupo Pro">' + (ES_ADMIN ? '<button type="button" class="sw lt" data-vista="admin">Vista admin</button>' : '') + '</div></header>' +
+      '<div class="dtr"><img src="logo-transparente.png" alt="Grupo Pro">' + (ES_ADMIN ? '<button type="button" class="sw lt" data-vista="admin">Vista admin</button>' : '') + '</div></header>' +
       '<label class="dsearch">' + svg('hallazgo', 16, 2.2) + '<span class="sr">Buscar</span><input id="dQ" type="search" placeholder="Buscar formulario o actividad" value="' + esc(QD) + '" autocomplete="off"></label>';
     var hoyN = 0, lateN = 0;
     if (centro) {
