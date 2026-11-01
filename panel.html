@@ -92,6 +92,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
 .seg3{grid-template-columns:repeat(3,1fr)}
 .sheet input[type=password],.sheet input[inputmode=numeric]{width:100%;border:1px solid #d4d4d8;border-radius:10px;padding:10px;font-size:18px;letter-spacing:4px}
 .st-Por-validar{background:var(--blue-bg);color:var(--blue)}
+.pinbox{background:#fff;border:1px solid #e6e6ea;border-radius:14px;padding:14px;margin-top:16px;display:flex;flex-direction:column;gap:6px}.pinbox small{color:#5c5c5c;font-size:13px}.pinrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.pinrow select,.pinrow input{height:42px;border:1px solid #d4d4d8;border-radius:10px;padding:0 10px;font-size:15px;background:#fff}.pinrow select{flex:1 1 180px}.pinrow input{width:110px}
 </style>
 </head>
 <body>
@@ -176,6 +177,25 @@ var configured=CFG.clientId.indexOf('__')<0;
 function loadScript(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=function(){ko(new Error('No se pudo cargar '+src.split('/').pop()+'. Revisa tu conexión.'))};document.head.appendChild(s)})}
 async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [].map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')}
 var pinKey=function(c,p){return 'gp|'+c+'|'+p};
+// Centros que ve cada encargado (los administradores ven todos). Quien entra con PIN ve además los centros que desbloqueó.
+var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
+  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
+function misCentros(){if(isAdmin())return null;var s={};
+  if(ACCOUNT)(ACCESO[String(ACCOUNT.username||'').toLowerCase()]||[]).forEach(function(c){s[c]=1});
+  var u=J('gpPanelPins',{});Object.keys(u).forEach(function(c){if(DATA.pinHash&&DATA.pinHash[c]&&u[c]===DATA.pinHash[c])s[c]=1});
+  return CENTROS.filter(function(c){return s[c]}).concat(Object.keys(s).filter(function(c){return CENTROS.indexOf(c)<0}))}
+function centroSel(mine){var sel=$('#fCentro'),cur=sel.value,list=mine||CENTROS;
+  var key=(mine?'m|':'a|')+list.join('|');if(sel.dataset.k!==key){sel.dataset.k=key;
+    sel.innerHTML=(list.length>1?'<option value="">'+(mine?'Mis centros':'Todos los centros')+'</option>':'')+list.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')}
+  if(list.indexOf(cur)>=0||(cur===''&&list.length>1))sel.value=cur;else{var p=prof().panelCentro;sel.value=list.indexOf(p)>=0?p:(list.length>1?'':(list[0]||''))}}
+function pinBox(first){var cs=CENTROS.filter(function(c){return DATA.pinHash&&DATA.pinHash[c]});
+  return '<div class="pinbox"><b>'+(first?'Ingresa el PIN de tu centro':'Agregar otro centro')+'</b><small>'+(first?'Verás solo las actividades de tu centro. Pide el PIN a Valentín Díaz si no lo tienes.':'Si estás a cargo de más de un centro, desbloquéalo con su PIN.')+'</small>'+
+    '<div class="pinrow"><select id="pbC"><option value="">Elige el centro</option>'+cs.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')+'</select><input id="pbP" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><button class="btn pri" id="pbGo" type="button">Entrar</button></div><div id="pbMsg"></div></div>'}
+function pinBind(){var go=$('#pbGo');if(!go)return;go.onclick=async function(){var c=$('#pbC').value,p=$('#pbP').value.trim(),m=$('#pbMsg');
+  if(!c||!p){m.innerHTML='<div class="msg err">Elige el centro y escribe el PIN.</div>';return}
+  var h=await sha(pinKey(c,p));if(h!==DATA.pinHash[c]){m.innerHTML='<div class="msg err">PIN incorrecto para '+esc(c)+'.</div>';return}
+  var u=J('gpPanelPins',{});u[c]=h;LS.set('gpPanelPins',JSON.stringify(u));var raw=J('gpPanelPinRaw',{});raw[c]=p;LS.set('gpPanelPinRaw',JSON.stringify(raw));
+  var q=prof();q.panelCentro=c;LS.set('gpPerfil',JSON.stringify(q));$('#fCentro').dataset.k='';render()}}
 
 // ---------------- Microsoft (SharePoint en vivo) ----------------
 async function initMsal(){
@@ -257,9 +277,12 @@ function fillMeses(){var sel=$('#fMes'),cur=sel.value||LS.get('gpPanelMes')||'';
   sel.value=[].some.call(sel.options,function(o){return o.value===cur})?cur:'';sel.onchange=function(){LS.set('gpPanelMes',sel.value);render()}}
 function render(){
   authBar();fillMeses();syncLine();
+  var mine=misCentros();centroSel(mine);$('.bar').hidden=!!(mine&&!mine.length);
+  if(mine&&!mine.length){$('#view').innerHTML=DATA.items.length?pinBox(true):'<div class="empty">Cargando el programa…</div>';pinBind();$('#admin').hidden=true;$('#note').innerHTML='';return}
+  var base=mine?DATA.items.filter(function(it){return mine.indexOf(it.Centro)>=0}):DATA.items;
   var c=$('#fCentro').value,m=$('#fMes').value;
   var inMes=function(it){return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
-  var all=DATA.items.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
+  var all=base.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
   var cnt={Realizada:0,'En proceso':0,Pendiente:0,Atrasada:0,'Por validar':0};
   mine.forEach(function(it){var s=st(it);if(s.p)cnt['Por validar']++;if(s.late)cnt.Atrasada++;else cnt[s.e]++});
   var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(m&&m[0]!=='@'?mesTxt(m):'del programa')+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
@@ -267,7 +290,7 @@ function render(){
   [['Atrasada','c-bad','Atrasadas'],['En proceso','c-mid','En proceso'],['Pendiente','','Pendientes'],['Por validar','c-blue','Por validar']].forEach(function(x){
     h+='<button type="button" class="kpi'+(filtro===x[0]?' on':'')+'" data-f="'+x[0]+'"><b class="'+x[1]+'">'+cnt[x[0]]+'</b><span>'+x[2]+'</span></button>'});
   h+='</div>';
-  if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return !c||q.centro===c});
+  if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return (!c||q.centro===c)&&(isAdmin()||base.some(function(x){return x.Centro===q.centro}))});
     if(pend.length){h+='<h2>Por validar ('+pend.length+')</h2><div class="list">'+pend.map(function(q){var it=DATA.items.filter(function(x){return x.id===q.id})[0];
       return '<div class="val"><div class="t">'+(q.auto?'📋 ':'')+esc(q.title||(it&&it.Title)||'Actividad')+'</div>'+(q.auto?'<div class="lock">Desde un formulario enviado · revisa que corresponda a esta actividad</div>':'')+'<div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
       (q.comentario?'<div>'+esc(q.comentario)+'</div>':'')+(q.evidencia?'<div class="lock">Evidencia en SharePoint: '+esc(q.evidencia)+'</div>':'')+
@@ -282,7 +305,8 @@ function render(){
   if(!DATA.items.length)h+='<div class="empty">Aún no hay actividades cargadas.'+(isAdmin()?'<br>Carga el programa con la planilla Excel en «Cargar programa».':'')+'</div>';
   else if(!list.length)h+='<div class="empty">No hay actividades '+(filtro?'en este estado ':'')+(c?'en '+esc(c):'')+' para este período.</div>';
   else h+='<div class="list">'+list.map(card).join('')+'</div>';
-  $('#view').innerHTML=h;
+  if(!isAdmin())h+=pinBox(false);
+  $('#view').innerHTML=h;pinBind();
   $$('.kpi[data-f]').forEach(function(b){b.onclick=function(){filtro=filtro===b.dataset.f?'':b.dataset.f;render()}});
   $$('.crow').forEach(function(r){r.onclick=function(){$('#fCentro').value=r.dataset.c;$('#fCentro').onchange()}});
   $$('[data-ed]').forEach(function(b){b.onclick=function(){openSheet(DATA.items.filter(function(it){return it.id===b.dataset.ed})[0])}});
@@ -448,7 +472,7 @@ async function load(){
   catch(e){render();$('#sync').insertAdjacentHTML('afterbegin','<div class="msg err" style="margin-bottom:6px">No se pudo actualizar: '+esc(e.message)+(DATA.items.length?'. Se muestra la última copia guardada.':'')+'</div>')}
 }
 initFilters();
-initMsal().then(load).then(function(){var id=new URLSearchParams(location.search).get('id');if(!id)return;var it=DATA.items.filter(function(x){return x.id===id})[0];if(it){if(it.Centro&&$('#fCentro').value&&$('#fCentro').value!==it.Centro){$('#fCentro').value='';render()}openSheet(it)}});
+initMsal().then(load).then(function(){var id=new URLSearchParams(location.search).get('id');if(!id)return;var mc=misCentros(),it=DATA.items.filter(function(x){return x.id===id&&(!mc||mc.indexOf(x.Centro)>=0)})[0];if(it){if(it.Centro&&$('#fCentro').value&&$('#fCentro').value!==it.Centro){$('#fCentro').value='';render()}openSheet(it)}});
 })();
 </script>
 <script src="gp-app.js"></script>
