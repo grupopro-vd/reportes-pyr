@@ -795,7 +795,7 @@ document.addEventListener('DOMContentLoaded',initApp);
   function preserveResize(canvas,w,h){
     const tmp=document.createElement('canvas');tmp.width=canvas.width||1;tmp.height=canvas.height||1;tmp.getContext('2d').drawImage(canvas,0,0);
     canvas.width=Math.max(1,Math.floor(w));canvas.height=Math.max(1,Math.floor(h));
-    const ctx=canvas.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';
+    const ctx=canvas.getContext('2d');ctx.lineWidth=Math.max(4,Math.round(canvas.width/110));ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';
     if(tmp.width>1&&tmp.height>1)ctx.drawImage(tmp,0,0,canvas.width,canvas.height);
   }
   setupSignature=function(canvas){
