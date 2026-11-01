@@ -86,6 +86,8 @@ select,button{font:inherit}
 .btn{border:1.5px solid #d4d4d8;background:#fff;border-radius:10px;height:42px;padding:0 14px;font-size:14px;font-weight:bold;cursor:pointer;color:var(--black);text-decoration:none;display:inline-flex;align-items:center}
 .btn.pri{background:var(--red);border-color:var(--red);color:#fff}
 .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}
+body.gated .bar,body.gated .chips,body.gated .sum,body.gated .cal,body.gated .agenda{display:none}
+.pinbox{background:#fff;border:1px solid #e6e6ea;border-radius:14px;padding:14px;margin:10px 0;display:flex;flex-direction:column;gap:6px}.pinbox small{color:#5c5c5c;font-size:13px}.pinrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.pinrow select,.pinrow input{height:42px;border:1px solid #d4d4d8;border-radius:10px;padding:0 10px;font-size:15px;background:#fff}.pinrow select{flex:1 1 180px}.pinrow input{width:110px}
 </style>
 </head>
 <body>
@@ -105,6 +107,7 @@ select,button{font:inherit}
     </div>
   </div>
   <div class="sync" id="sync"></div>
+  <div id="gate"></div>
   <div class="chips" id="chips"></div>
   <div class="sum" id="sum"></div>
   <div class="cal">
@@ -170,11 +173,33 @@ function initCentro(){var sel_=$('#fCentro'),p=J('gpPerfil',{});
   sel_.innerHTML='<option value="">Todos los centros</option>'+CENTROS.map(function(c){return '<option>'+esc(c)+'</option>'}).join('');
   var c=p.panelCentro!=null?p.panelCentro:(p.centro||'');if(c&&CENTROS.indexOf(c)<0)sel_.insertAdjacentHTML('beforeend','<option>'+esc(c)+'</option>');sel_.value=c;
   sel_.onchange=function(){var q=J('gpPerfil',{});q.panelCentro=sel_.value;LS.set('gpPerfil',JSON.stringify(q));render()}}
-function visibles(){var c=$('#fCentro').value;return DATA.items.filter(function(it){return (!c||it.Centro===c)&&!off[cat(it).k]})}
+// Cada encargado ve solo sus centros (los administradores ven todos), igual que en el Panel.
+var ADMINS=['vdiaz@grupopro.cl'];
+var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
+  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
+function cuentaMs(){try{for(var i=0;i<localStorage.length;i++){var v=localStorage.getItem(localStorage.key(i));if(v&&v.indexOf('"username"')>=0&&v.indexOf('"homeAccountId"')>=0){var o=JSON.parse(v);if(o&&o.username)return String(o.username).toLowerCase()}}}catch(e){}return ''}
+var ME=cuentaMs();
+function pinsH(){return (DATA.pins&&Object.keys(DATA.pins).length?DATA.pins:(J('gpPanelData2',{})||{}).pinHash)||{}}
+function misCentros(){if(ADMINS.indexOf(ME)>=0)return null;var s={},ph=pinsH();(ACCESO[ME]||[]).forEach(function(c){s[c]=1});
+  var u=J('gpPanelPins',{});Object.keys(u).forEach(function(c){if(ph[c]&&u[c]===ph[c])s[c]=1});
+  return CENTROS.filter(function(c){return s[c]}).concat(Object.keys(s).filter(function(c){return CENTROS.indexOf(c)<0}))}
+var MINE=null;
+function todos(){return MINE?DATA.items.filter(function(it){return MINE.indexOf(it.Centro)>=0}):DATA.items}
+function centroSel(){var sel_=$('#fCentro'),cur=sel_.value,list=MINE||CENTROS,key=(MINE?'m|':'a|')+list.join('|');
+  if(sel_.dataset.k!==key){sel_.dataset.k=key;sel_.innerHTML=(list.length>1?'<option value="">'+(MINE?'Mis centros':'Todos los centros')+'</option>':'')+list.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')}
+  if(list.indexOf(cur)>=0||(cur===''&&list.length>1))sel_.value=cur;else{var p=J('gpPerfil',{}).panelCentro;sel_.value=list.indexOf(p)>=0?p:(list.length>1?'':(list[0]||''))}}
+function gate(){var g=$('#gate'),ph=pinsH(),cs=CENTROS.filter(function(c){return ph[c]});document.body.classList.add('gated');
+  g.innerHTML=DATA.items.length?'<div class="pinbox"><b>Ingresa el PIN de tu centro</b><small>Verás solo las actividades de tu centro. Pide el PIN a Valentín Díaz si no lo tienes.</small><div class="pinrow"><select id="pbC"><option value="">Elige el centro</option>'+cs.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')+'</select><input id="pbP" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><button class="btn pri" id="pbGo" type="button">Entrar</button></div><div id="pbMsg"></div></div>':'';
+  var go=$('#pbGo');if(go)go.onclick=async function(){var c=$('#pbC').value,p=$('#pbP').value.trim(),m=$('#pbMsg');if(!c||!p){m.innerHTML='<p style="color:var(--bad)">Elige el centro y escribe el PIN.</p>';return}
+    var h=await sha('gp|'+c+'|'+p);if(h!==ph[c]){m.innerHTML='<p style="color:var(--bad)">PIN incorrecto para '+esc(c)+'.</p>';return}
+    var u=J('gpPanelPins',{});u[c]=h;LS.set('gpPanelPins',JSON.stringify(u));var raw=J('gpPanelPinRaw',{});raw[c]=p;LS.set('gpPanelPinRaw',JSON.stringify(raw));
+    var q=J('gpPerfil',{});q.panelCentro=c;LS.set('gpPerfil',JSON.stringify(q));render()}}
+function visibles(){var c=$('#fCentro').value;return todos().filter(function(it){return (!c||it.Centro===c)&&!off[cat(it).k]})}
 
 function render(){
+  MINE=misCentros();centroSel();if(MINE&&!MINE.length){gate();return}document.body.classList.remove('gated');$('#gate').innerHTML='';
   var y=+view.slice(0,4),m=+view.slice(5,7);$('#mesT').textContent=MES[m-1]+' '+y;
-  var c=$('#fCentro').value,base=DATA.items.filter(function(it){return !c||it.Centro===c}),delMes=base.filter(function(it){return (it.Fecha||'').slice(0,7)===view||(!it.Fecha&&it.Mes===view)});
+  var c=$('#fCentro').value,base=todos().filter(function(it){return !c||it.Centro===c}),delMes=base.filter(function(it){return (it.Fecha||'').slice(0,7)===view||(!it.Fecha&&it.Mes===view)});
   // chips por programa (cuentan el mes visible)
   var usados=CAT.filter(function(k){return k.k!=='Otros'||delMes.some(function(it){return cat(it).k==='Otros'})});
   $('#chips').innerHTML=usados.map(function(k){var n=delMes.filter(function(it){return cat(it)===k}).length;return '<button type="button" class="chip'+(off[k.k]?' off':'')+'" style="--k:'+k.c+'" data-k="'+esc(k.k)+'"><i></i>'+esc(k.l)+' <b>'+n+'</b></button>'}).join('');
