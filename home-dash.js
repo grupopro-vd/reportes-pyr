@@ -293,7 +293,7 @@
       h += '<div class="dpick">Elige tu centro arriba para ver tu avance y lo que te toca hoy.</div>';
     }
     formsDOM().forEach(function (g) { h += dGroup(g.title, g.rows.map(function (r) { return dRow(r, g.c); })); });
-    h += dGroup('Ayúdanos a mejorar la app', [dRow({ href: 'sugerencias.html', label: 'Sugerencias y problemas de la app', i: 'charla' }, '#bd0926', '', '', 'Cuéntanos qué mejorar · se revisa cada viernes')]);
+    h += dGroup('Ayúdanos a mejorar la app', [dRow({ href: 'sugerencias.html', label: 'Sugerencias', i: 'charla' }, '#bd0926')]);
     h += '<div class="dnone" hidden>No hay resultados para tu búsqueda.</div>';
     return h;
   }
