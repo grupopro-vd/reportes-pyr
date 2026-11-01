@@ -69,7 +69,7 @@ textarea{min-height:130px;resize:vertical}
 (function(){
 'use strict';
 var CFG={endpoint:'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',key:'GP-PYR-2026',
-  form:'Sugerencias para la app',formCode:'SUG-APP',folder:'PRO_EHS/Sugerencias_App',estado:'PRO_EHS/Config/sugerencias_estado.json',
+  form:'Sugerencias para la app',formCode:'SUG-APP',folder:'PRO_EHS/Gestion/Sugerencias_App',estado:'PRO_EHS/Config/sugerencias_estado.json',
   clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e-49c6-a6f6-ed59ef49a1c3',site:'grupoprocl.sharepoint.com,32881a9e-1d10-427d-8d81-a8e638a346f4,8c2de84d-d5d6-4c85-8258-7ffb421c081f',
   admins:['vdiaz@grupopro.cl'],scopes:['Sites.ReadWrite.All'],
   msal:'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',qr:'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'};
@@ -116,7 +116,7 @@ function bindForm(){
     var payload={key:CFG.key,form:CFG.form,formCode:CFG.formCode,recordId:id,subject:'Sugerencia app · '+d.tipo+' · '+d.parte,reporterName:d.nombre||'Equipo',reporterEmail:'',cc:'',
       htmlBody:'<p><b>'+esc(d.tipo)+'</b> · '+esc(d.parte)+' · prioridad '+esc(d.prioridad)+'</p><p>'+esc(d.texto).replace(/\n/g,'<br>')+'</p><p>— '+esc(d.nombre||'Anónimo')+(d.centro?' · '+esc(d.centro):'')+'</p>',
       textBody:text,attachments:[],sentAt:now.toISOString(),notify:false,emailOptional:true,folderPath:CFG.folder+'/'+fISO.slice(0,4)+'/'+fISO.slice(5,7)+'/'+base,fileBase:base,important:false,
-      fields:{tipo:d.tipo,persona:d.nombre,fecha:fISO,centro:d.centro,area:d.parte},grupo:'App',backupFiles:files};
+      fields:{tipo:d.tipo,persona:d.nombre,fecha:fISO,centro:d.centro,area:d.parte},grupo:'Gestion',backupFiles:files};
     var listo=function(cola){fm.reset();foto=null;$('#phv').innerHTML='';go.disabled=false;
       ms.innerHTML='<div class="msg '+(cola?'warn':'ok')+'">'+(cola?'📶 Sin señal: tu sugerencia quedó guardada en este teléfono y se enviará sola cuando vuelva la conexión.':'✔ ¡Gracias! Tu sugerencia quedó registrada. La revisaremos el viernes.')+'</div>';
       var pn=fm.querySelector('[name=nombre]');if(pn)pn.value=d.nombre;var pc=fm.querySelector('[name=centro]');if(pc)pc.value=d.centro};
@@ -147,7 +147,7 @@ async function bandeja(){
     var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;
     try{var r=await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{raw:true});if(r.ok)EST=await r.json()||{}}catch(e){}
     var files=[],seen={};
-    for(const q of ['datos.json','imagen.jpg']){var u='/drives/'+REP+'/root:/'+encPath(CFG.folder)+":/search(q='"+q+"')?$select=id,name&$top=500";
+    for(const q of ['SUG-','datos.json','imagen.jpg']){var u='/drives/'+REP+"/root/search(q='"+q+"')?$select=id,name&$top=500";
       try{while(u){var d=await g(u);(d.value||[]).forEach(function(f){if(!seen[f.id]&&/^\d{4}-\d{2}-\d{2}_SUG-/.test(f.name)){seen[f.id]=1;files.push(f)}});u=d['@odata.nextLink']||null}}catch(e){if(e.status!==404)throw e}}
     var js=files.filter(function(f){return /_datos\.json$/i.test(f.name)}),imgs={};files.forEach(function(f){if(/_imagen\.jpg$/i.test(f.name))imgs[f.name.replace(/_imagen\.jpg$/i,'')]=f.id});
     ITEMS=[];for(var i=0;i<js.length;i+=20){var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:js.slice(i,i+20).map(function(f,k){return {id:String(k),method:'GET',url:'/drives/'+REP+'/items/'+f.id+'?$select=id,name,@microsoft.graph.downloadUrl'}})})});

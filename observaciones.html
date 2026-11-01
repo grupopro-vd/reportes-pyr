@@ -183,9 +183,9 @@ async function cargar(force){
     await loadScript(CFG.chart);
     if(!REP){var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('No encontré la biblioteca ReportesPYR')}
     await leerSeg();
-    var files=[],u='/drives/'+REP+'/root:/'+encPath(CFG.folder)+":/search(q='datos.json')?$select=id,name,eTag,parentReference&$top=500";
-    try{while(u){var d=await g(u);files=files.concat((d.value||[]).filter(function(f){return /_datos\.json$/i.test(f.name)}));u=d['@odata.nextLink']||null}}
-    catch(e){if(e.status!==404)throw e}
+    // Busca en toda la biblioteca: el respaldo puede guardar en la carpeta del formulario o en la raíz.
+    var files=[],u='/drives/'+REP+"/root/search(q='datos.json')?$select=id,name,eTag,webUrl&$top=500";
+    while(u){var d=await g(u);files=files.concat((d.value||[]).filter(function(f){if(!/_datos\.json$/i.test(f.name))return false;var w=decodeURIComponent(f.webUrl||'').replace(/^.*?\/ReportesPYR\//i,'');return /Observaciones_Conducta\//i.test(w)||w.indexOf('/')<0}));u=d['@odata.nextLink']||null}
     var cache=force?{}:cacheGet(),out={},need=files.filter(function(f){var c=cache[f.id];if(c&&c.e===f.eTag){out[f.id]=c;return false}return true});
     for(var i=0;i<need.length;i+=20){
       $('#app').innerHTML='<div class="empty"><span class="spin"></span>Leyendo observaciones '+Math.min(i+20,need.length)+' de '+need.length+'…</div>';
