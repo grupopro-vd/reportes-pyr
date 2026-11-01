@@ -392,7 +392,7 @@ async function validar(qid,ok,btn){
   }catch(e){alert('No se pudo validar: '+e.message);btn.disabled=false}
 }
 // ---------------- Carga del programa (Excel) ----------------
-var rows=[];
+var rows=[],stale=[];
 function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim()}
 function toISO(v){if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
   var s=String(v||'').trim(),m;if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
@@ -420,7 +420,10 @@ $('#xlsIn').onchange=async function(){var f=this.files[0];this.value='';if(!f)re
     rows.forEach(function(o){if(o.exId||c2[clave2(o)]!==1)return;var k=clave2(o);var ex=DATA.items.filter(function(x){return !used[x.id]&&clave2(x)===k});if(ex.length===1){used[ex[0].id]=1;o.exId=ex[0].id;o.exFecha=ex[0].Fecha||''}});
     if(!rows.length)throw new Error('La planilla no tiene actividades.');
     var ok=rows.filter(function(r){return !r.err}),nuevos=ok.filter(function(r){return !r.exId}).length,byC={};ok.forEach(function(r){byC[r.Centro]=(byC[r.Centro]||0)+1});
+    var enXls={};ok.forEach(function(r){enXls[r.Centro]=1});
+    stale=DATA.items.filter(function(x){return enXls[x.Centro]&&!used[x.id]&&x.Estado!=='Realizada'&&!pendingFor(x.id)});
     M.innerHTML='<div class="msg '+(rows.length-ok.length?'err':'ok')+'">'+ok.length+' actividades: '+nuevos+' nuevas y '+(ok.length-nuevos)+' para actualizar'+(rows.length-ok.length?' · '+(rows.length-ok.length)+' fila(s) sin centro (no se cargan)':'')+'<br><small>'+Object.keys(byC).map(function(c){return esc(c)+': '+byC[c]}).join(' · ')+'</small></div>';
+    if(stale.length)M.innerHTML+='<div class="msg info"><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="xlsDel" checked style="margin-top:3px"><span><b>'+stale.length+' actividad(es) pendientes ya no están en la planilla</b> y se eliminarán de la app (quedan en la papelera de SharePoint):<br><small>'+stale.slice(0,6).map(function(x){return esc(x.Centro)+' · '+esc(x.Title)+(x.Fecha?' · '+esc(x.Fecha):'')}).join('<br>')+(stale.length>6?'<br>y '+(stale.length-6)+' más':'')+'</small></span></label></div>';
     $('#xlsPrev').innerHTML='<table><thead><tr><th>Centro</th><th>Actividad</th><th>Programa</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr class="'+(r.err?'err':'')+'"><td>'+esc(r.Centro)+'</td><td>'+esc(r.Title)+(r.DirigidoA?' <small>('+esc(r.DirigidoA)+')</small>':'')+(r.err?'<br><b>'+esc(r.err)+'</b>':'')+'</td><td>'+esc(r.Programa)+'</td><td>'+(r.Fecha?fd(r.Fecha):r.Mes?mesTxt(r.Mes):'—')+'</td><td>'+esc(r.Estado)+'</td><td>'+(r.exId?'Actualiza':'Nueva')+'</td></tr>'}).join('')+'</tbody></table>';
     $('#xlsPrev').hidden=false;$('#xlsSend').hidden=!ok.length;
   }catch(e){M.innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}};
@@ -431,7 +434,9 @@ $('#xlsGo').onclick=async function(){var ok=rows.filter(function(r){return !r.er
       f.Estado=r.Estado;return {id:String(i),method:'POST',url:L+'/items',headers:{'Content-Type':'application/json'},body:{fields:f}}});
     var fail=[];for(var i=0;i<reqs.length;i+=20){M.innerHTML='<div class="msg info">Cargando '+Math.min(i+20,reqs.length)+' de '+reqs.length+'…</div>';
       var d=await g('/$batch',{method:'POST',body:{requests:reqs.slice(i,i+20)}});(d.responses||[]).forEach(function(x){if(x.status>=300)fail.push(ok[+x.id].Title+': '+((x.body&&x.body.error&&x.body.error.message)||x.status))})}
-    M.innerHTML='<div class="msg '+(fail.length?'err':'ok')+'">'+(fail.length?'Se cargaron '+(reqs.length-fail.length)+' de '+reqs.length+'. Con error:<br>'+fail.slice(0,8).map(esc).join('<br>'):'✔ Programa cargado: '+reqs.length+' actividades en SharePoint.')+'</div>';
+    var del=0,dx=$('#xlsDel');if(stale.length&&dx&&dx.checked){var dr=stale.map(function(x,j){return {id:'d'+j,method:'DELETE',url:L+'/items/'+x.id}});
+      for(var k=0;k<dr.length;k+=20){M.innerHTML='<div class="msg info">Eliminando '+Math.min(k+20,dr.length)+' de '+dr.length+' que ya no están en la planilla…</div>';var dd=await g('/$batch',{method:'POST',body:{requests:dr.slice(k,k+20)}});(dd.responses||[]).forEach(function(x){if(x.status<300)del++;else fail.push('Eliminar: '+x.status)})}}
+    M.innerHTML='<div class="msg '+(fail.length?'err':'ok')+'">'+(fail.length?'Se cargaron '+(reqs.length-fail.length)+' de '+reqs.length+'. Con error:<br>'+fail.slice(0,8).map(esc).join('<br>'):'✔ Programa cargado: '+reqs.length+' actividades en SharePoint'+(del?' · '+del+' eliminadas por no estar en la planilla':'')+'.')+'</div>';
     $('#xlsSend').hidden=true;$('#xlsPrev').hidden=true;await load();
   }catch(e){M.innerHTML='<div class="msg err">No se pudo cargar: '+esc(e.message)+'</div>';btn.disabled=false}};
 
