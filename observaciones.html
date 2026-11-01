@@ -124,8 +124,8 @@ var CFG={clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e
 // Centros que ve cada encargado (los administradores ven todos)
 var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
   'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
-// Código CD de Walmart por centro (columna «CD» del consolidado)
-var CD={'Walmart Pudahuel':'6014'};
+// Columna «CD» del consolidado: nombre corto del centro (Pudahuel, Peñón, La Farfana…)
+var cdNom=function(c){return String(c||'').replace(/^(Walmart|Líder|Lider)\s+/i,'')};
 var ESC=['Proceso de mejora','Comentario GDI','Escalamiento GDI','Carta de amonestación','Bloqueo','Desvinculación'];
 var ESTADOS=['Pendiente','Cerrado','Caducado'];
 var PAL=['#bd0926','#18181b','#0f766e','#b45309','#1d4ed8','#7e22ce','#15803d','#be185d','#0e7490','#64748b','#a16207','#9a3412'];
@@ -210,7 +210,7 @@ async function guardarSeg(id,val){
 function falta(o){return o.resultado==='Negativa'||(o.mejora&&o.mejora.length)||(o.graves&&o.graves.length)||(o.no_cumple&&o.no_cumple.length)||!!o.tipo_falta||!!o.escalamiento}
 function desdeApp(o){if(!o||!o.fecha)return null;var wk=isoWeek(o.fecha),s=SEG[o.id]||{},f=!!falta(o);
   var detalle=[].concat(o.graves||[],o.mejora||[],(o.no_cumple||[]).map(function(x){return 'No cumple: '+x})).join(' · ');
-  var r={src:'app',id:o.id,centro:o.centro||'Sin centro',cd:CD[o.centro]||o.centro||'',anio:wk.y,semana:wk.w,fecha:o.fecha,hora:o.hora||'',turno:o.turno||'',
+  var r={src:'app',id:o.id,centro:o.centro||'Sin centro',cd:cdNom(o.centro),anio:wk.y,semana:wk.w,fecha:o.fecha,hora:o.hora||'',turno:o.turno||'',
     tipo:o.tipo_obs||'',resultado:o.resultado||(f?'Negativa':'Positiva'),conFalta:f,area:o.area||'',gerencia:o.gerencia||'',persona:o.persona||'',cargo:o.cargo||'',empresa:o.empresa||'',lugar:o.lugar||'',
     observacion:[o.descripcion,detalle].filter(Boolean).join(' — '),tipoFalta:s.tipo_falta||o.tipo_falta||'',escalamiento:s.escalamiento||o.escalamiento||'',
     observador:o.observador||o.reporter||'',supervisor:s.supervisor||o.supervisor||'',prevencionista:o.prevencionista||'',tope:s.fecha_tope||o.fecha_tope||'',cierre:s.fecha_cierre||'',
@@ -228,11 +228,11 @@ async function importar(file){
       if(I.obs<0||I.tf<0||I.ini<0)return;
       aoa.slice(1).forEach(function(rw,k){var get=function(x){return I[x]>=0?rw[I[x]]:''};var f=toISOx(get('ini'));if(!f&&!String(get('obs')).trim())return;
         var wk=f?isoWeek(f):{y:+get('anio')||0,w:parseInt(String(get('sem')))||0};var cd=String(get('cd')).trim();
-        var r={src:'excel',id:'XLS-'+n+'-'+(k+2),centro:cd==='6014'?'Walmart Pudahuel':/pe[ñn]on/i.test(cd)?'Walmart Peñón':(cd||'Importado'),cd:cd,anio:wk.y,semana:wk.w,fecha:f,hora:'',turno:'',tipo:'Importado',resultado:'Negativa',conFalta:true,
+        var r={src:'excel',id:'XLS-'+n+'-'+(k+2),centro:cd==='6014'?'Walmart Pudahuel':/pe[ñn]on/i.test(cd)?'Walmart Peñón':(cd||'Importado'),cd:'',anio:wk.y,semana:wk.w,fecha:f,hora:'',turno:'',tipo:'Importado',resultado:'Negativa',conFalta:true,
           area:String(get('area')).trim(),gerencia:String(get('ger')).trim(),persona:String(get('per')).trim(),cargo:'',empresa:String(get('emp')).trim(),lugar:'',observacion:String(get('obs')).trim(),
           tipoFalta:String(get('tf')).trim(),escalamiento:String(get('esc')).trim(),observador:String(get('obsr')).trim(),supervisor:String(get('sup')).trim(),prevencionista:String(get('prev')).trim(),
           tope:toISOx(get('tope')),cierre:toISOx(get('cie')),medida:'',feedback:'',nota:'',estadoSeg:String(get('est')).trim().replace(/^./,function(c){return c.toUpperCase()}),graves:0};
-        r.estado=estado(r);add.push(r)})});
+        r.cd=cdNom(r.centro);r.estado=estado(r);add.push(r)})});
     if(!add.length)throw new Error('No encontré columnas del consolidado (Observación, Tipo de falta, Fecha inicio).');
     IMP=IMP.concat(add);componer();msgTop('ok','Se sumaron '+add.length+' observaciones de «'+file.name+'». Solo se muestran aquí; no se guardan en SharePoint.');
   }catch(e){msgTop('err','No se pudo importar: '+e.message)}}
