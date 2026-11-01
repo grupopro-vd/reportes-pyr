@@ -243,7 +243,7 @@
     if (side) {
       side.innerHTML = admin ? '<div class="sl"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><b>PRO EHS</b></div>' +
         '<div class="sh">Centro</div>' + [''].concat(centros).map(function (c) { return '<button type="button" data-c="' + esc(c) + '" class="' + (c === centro ? 'on' : '') + '">' + (c ? esc(c) : 'Todo el programa') + '</button>'; }).join('') +
-        '<div class="sh">Herramientas</div><a href="calendario.html">' + svg('cal', 18) + 'Calendario</a><a href="panel.html">' + svg('panel', 18) + 'Panel de control</a><a href="estadisticas.html">' + svg('est', 18) + 'Estadísticas</a><a href="observaciones.html">' + svg('obs', 18) + 'Observaciones</a><a href="panel.html">' + svg('up', 18) + 'Cargar programa</a><a href="#formularios">' + svg('forms', 18) + 'Formularios</a>' : '';
+        '<div class="sh">Herramientas</div><a href="calendario.html">' + svg('cal', 18) + 'Calendario</a><a href="panel.html">' + svg('panel', 18) + 'Panel de control</a><a href="estadisticas.html">' + svg('est', 18) + 'Estadísticas</a><a href="observaciones.html">' + svg('obs', 18) + 'Observaciones</a><a href="sugerencias.html#bandeja">' + svg('charla', 18) + 'Sugerencias del equipo</a><a href="panel.html">' + svg('up', 18) + 'Cargar programa</a><a href="#formularios">' + svg('forms', 18) + 'Formularios</a>' : '';
     }
   }
 
@@ -293,6 +293,7 @@
       h += '<div class="dpick">Elige tu centro arriba para ver tu avance y lo que te toca hoy.</div>';
     }
     formsDOM().forEach(function (g) { h += dGroup(g.title, g.rows.map(function (r) { return dRow(r, g.c); })); });
+    h += dGroup('Ayúdanos a mejorar la app', [dRow({ href: 'sugerencias.html', label: 'Sugerencias y problemas de la app', i: 'charla' }, '#bd0926', '', '', 'Cuéntanos qué mejorar · se revisa cada viernes')]);
     h += '<div class="dnone" hidden>No hay resultados para tu búsqueda.</div>';
     return h;
   }

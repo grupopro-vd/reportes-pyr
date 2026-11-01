@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sugerencias para la app · PRO EHS</title>
+<meta name="theme-color" content="#18181b">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#18181b;--red:#bd0926;--bg:#f2f2f7;--line:#e4e4e7;--mute:#6e6e73;--ok:#16623f;--okb:#e3f4ea;--bad:#b3261e;--badb:#fde4e2;--blue:#1d4ed8;--blueb:#dbeafe;--mid:#b45309;--midb:#fdf0d5}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+button,select,input,textarea{font:inherit}
+.wrap{max-width:640px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+.wide{max-width:1100px}
+.back{display:inline-flex;font-weight:800;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:13px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.4px;margin:14px 0 4px}
+.lead{color:#3f3f46;font-size:14.5px;line-height:1.5;margin:0 0 14px}
+.box{background:#fff;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:800;color:#3f3f46}
+label.f small{font-weight:600;color:var(--mute)}
+select,input[type=text],textarea{border:1px solid #d4d4d8;border-radius:10px;padding:10px 11px;font-size:15px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:130px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #d4d4d8;border-radius:99px;padding:8px 12px;font-size:14px;font-weight:700;cursor:pointer;background:#fff}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips label:has(input:checked){border-color:var(--ink);background:var(--ink);color:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+.btn{border:1.5px solid #d4d4d8;background:#fff;border-radius:12px;height:46px;padding:0 16px;font-size:15px;font-weight:800;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff;width:100%}.btn.sm{height:34px;font-size:12.5px;padding:0 11px;border-radius:9px}.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn:disabled{opacity:.55}
+.photo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.photo img{height:64px;border-radius:8px;border:1px solid var(--line)}
+.msg{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45}.msg.ok{background:var(--okb);color:var(--ok)}.msg.err{background:var(--badb);color:var(--bad)}.msg.info{background:var(--blueb);color:#1e3a8a}.msg.warn{background:var(--midb);color:#7c2d12}
+.foot{font-size:12.5px;color:var(--mute);margin-top:12px;line-height:1.45}
+/* Bandeja */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.tabs button{border:1px solid #d4d4d8;background:#fff;border-radius:99px;height:34px;padding:0 13px;font-weight:800;font-size:13px;cursor:pointer}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:10px}
+.it{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.it.nueva{border-color:#fca5a5;box-shadow:0 0 0 2px #fee2e2}
+.it .top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--mute);font-weight:700}
+.it .tx{font-size:14.5px;line-height:1.5;white-space:pre-wrap}
+.it .act{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.it img{max-width:220px;border-radius:8px;border:1px solid var(--line)}
+.pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:800}
+.p-red{background:var(--badb);color:var(--bad)}.p-blue{background:var(--blueb);color:var(--blue)}.p-ok{background:var(--okb);color:var(--ok)}.p-mid{background:var(--midb);color:var(--mid)}.p-gray{background:#f4f4f5;color:#52525b}
+.qr{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:#fff;border-radius:14px;padding:14px;margin-top:12px}
+.qr #qrc{background:#fff;padding:8px;border:1px solid var(--line);border-radius:10px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #d4d4d8;border-top-color:var(--red);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes sp{to{transform:rotate(360deg)}}
+@media print{body *{visibility:hidden}#printQR,#printQR *{visibility:visible}#printQR{position:fixed;inset:0;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:22px;text-align:center}}
+#printQR{display:none}
+</style>
+</head>
+<body>
+<main class="wrap" id="main">
+  <a class="back" href="./">← Inicio</a>
+  <div id="view"></div>
+</main>
+<div id="printQR"><div style="font-weight:800;font-size:30px">¿Problemas o ideas para la app PRO EHS?</div><div id="qrPrint"></div><div>Escanea y cuéntanos. Lo revisamos todos los viernes.</div></div>
+
+<script>
+(function(){
+'use strict';
+var CFG={endpoint:'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',key:'GP-PYR-2026',
+  form:'Sugerencias para la app',formCode:'SUG-APP',folder:'PRO_EHS/Sugerencias_App',estado:'PRO_EHS/Config/sugerencias_estado.json',
+  clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e-49c6-a6f6-ed59ef49a1c3',site:'grupoprocl.sharepoint.com,32881a9e-1d10-427d-8d81-a8e638a346f4,8c2de84d-d5d6-4c85-8258-7ffb421c081f',
+  admins:['vdiaz@grupopro.cl'],scopes:['Sites.ReadWrite.All'],
+  msal:'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',qr:'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'};
+var CENTROS=['Walmart Peñón','Walmart Pudahuel','Walmart Lo Aguirre','Walmart La Farfana','Líder La Reina','Líder Lo Barnechea','ICB','Oficina Grupo Pro','Otro'];
+var PARTES=['Inicio','Calendario','Panel de control','Formularios','Observación de conducta','Hallazgos','Check list','Charlas','Estadísticas','Toda la app','Otra'];
+var $=function(s){return document.querySelector(s)},$$=function(s){return [].slice.call(document.querySelectorAll(s))};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var J=function(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch(e){return d}};
+var pad=function(n){return (n<10?'0':'')+n};
+function loadScript(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=function(){ko(new Error('No se pudo cargar '+src.split('/').pop()))};document.head.appendChild(s)})}
+function cuentaMs(){try{for(var i=0;i<localStorage.length;i++){var v=localStorage.getItem(localStorage.key(i));if(v&&v.indexOf('"username"')>=0&&v.indexOf('"homeAccountId"')>=0){var o=JSON.parse(v);if(o&&o.username)return String(o.username).toLowerCase()}}}catch(e){}return ''}
+var ME=cuentaMs(),ADMIN=CFG.admins.indexOf(ME)>=0;
+var foto=null;
+
+// ---------------- Formulario ----------------
+function formHTML(){var p=J('gpPerfil',{}),c=p.panelCentro||p.centro||'';
+  return '<h1>Sugerencias para la app</h1><p class="lead">¿Algo no funciona, te complica o se te ocurre una mejora? Cuéntalo aquí. Valentín revisa las sugerencias <b>todos los viernes</b> para ir mejorando la aplicación.</p>'+
+  '<form class="box" id="fm" novalidate>'+
+  '<div class="f" style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:800;color:#3f3f46">¿Qué quieres contarnos?<div class="chips" role="radiogroup">'+
+    [['Problema','🐞 Algo no funciona'],['Mejora','✨ Mejora'],['Idea nueva','💡 Idea nueva'],['Otro','💬 Otro']].map(function(x,i){return '<label><input type="radio" name="tipo" value="'+x[0]+'"'+(i===0?' checked':'')+'>'+x[1]+'</label>'}).join('')+'</div></div>'+
+  '<label class="f">¿En qué parte de la app?<select name="parte">'+PARTES.map(function(x){return '<option>'+esc(x)+'</option>'}).join('')+'</select></label>'+
+  '<label class="f">Cuéntanos con detalle <small>Qué pasó o qué te gustaría, y cómo te ayudaría en tu trabajo.</small><textarea name="texto" required maxlength="3000" placeholder="Ej.: Al enviar el check list sin señal no sé si quedó guardado…"></textarea></label>'+
+  '<div class="f" style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:800;color:#3f3f46">¿Qué tan importante es para ti?<div class="chips">'+['Baja','Media','Alta'].map(function(x,i){return '<label><input type="radio" name="prioridad" value="'+x+'"'+(i===1?' checked':'')+'>'+x+'</label>'}).join('')+'</div></div>'+
+  '<div class="photo"><label class="btn sm">📷 Agregar pantallazo o foto<input id="ph" type="file" accept="image/*" hidden></label><span id="phv"></span></div>'+
+  '<div class="row2"><label class="f">Tu nombre <small>(opcional)</small><input type="text" name="nombre" value="'+esc(p.name||'')+'"></label>'+
+  '<label class="f">Centro<select name="centro"><option value=""></option>'+CENTROS.map(function(x){return '<option'+(x===c?' selected':'')+'>'+esc(x)+'</option>'}).join('')+'</select></label></div>'+
+  '<div id="ms"></div><button class="btn pri" id="go" type="submit">Enviar sugerencia</button></form>'+
+  '<p class="foot">Tu sugerencia queda guardada en SharePoint para el equipo de Prevención de Riesgos. No se envía ningún correo.</p>'+
+  (ADMIN?'<p class="foot"><a class="btn sm dark" href="#bandeja">Ver bandeja de sugerencias →</a></p>':'');}
+function bindForm(){
+  $('#ph').onchange=async function(){var f=this.files[0];this.value='';if(!f)return;try{foto=await reducir(f);$('#phv').innerHTML='<img src="'+foto+'" alt="Imagen adjunta"> <button type="button" class="btn sm" id="phx">Quitar</button>';$('#phx').onclick=function(){foto=null;$('#phv').innerHTML=''}}catch(e){$('#phv').textContent='No se pudo leer la imagen.'}};
+  $('#fm').onsubmit=async function(e){e.preventDefault();var fm=e.target,ms=$('#ms'),go=$('#go');
+    var d={tipo:(fm.querySelector('[name=tipo]:checked')||{}).value||'Otro',parte:fm.parte.value,texto:fm.texto.value.trim(),prioridad:(fm.querySelector('[name=prioridad]:checked')||{}).value||'Media',nombre:fm.nombre.value.trim(),centro:fm.centro.value};
+    if(d.texto.length<5){ms.innerHTML='<div class="msg err">Escribe tu sugerencia antes de enviar.</div>';fm.texto.focus();return}
+    try{var p=J('gpPerfil',{});p.name=p.name||d.nombre;if(d.centro&&!p.panelCentro)p.panelCentro=d.centro;localStorage.setItem('gpPerfil',JSON.stringify(p))}catch(_){}
+    go.disabled=true;ms.innerHTML='<div class="msg info"><span class="spin"></span>Enviando…</div>';
+    var now=new Date(),fISO=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    var id='SUG-'+Math.random().toString(36).slice(2,5).toUpperCase()+'-'+Math.random().toString(36).slice(2,5).toUpperCase();
+    var base=fISO+'_'+id,data={sug:Object.assign({fecha:fISO,hora:pad(now.getHours())+':'+pad(now.getMinutes()),app:navigator.userAgent.slice(0,160)},d),recordId:id,form:CFG.form,formCode:CFG.formCode,sentAt:now.toISOString()};
+    var text='Sugerencia para la app ('+d.tipo+' · '+d.parte+' · prioridad '+d.prioridad+')\n'+d.texto+'\n— '+(d.nombre||'Anónimo')+(d.centro?' · '+d.centro:'');
+    var b64=function(s){return btoa(unescape(encodeURIComponent(s)))};
+    var files=[{name:base+'_datos.json',mimeType:'application/json',base64:b64(JSON.stringify(data,null,2))}];
+    if(foto)files.push({name:base+'_imagen.jpg',mimeType:'image/jpeg',base64:foto.split(',')[1]});
+    var payload={key:CFG.key,form:CFG.form,formCode:CFG.formCode,recordId:id,subject:'Sugerencia app · '+d.tipo+' · '+d.parte,reporterName:d.nombre||'Equipo',reporterEmail:'',cc:'',
+      htmlBody:'<p><b>'+esc(d.tipo)+'</b> · '+esc(d.parte)+' · prioridad '+esc(d.prioridad)+'</p><p>'+esc(d.texto).replace(/\n/g,'<br>')+'</p><p>— '+esc(d.nombre||'Anónimo')+(d.centro?' · '+esc(d.centro):'')+'</p>',
+      textBody:text,attachments:[],sentAt:now.toISOString(),notify:false,emailOptional:true,folderPath:CFG.folder+'/'+fISO.slice(0,4)+'/'+fISO.slice(5,7)+'/'+base,fileBase:base,important:false,
+      fields:{tipo:d.tipo,persona:d.nombre,fecha:fISO,centro:d.centro,area:d.parte},grupo:'App',backupFiles:files};
+    var listo=function(cola){fm.reset();foto=null;$('#phv').innerHTML='';go.disabled=false;
+      ms.innerHTML='<div class="msg '+(cola?'warn':'ok')+'">'+(cola?'📶 Sin señal: tu sugerencia quedó guardada en este teléfono y se enviará sola cuando vuelva la conexión.':'✔ ¡Gracias! Tu sugerencia quedó registrada. La revisaremos el viernes.')+'</div>';
+      var pn=fm.querySelector('[name=nombre]');if(pn)pn.value=d.nombre;var pc=fm.querySelector('[name=centro]');if(pc)pc.value=d.centro};
+    try{if(navigator.onLine===false&&window.gpQueue){await window.gpQueue(payload,id,id,CFG.endpoint);listo(true);return}
+      var r=await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify(payload)});var j=null;try{j=await r.json()}catch(_){j={ok:r.ok}}
+      if(!j||!j.ok)throw new Error((j&&j.error)||('respuesta '+r.status));listo(false)}
+    catch(err){if(window.gpQueue&&/fetch|network|Failed/i.test(String(err.message))){try{await window.gpQueue(payload,id,id,CFG.endpoint);listo(true);return}catch(_){}}
+      go.disabled=false;ms.innerHTML='<div class="msg err">No se pudo enviar: '+esc(err.message)+'. Inténtalo de nuevo en un momento.</div>'}};
+}
+function reducir(file){return new Promise(function(ok,ko){var fr=new FileReader();fr.onerror=ko;fr.onload=function(){var im=new Image();im.onerror=ko;im.onload=function(){var m=1280,w=im.width,h=im.height,k=Math.min(1,m/Math.max(w,h));var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.78))};im.src=fr.result};fr.readAsDataURL(file)})}
+
+// ---------------- Bandeja (administrador) ----------------
+var PCA=null,ACC=null,REP=null,ITEMS=[],EST={},filtro='Nueva';
+async function token(){try{return (await PCA.acquireTokenSilent({scopes:CFG.scopes,account:ACC})).accessToken}catch(e){try{sessionStorage.setItem('gpVolver','sugerencias.html')}catch(_){}await PCA.acquireTokenRedirect({scopes:CFG.scopes,account:ACC});throw new Error('Redirigiendo a Microsoft…')}}
+async function g(p,o){o=o||{};var r=await fetch(p.indexOf('http')===0?p:'https://graph.microsoft.com/v1.0'+p,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+(await token())},o.ct?{'Content-Type':o.ct}:{}),body:o.body});
+  if(o.raw)return r;if(r.status===204)return null;var d=await r.json().catch(function(){return null});if(!r.ok){var e=new Error((d&&d.error&&d.error.message)||('Error '+r.status));e.status=r.status;throw e}return d}
+var encPath=function(p){return p.split('/').map(encodeURIComponent).join('/')};
+async function bandeja(){
+  $('#main').classList.add('wide');
+  $('#view').innerHTML='<h1>Sugerencias del equipo</h1><p class="lead">Lo que el equipo propone o reporta sobre la app. Márcalas como leídas al revisarlas los viernes.</p><div id="bx"><div class="msg info"><span class="spin"></span>Leyendo SharePoint…</div></div>'+
+    '<div class="qr"><div id="qrc"></div><div style="flex:1;min-width:220px"><b>QR para el equipo</b><p class="foot" style="margin:4px 0 10px">Imprímelo y déjalo en los centros: abre directo este formulario. También está al final de la lista de cada encargado en la app.</p><button class="btn sm" id="qrP" type="button">🖨 Imprimir QR</button> <a class="btn sm" href="#">Ver el formulario</a></div></div>';
+  var url=location.origin+location.pathname;
+  loadScript(CFG.qr).then(function(){new QRCode($('#qrc'),{text:url,width:150,height:150,correctLevel:QRCode.CorrectLevel.M});new QRCode($('#qrPrint'),{text:url,width:360,height:360,correctLevel:QRCode.CorrectLevel.M});$('#qrP').onclick=function(){window.print()}}).catch(function(){});
+  try{await loadScript(CFG.msal);
+    PCA=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname.replace(/[^/]*$/,'')+'panel.html'},cache:{cacheLocation:'localStorage'}});
+    try{await PCA.handleRedirectPromise()}catch(e){}
+    ACC=PCA.getActiveAccount()||PCA.getAllAccounts()[0];if(!ACC)throw new Error('Inicia sesión con tu cuenta Microsoft en el Panel de control.');PCA.setActiveAccount(ACC);
+    var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;
+    try{var r=await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{raw:true});if(r.ok)EST=await r.json()||{}}catch(e){}
+    var files=[],seen={};
+    for(const q of ['datos.json','imagen.jpg']){var u='/drives/'+REP+'/root:/'+encPath(CFG.folder)+":/search(q='"+q+"')?$select=id,name&$top=500";
+      try{while(u){var d=await g(u);(d.value||[]).forEach(function(f){if(!seen[f.id]&&/^\d{4}-\d{2}-\d{2}_SUG-/.test(f.name)){seen[f.id]=1;files.push(f)}});u=d['@odata.nextLink']||null}}catch(e){if(e.status!==404)throw e}}
+    var js=files.filter(function(f){return /_datos\.json$/i.test(f.name)}),imgs={};files.forEach(function(f){if(/_imagen\.jpg$/i.test(f.name))imgs[f.name.replace(/_imagen\.jpg$/i,'')]=f.id});
+    ITEMS=[];for(var i=0;i<js.length;i+=20){var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:js.slice(i,i+20).map(function(f,k){return {id:String(k),method:'GET',url:'/drives/'+REP+'/items/'+f.id+'?$select=id,name,@microsoft.graph.downloadUrl'}})})});
+      var got=await Promise.all((b.responses||[]).map(function(x){var u2=x.body&&x.body['@microsoft.graph.downloadUrl'];return u2?fetch(u2).then(function(r){return r.json()}).then(function(o){o._base=x.body.name.replace(/_datos\.json$/i,'');return o}).catch(function(){return null}):null}));
+      got.forEach(function(o){if(o&&o.sug){o.sug.id=o.recordId;o.sug.img=imgs[o._base]||'';ITEMS.push(o.sug)}})}
+    ITEMS.sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});pintar();
+  }catch(e){$('#bx').innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}}
+function est(s){return (EST[s.id]&&EST[s.id].estado)||'Nueva'}
+function pintar(){var n={};ITEMS.forEach(function(s){var e=est(s);n[e]=(n[e]||0)+1});
+  var h='<div class="tabs">'+['Nueva','Leída','En curso','Hecha','Todas'].map(function(t){return '<button type="button" data-t="'+t+'" class="'+(filtro===t?'on':'')+'">'+t+(t==='Todas'?' ('+ITEMS.length+')':' ('+(n[t]||0)+')')+'</button>'}).join('')+'</div>';
+  var l=ITEMS.filter(function(s){return filtro==='Todas'||est(s)===filtro});
+  h+=l.length?'<div class="list">'+l.map(function(s){var e=est(s);return '<div class="it'+(e==='Nueva'?' nueva':'')+'" data-id="'+esc(s.id)+'"><div class="top"><span class="pill '+({Problema:'p-red','Mejora':'p-blue','Idea nueva':'p-ok'}[s.tipo]||'p-gray')+'">'+esc(s.tipo)+'</span><span class="pill p-gray">'+esc(s.parte)+'</span><span class="pill '+(s.prioridad==='Alta'?'p-red':s.prioridad==='Media'?'p-mid':'p-gray')+'">Prioridad '+esc(s.prioridad)+'</span><span>'+esc(s.fecha.split('-').reverse().join('-'))+' '+esc(s.hora||'')+' · '+esc(s.nombre||'Anónimo')+(s.centro?' · '+esc(s.centro):'')+'</span></div>'+
+      '<div class="tx">'+esc(s.texto)+'</div>'+(s.img?'<div class="im" data-img="'+esc(s.img)+'"><button class="btn sm" type="button">Ver imagen</button></div>':'')+
+      '<div class="act">'+['Leída','En curso','Hecha'].map(function(x){return '<button type="button" class="btn sm'+(e===x?' dark':'')+'" data-e="'+x+'">'+x+'</button>'}).join('')+(EST[s.id]&&EST[s.id].at?'<span class="foot" style="margin:0">'+esc(EST[s.id].estado)+' · '+new Date(EST[s.id].at).toLocaleDateString('es-CL')+'</span>':'')+'</div></div>'}).join('')+'</div>'
+    :'<div class="msg info">'+(ITEMS.length?'No hay sugerencias en «'+esc(filtro)+'».':'Aún no llegan sugerencias. Cuando el equipo las envíe, aparecerán aquí.')+'</div>';
+  $('#bx').innerHTML=h;
+  $$('.tabs button').forEach(function(b){b.onclick=function(){filtro=b.dataset.t;pintar()}});
+  $$('.it [data-e]').forEach(function(b){b.onclick=async function(){var id=b.closest('.it').dataset.id;b.disabled=true;try{var cur={};try{var r=await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{raw:true});if(r.ok)cur=await r.json()||{}}catch(_){}
+    cur[id]={estado:b.dataset.e,at:new Date().toISOString(),by:ACC.name||ACC.username};await g('/drives/'+REP+'/root:/'+encPath(CFG.estado)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});EST=cur;pintar()}catch(e){b.disabled=false;alertBox(e.message)}}});
+  $$('.it .im button').forEach(function(b){b.onclick=async function(){var w=b.parentNode;b.disabled=true;try{var r=await g('/drives/'+REP+'/items/'+w.dataset.img+'?$select=@microsoft.graph.downloadUrl');w.innerHTML='<img src="'+esc(r['@microsoft.graph.downloadUrl'])+'" alt="Imagen adjunta">'}catch(e){b.disabled=false}}});
+}
+function alertBox(t){var d=document.createElement('div');d.className='msg err';d.textContent='No se pudo guardar: '+t;$('#bx').prepend(d);setTimeout(function(){d.remove()},6000)}
+
+function route(){if(location.hash==='#bandeja'&&ADMIN){bandeja()}else{$('#main').classList.remove('wide');$('#view').innerHTML=formHTML();bindForm()}}
+window.addEventListener('hashchange',route);route();
+})();
+</script>
+<script src="gp-app.js"></script>
+</body>
+</html>
