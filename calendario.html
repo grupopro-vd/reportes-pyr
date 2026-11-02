@@ -39,6 +39,7 @@ select,button{font:inherit}
 .day{min-height:64px;border-right:1px solid #f0f0f2;border-bottom:1px solid #f0f0f2;padding:5px 4px;cursor:pointer;position:relative;background:#fff;text-align:left;border-top:0;border-left:0;font:inherit;color:inherit;display:flex;flex-direction:column;gap:3px;min-width:0}
 .day:nth-child(7n){border-right:0}
 .day.out{background:#fafafb;color:#aaa}
+.day .sn{display:none;position:absolute;top:6px;right:5px;font-size:9.5px;font-weight:bold;color:#71717a;background:#f4f4f5;border-radius:6px;padding:1px 5px}
 .day .n{font-size:13px;font-weight:bold;width:24px;height:24px;display:grid;place-items:center;border-radius:50%}
 .day.hoy .n{background:var(--red);color:#fff}
 .day.sel{outline:2px solid var(--black);outline-offset:-2px;z-index:1}
@@ -49,6 +50,7 @@ select,button{font:inherit}
 .dots i.late{box-shadow:0 0 0 2px #fff,0 0 0 3px var(--bad)}
 .ev{display:none}
 @media(min-width:760px){
+  .day .sn{display:block}
   .day{min-height:112px;padding:6px}
   .dots{display:none}
   .ev{display:block;font-size:11.5px;line-height:1.25;padding:3px 6px;border-radius:6px;background:color-mix(in srgb,var(--k) 13%,#fff);border-left:3px solid var(--k);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#222}
@@ -58,6 +60,7 @@ select,button{font:inherit}
 }
 .more{display:none}@media(min-width:760px){.more{display:block}}
 .agenda{margin-top:14px}
+.agenda h3.snh span{float:right;text-transform:none;letter-spacing:0;font-weight:normal}
 .agenda h3{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin:16px 2px 8px}
 .list{display:grid;gap:8px}
 .it{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start;background:#fff;border:1px solid var(--line);border-left:5px solid var(--k);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
@@ -207,13 +210,14 @@ function render(){
   var vis=visibles(),mesVis=vis.filter(function(it){return (it.Fecha||'').slice(0,7)===view||(!it.Fecha&&it.Mes===view)});
   var cnt={t:mesVis.length,r:0,p:0,a:0};mesVis.forEach(function(it){var s=st(it);if(s==='Realizada')cnt.r++;else if(s==='Atrasada')cnt.a++;else cnt.p++});
   $('#sum').innerHTML='<div><b>'+cnt.t+'</b><span>Programadas</span></div><div><b style="color:var(--ok)">'+cnt.r+'</b><span>Realizadas</span></div><div><b>'+cnt.p+'</b><span>Por hacer</span></div><div><b style="color:var(--bad)">'+cnt.a+'</b><span>Atrasadas</span></div>';
-  // grilla lunes a domingo
-  var first=new Date(y,m-1,1),start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+  // grilla lunes a domingo (el lunes muestra el número de semana SN)
+  function snW(s){var x=new Date(s+'T12:00:00Z');var dd=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-dd);var y0=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil(((x-y0)/86400000+1)/7)}
+  window.snW=snW;var first=new Date(y,m-1,1),start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
   var byDay={};vis.forEach(function(it){if(it.Fecha)(byDay[it.Fecha]=byDay[it.Fecha]||[]).push(it)});
   var h='';for(var i=0;i<42;i++){var d=new Date(start);d.setDate(start.getDate()+i);var k=iso(d),out=d.getMonth()!==m-1;
     if(i===35&&out)break;
     var its=(byDay[k]||[]).slice().sort(function(a,b){return CAT.indexOf(cat(a))-CAT.indexOf(cat(b))});
-    h+='<button type="button" class="day'+(out?' out':'')+(k===HOY?' hoy':'')+(k===sel?' sel':'')+(d.getDay()%6===0?' we':'')+'" data-d="'+k+'" aria-label="'+fdl(k)+', '+its.length+' actividades"><span class="n">'+d.getDate()+'</span>'+
+    h+='<button type="button" class="day'+(out?' out':'')+(k===HOY?' hoy':'')+(k===sel?' sel':'')+(d.getDay()%6===0?' we':'')+'" data-d="'+k+'" aria-label="'+fdl(k)+', '+its.length+' actividades"><span class="n">'+d.getDate()+'</span>'+(i%7===0?'<span class="sn">SN '+snW(k)+'</span>':'')+
       '<span class="dots">'+its.map(function(it){var s=st(it);return '<i style="--k:'+cat(it).c+'" class="'+(s==='Realizada'?'done':s==='Atrasada'?'late':'')+'"></i>'}).join('')+'</span>'+
       its.slice(0,3).map(function(it){var s=st(it);return '<span class="ev'+(s==='Realizada'?' done':s==='Atrasada'?' late':'')+'" style="--k:'+cat(it).c+'" title="'+esc(it.Title+' · '+it.Centro)+'">'+(s==='Realizada'?'✓ ':'')+esc(corto(it))+(c?'':' · '+esc(it.Centro.replace(/^(Walmart|Líder) /,'')))+'</span>'}).join('')+
       (its.length>3?'<span class="more">+'+(its.length-3)+' más</span>':'')+'</button>'}
@@ -225,7 +229,11 @@ function render(){
   lista=lista.slice().sort(function(a,b){return String(a.Fecha).localeCompare(String(b.Fecha))||CAT.indexOf(cat(a))-CAT.indexOf(cat(b))});
   var sinDia=sel?[]:mesVis.filter(function(it){return !it.Fecha});
   var A='<h3>'+esc(tit)+(sel?' · <a href="#" id="verMes" style="color:var(--red);text-transform:none;letter-spacing:0">ver todo el mes</a>':'')+'</h3>';
-  A+=lista.length?'<div class="list">'+lista.map(row).join('')+'</div>':'<div class="empty">'+(DATA.items.length?'No hay actividades '+(sel?'este día':'este mes')+' con los filtros elegidos.':'Aún no hay programa cargado. Cárgalo desde el Panel de control.')+'</div>';
+  if(!sel&&lista.length){var MC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],grp={},ord=[];
+    lista.forEach(function(it){var l=lunes(it.Fecha);if(!grp[l]){grp[l]=[];ord.push(l)}grp[l].push(it)});
+    A+=ord.map(function(l){var a=new Date(l+'T12:00:00'),b=new Date(a);b.setDate(a.getDate()+6);var g=grp[l],ok=g.filter(function(x){return st(x)==='Realizada'}).length;
+      return '<h3 class="snh">SN '+snW(l)+' · '+a.getDate()+(a.getMonth()!==b.getMonth()?' '+MC[a.getMonth()]:'')+'–'+b.getDate()+' '+MC[b.getMonth()]+' <span>'+ok+' de '+g.length+' realizadas</span></h3><div class="list">'+g.map(row).join('')+'</div>'}).join('');lista=[]}
+  else A+=lista.length?'<div class="list">'+lista.map(row).join('')+'</div>':'<div class="empty">'+(DATA.items.length?'No hay actividades '+(sel?'este día':'este mes')+' con los filtros elegidos.':'Aún no hay programa cargado. Cárgalo desde el Panel de control.')+'</div>';
   if(sinDia.length)A+='<h3>Este mes, sin día fijo</h3><div class="list">'+sinDia.map(row).join('')+'</div>';
   $('#agenda').innerHTML=A;
   if($('#verMes'))$('#verMes').onclick=function(e){e.preventDefault();sel=null;render()};

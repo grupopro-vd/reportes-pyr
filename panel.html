@@ -106,6 +106,8 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
   <div class="bar">
     <select id="fCentro" aria-label="Centro"></select>
     <select id="fMes" aria-label="Mes"></select>
+    <select id="fSem" aria-label="Semana"></select>
+    <select id="fFrec" aria-label="Frecuencia"><option value="">Semanales y mensuales</option><option value="sem">Solo semanales</option><option value="men">Solo mensuales</option></select>
   </div>
   <div class="sync" id="sync"></div>
   <div id="view"></div>
@@ -256,6 +258,20 @@ function st(it){var p=pendingFor(it.id),e=it.Estado||'Pendiente';if(e!=='Realiza
 function pct(list){return list.length?list.filter(function(it){return st(it).e==='Realizada'}).length/list.length*100:null}
 function cls(p){return p===null?'':(p>=90?'ok':(p>=70?'mid':'bad'))}
 function fmtP(p){return p===null?'—':Math.round(p)+'%'}
+// Semana ISO (SN): la semana que parte el lunes 2 de noviembre de 2026 es la SN 45
+function snDe(s){var d=new Date(s+'T12:00:00Z');var day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);var y0=new Date(Date.UTC(d.getUTCFullYear(),0,1));return {y:d.getUTCFullYear(),w:Math.ceil(((d-y0)/86400000+1)/7)}}
+var MESC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function snTxt(lun){var a=new Date(lun+'T12:00:00Z'),b=new Date(a);b.setUTCDate(a.getUTCDate()+6);return 'SN '+snDe(lun).w+' · '+a.getUTCDate()+(a.getUTCMonth()!==b.getUTCMonth()?' '+MESC[a.getUTCMonth()]:'')+'–'+b.getUTCDate()+' '+MESC[b.getUTCMonth()]}
+var WK=null;function esSemanal(it){if(!WK){WK={};DATA.items.forEach(function(x){if(!x.Fecha)return;var k1='t|'+x.Centro+'|'+x.Title,k2='g|'+x.Centro+'|'+x.Programa+'|'+x.Tipo+'|'+x.DirigidoA;WK[k1]=(WK[k1]||0)+1;WK[k2]=(WK[k2]||0)+1})}
+  return !!it.Fecha&&((WK['t|'+it.Centro+'|'+it.Title]||0)>=40||(WK['g|'+it.Centro+'|'+it.Programa+'|'+it.Tipo+'|'+it.DirigidoA]||0)>=40)}
+function proxL(){return lunes(new Date(Date.parse(lunes(todayISO)+'T12:00:00Z')+7*864e5).toISOString().slice(0,10))}
+function fillSemanas(){var sel=$('#fSem'),cur=sel.value||LS.get('gpPanelSem')||'',m=$('#fMes').value,ws={};WK=null;
+  DATA.items.forEach(function(it){if(!it.Fecha)return;if(m&&m[0]!=='@'&&it.Fecha.slice(0,7)!==m&&it.Mes!==m)return;ws[lunes(it.Fecha)]=1});
+  var keys=Object.keys(ws).sort();
+  sel.innerHTML='<option value="">Todas las semanas</option><option value="@hoy">Esta semana · '+esc(snTxt(lunes(todayISO)))+'</option><option value="@prox">Próxima semana · '+esc(snTxt(proxL()))+'</option>'+keys.map(function(l){return '<option value="'+l+'">'+esc(snTxt(l))+'</option>'}).join('');
+  sel.value=[].some.call(sel.options,function(o){return o.value===cur})?cur:'';sel.onchange=function(){LS.set('gpPanelSem',sel.value);render()};
+  var fr=$('#fFrec');fr.value=LS.get('gpPanelFrec')||'';fr.onchange=function(){LS.set('gpPanelFrec',fr.value);render()}}
+function semSel(){var v=$('#fSem').value;if(v==='@hoy')return lunes(todayISO);if(v==='@prox')return proxL();return v}
 function mesTxt(m){return m?MES[+m.slice(5,7)-1]+' '+m.slice(0,4):'Sin mes'}
 function fd(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
 function setMsg(t,k){$('#sync').innerHTML='<div class="msg '+(k||'info')+'">'+t+'</div>'}
@@ -274,18 +290,20 @@ function initFilters(){var p=prof(),sel=$('#fCentro');
   sel.onchange=function(){var q=prof();q.panelCentro=sel.value;LS.set('gpPerfil',JSON.stringify(q));render()};$('#fMes').onchange=render}
 function fillMeses(){var sel=$('#fMes'),cur=sel.value||LS.get('gpPanelMes')||'';var ms={};DATA.items.forEach(function(it){ms[it.Mes||'']=1});
   var keys=Object.keys(ms).filter(Boolean).sort();sel.innerHTML='<option value="">Todo el programa</option><option value="@hasta">Hasta este mes</option>'+keys.map(function(m){return '<option value="'+m+'">'+mesTxt(m)+'</option>'}).join('')+(ms['']?'<option value="@sin">Sin mes</option>':'');
-  sel.value=[].some.call(sel.options,function(o){return o.value===cur})?cur:'';sel.onchange=function(){LS.set('gpPanelMes',sel.value);render()}}
+  sel.value=[].some.call(sel.options,function(o){return o.value===cur})?cur:'';sel.onchange=function(){LS.set('gpPanelMes',sel.value);$('#fSem').value='';LS.set('gpPanelSem','');render()}}
 function render(){
-  authBar();fillMeses();syncLine();
+  authBar();fillMeses();fillSemanas();syncLine();
   var mine=misCentros();centroSel(mine);$('.bar').hidden=!!(mine&&!mine.length);
   if(mine&&!mine.length){$('#view').innerHTML=DATA.items.length?pinBox(true):'<div class="empty">Cargando el programa…</div>';pinBind();$('#admin').hidden=true;$('#note').innerHTML='';return}
   var base=mine?DATA.items.filter(function(it){return mine.indexOf(it.Centro)>=0}):DATA.items;
   var c=$('#fCentro').value,m=$('#fMes').value;
-  var inMes=function(it){return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
+  var sw=semSel(),fq=$('#fFrec').value;
+  var inMes=function(it){if(fq==='sem'&&!esSemanal(it))return false;if(fq==='men'&&esSemanal(it))return false;
+    if(sw)return !!it.Fecha&&lunes(it.Fecha)===sw;return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
   var all=base.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
   var cnt={Realizada:0,'En proceso':0,Pendiente:0,Atrasada:0,'Por validar':0};
   mine.forEach(function(it){var s=st(it);if(s.p)cnt['Por validar']++;if(s.late)cnt.Atrasada++;else cnt[s.e]++});
-  var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(m&&m[0]!=='@'?mesTxt(m):'del programa')+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
+  var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'del programa'))+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
     '<div class="meter"><i class="bg-'+(k||'ok')+'" style="width:'+(p||0)+'%"></i></div><span style="font-weight:normal;margin-top:6px">'+cnt.Realizada+' de '+mine.length+' realizadas</span></div>';
   [['Atrasada','c-bad','Atrasadas'],['En proceso','c-mid','En proceso'],['Pendiente','','Pendientes'],['Por validar','c-blue','Por validar']].forEach(function(x){
     h+='<button type="button" class="kpi'+(filtro===x[0]?' on':'')+'" data-f="'+x[0]+'"><b class="'+x[1]+'">'+cnt[x[0]]+'</b><span>'+x[2]+'</span></button>'});
@@ -319,7 +337,7 @@ function render(){
 function formFor(it){var f=FORM[it.Tipo];if(it.Tipo==='Check list de equipos'&&/emergencia|anden/i.test(it.Title||''))return null;return f||null}
 var FLAB={'hallazgos.html':'🔍 Registrar hallazgo','check_list_equipos.html':'✅ Hacer check list','check_list_arnes.html':'✅ Hacer check list','check_list_epp.html':'✅ Hacer check list','observacion_conducta.html':'👁 Hacer observación','charlas.html':'🗣 Registrar charla','comite.html':'📝 Registrar acta','auditoria_mensual.html':'📋 Hacer auditoría','pre_auditoria.html':'📋 Hacer pre auditoría','entrega_epp.html':'🦺 Registrar entrega'};
 function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=formFor(it);
-  var meta=[it.Mes?'📅 '+(it.Fecha?fd(it.Fecha):mesTxt(it.Mes)):'',it.Tipo?'🏷 '+esc(it.Tipo):'',it.Programa?'📚 '+esc(it.Programa):'',it.DirigidoA?'👥 '+esc(it.DirigidoA):'',it.Responsable?'👤 '+esc(it.Responsable):'',!$('#fCentro').value?'📍 '+esc(it.Centro):''].filter(Boolean);
+  var meta=[it.Mes?'📅 '+(it.Fecha?fd(it.Fecha)+' · SN '+snDe(it.Fecha).w:mesTxt(it.Mes)):'',it.Tipo?'🏷 '+esc(it.Tipo):'',it.Programa?'📚 '+esc(it.Programa):'',it.DirigidoA?'👥 '+esc(it.DirigidoA):'',it.Responsable?'👤 '+esc(it.Responsable):'',!$('#fCentro').value?'📍 '+esc(it.Centro):''].filter(Boolean);
   return '<div class="act'+(s.late?' late':'')+'"><div class="t">'+esc(it.Title)+'</div><span class="pill st-'+lab.replace(/ /g,'-')+'">'+esc(lab)+(s.late&&s.e!=='Pendiente'?' · '+esc(s.e):'')+'</span>'+
     '<div class="m">'+meta.map(function(x){return '<span>'+x+'</span>'}).join('')+'</div>'+
     (s.p?'<div class="av"><span class="pill st-Por-validar">Por validar</span> '+esc(s.p.estado)+' · '+esc(s.p.nombre||'')+(s.p.comentario?': '+esc(s.p.comentario):'')+'</div>':'')+

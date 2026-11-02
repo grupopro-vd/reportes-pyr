@@ -176,7 +176,7 @@
     var valAll = items.filter(function (it) { return estado(it) === 'val'; }).length;
     var nombre = (perfil().name || (ACC && ACC.name) || '').split(' ')[0];
     var lun = new Date(LUN + 'T12:00:00'), dom = new Date(DOM + 'T12:00:00');
-    var rango = per === 'semana' ? 'Semana del ' + lun.getDate() + (lun.getMonth() !== dom.getMonth() ? ' de ' + MES[lun.getMonth()] : '') + ' al ' + dom.getDate() + ' de ' + MES[dom.getMonth()]
+    var rango = per === 'semana' ? 'SN ' + isoW(LUN) + ' · semana del ' + lun.getDate() + (lun.getMonth() !== dom.getMonth() ? ' de ' + MES[lun.getMonth()] : '') + ' al ' + dom.getDate() + ' de ' + MES[dom.getMonth()]
       : MES[new Date(HOY + 'T12:00:00').getMonth()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + HOY.slice(0, 4);
     if (!admin) { if (side) side.innerHTML = ''; root.innerHTML = vistaD(items, centros, centro, R); filtrarD(); marcarBorradores(); return; }
     var h = '';
@@ -312,6 +312,7 @@
   }
   document.addEventListener('input', function (e) { if (e.target && e.target.id === 'dQ') { QD = e.target.value; filtrarD(); } });
   window.addEventListener('load', function () { if (root.classList.contains('team')) marcarBorradores(); });
+  function isoW(s) { var x = new Date(s + 'T12:00:00Z'); var dd = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - dd); var y0 = new Date(Date.UTC(x.getUTCFullYear(), 0, 1)); return Math.ceil(((x - y0) / 86400000 + 1) / 7); }
   function addDays(s, n) { var d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return iso(d); }
   function hace(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'recién' : m < 60 ? 'hace ' + m + ' min' : m < 1440 ? 'hace ' + Math.round(m / 60) + ' h' : 'hace ' + Math.round(m / 1440) + ' d'; }
 
