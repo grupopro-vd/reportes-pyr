@@ -101,7 +101,9 @@
     return 'todo';
   }
   function enPeriodo(it, per) {
+    if (per === 'dia') return it.Fecha === HOY;
     if (per === 'semana') return !!it.Fecha && it.Fecha >= LUN && it.Fecha <= DOM;
+    if (per === 'anio') return it.Fecha ? it.Fecha <= HOY : (!!it.Mes && it.Mes <= MESHOY);
     return (it.Fecha ? it.Fecha.slice(0, 7) : it.Mes) === MESHOY;
   }
   function progIdx(it) { var p = norm(it.Programa); for (var i = 0; i < PROG.length; i++) if (PROG[i].m.test(p)) return i; return -1; }
@@ -109,6 +111,8 @@
 
   // ---- Render
   var root = document.getElementById('dash'), side = document.getElementById('dside');
+  var PERS = { dia: ['D', 'hoy', 'hoy', 'Cumplimiento diario'], semana: ['S', 'semana', 'esta semana', 'Cumplimiento semanal'], mes: ['M', 'mes', 'este mes', 'Cumplimiento mensual'], anio: ['A', 'año', 'en el año', 'Cumplimiento anual (acumulado a hoy)'] };
+  var DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   var st = { centro: LS.get('gpHomeCentro', ''), per: LS.get('gpHomePer', 'semana') };
 
   function ring(p, size, label) {
@@ -169,16 +173,19 @@
 
     var centro = admin ? (centros.indexOf(st.centro) >= 0 ? st.centro : '') : miCentro();
     var items = centro ? all.filter(function (it) { return it.Centro === centro; }) : (admin ? all : []);
-    var per = st.per === 'mes' ? 'mes' : 'semana';
+    var per = PERS[st.per] ? st.per : 'semana';
     var perItems = items.filter(function (it) { return enPeriodo(it, per); });
     var R = resumen(perItems);
     var lateAll = items.filter(function (it) { return estado(it) === 'late'; }).length;
     var valAll = items.filter(function (it) { return estado(it) === 'val'; }).length;
     var nombre = (perfil().name || (ACC && ACC.name) || '').split(' ')[0];
     var lun = new Date(LUN + 'T12:00:00'), dom = new Date(DOM + 'T12:00:00');
-    var rango = per === 'semana' ? 'SN ' + isoW(LUN) + ' · semana del ' + lun.getDate() + (lun.getMonth() !== dom.getMonth() ? ' de ' + MES[lun.getMonth()] : '') + ' al ' + dom.getDate() + ' de ' + MES[dom.getMonth()]
+    var hoyD = new Date(HOY + 'T12:00:00');
+    var rango = per === 'dia' ? 'Hoy, ' + DIAS[hoyD.getDay()] + ' ' + hoyD.getDate() + ' de ' + MES[hoyD.getMonth()]
+      : per === 'anio' ? 'Acumulado del año al ' + hoyD.getDate() + ' de ' + MES[hoyD.getMonth()] + ' · ' + perItems.length + ' de ' + items.length + ' ya vencidas'
+      : per === 'semana' ? 'SN ' + isoW(LUN) + ' · semana del ' + lun.getDate() + (lun.getMonth() !== dom.getMonth() ? ' de ' + MES[lun.getMonth()] : '') + ' al ' + dom.getDate() + ' de ' + MES[dom.getMonth()]
       : MES[new Date(HOY + 'T12:00:00').getMonth()].replace(/^./, function (c) { return c.toUpperCase(); }) + ' ' + HOY.slice(0, 4);
-    if (!admin) { if (side) side.innerHTML = ''; root.innerHTML = vistaD(items, centros, centro, R); filtrarD(); marcarBorradores(); return; }
+    if (!admin) { if (side) side.innerHTML = ''; root.innerHTML = vistaD(items, centros, centro, R, per); filtrarD(); marcarBorradores(); return; }
     var h = '';
 
     // Cabecera + panel negro
@@ -190,7 +197,7 @@
       h += '<section class="hero">' +
         '<div class="htop"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><span class="who">' + esc(nombre || 'Administrador') + ' · administrador <button type="button" class="sw" data-vista="equipo">Vista equipo</button></span></div>' +
         '<div class="tabs" role="tablist" aria-label="Centro">' + tabs + '</div>' +
-        '<div class="kpis">' + ring(R.p, 76, per === 'semana' ? 'semana' : 'mes') + stats + '</div>' + sync + '</section>';
+        '<div class="kpis">' + ring(R.p, 76, PERS[per][1]) + stats + '</div>' + sync + '</section>';
     } else {
       var opts = '<option value="">Elige tu centro</option>' + centros.concat(centros.length ? [] : ORDEN).map(function (c) { return '<option' + (c === centro ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
       h += '<header class="thead"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><label class="csel"><span class="sr">Mi centro</span><select id="dCentro">' + opts + '</select></label>' +
@@ -198,13 +205,13 @@
       if (!centro) {
         h += '<section class="hero card"><div class="pick"><b>¿Cuál es tu centro?</b><span>Elígelo arriba para ver el avance de tus actividades y lo que te toca hoy.</span></div></section>';
       } else {
-        h += '<section class="hero card"><div class="kpis">' + ring(R.p, 92, per === 'semana' ? 'esta semana' : 'este mes') + stats + '</div>' + sync + '</section>';
+        h += '<section class="hero card"><div class="kpis">' + ring(R.p, 92, PERS[per][2]) + stats + '</div>' + sync + '</section>';
       }
     }
 
     if (admin || centro) {
       // Avance por programa
-      var seg = '<div class="seg" role="tablist" aria-label="Periodo"><button type="button" role="tab" data-per="semana" aria-selected="' + (per === 'semana') + '">Semanal</button><button type="button" role="tab" data-per="mes" aria-selected="' + (per === 'mes') + '">Mensual</button></div>';
+      var seg = '<div class="seg seg4" role="tablist" aria-label="Periodo">' + ['dia', 'semana', 'mes', 'anio'].map(function (k) { return '<button type="button" role="tab" data-per="' + k + '" title="' + PERS[k][3] + '" aria-label="' + PERS[k][3] + '" aria-selected="' + (per === k) + '">' + PERS[k][0] + '</button>'; }).join('') + '</div>';
       var progs = PROG.map(function (p, i) { return bar(p.n, resumen(perItems.filter(function (it) { return progIdx(it) === i; }))); }).join('');
       var otros = perItems.filter(function (it) { return progIdx(it) < 0; });
       if (otros.length) progs += bar('Otros', resumen(otros));
@@ -268,7 +275,7 @@
       '<span class="dbr" hidden>Borrador</span><svg class="dch" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b0b5" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>';
   }
   function dGroup(title, rows, cls) { return rows.length ? '<section class="dgrp' + (cls ? ' ' + cls : '') + '"><div class="dgt">' + esc(title) + '</div><div class="dbox">' + rows.join('') + '</div></section>' : ''; }
-  function vistaD(items, centros, centro, R) {
+  function vistaD(items, centros, centro, R, per) {
     var opts = '<option value="">Elige tu centro</option>' + (centros.length ? centros : ORDEN).map(function (c) { return '<option' + (c === centro ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
     var h = '<header class="dtop"><div><label class="dcs"><span class="sr">Mi centro</span><select id="dCentro">' + opts + '</select></label><div class="dtt">PRO EHS</div></div>' +
       '<div class="dtr"><img src="logo-transparente.png" alt="Grupo Pro">' + (ES_ADMIN ? '<button type="button" class="sw lt" data-vista="admin">Vista admin</button>' : '') + '</div></header>' +
@@ -280,7 +287,7 @@
       hoyN = hoy.filter(function (it) { return estado(it) !== 'val'; }).length; lateN = late.length;
       var pc = R.p == null ? '' : R.p + '%';
       h += dGroup('Mi centro', [
-        dRow({ href: 'panel.html', label: 'Panel de control', i: 'panel' }, '#18181b', pc, R.p == null ? '' : col(R.p), 'Avance de esta semana: ' + R.ok + ' de ' + R.t),
+        dRow({ href: 'panel.html', label: 'Panel de control', i: 'panel' }, '#18181b', pc, R.p == null ? '' : col(R.p), 'Avance ' + PERS[per][2] + ': ' + R.ok + ' de ' + R.t),
         dRow({ href: 'calendario.html', label: 'Calendario', i: 'cal' }, '#18181b', hoyN ? String(hoyN) : '', '#b45309', hoyN ? hoyN + ' para hoy' : 'Nada pendiente hoy'),
         dRow({ href: 'estadisticas.html', label: 'Estadísticas', i: 'est' }, '#18181b')
       ], 'dmine');
