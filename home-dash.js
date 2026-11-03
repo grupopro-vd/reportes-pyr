@@ -5,7 +5,7 @@
   var ADMINS = ['vdiaz@grupopro.cl'];
   var ORDEN = ['Walmart Peñón', 'Walmart Pudahuel', 'Líder La Reina', 'Walmart Lo Aguirre', 'Walmart La Farfana', 'Líder Lo Barnechea', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
   var PROG = [
-    { n: 'Charlas', m: /subcontrat|plan de prevenc/, c: '#1d4ed8' },
+    { n: 'Charlas', m: /subcontrat|plan de prevenc|charla semanal/, c: '#1d4ed8' },
     { n: 'Check list', m: /check ?list/, c: '#b45309' },
     { n: 'Inspecciones', m: /inspecc|observac/, c: '#0f766e' },
     { n: 'Comité', m: /comit/, c: '#7e22ce' },
