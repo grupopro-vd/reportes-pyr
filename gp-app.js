@@ -400,6 +400,61 @@
     }
   }
 
+  /* ---------------- PDF del registro (reemplaza al Word) ---------------- */
+  var PDF_LIBS = ['vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'].map(function (u) { return new URL(u, document.baseURI).href; });
+  var PDF_SIGLA = { 'CHECKLIST-EQ': 'CL Equipo', 'CHECKLIST-ARNES': 'CL Arnes', 'CHECKLIST-EPP': 'CL EPP', 'CHECKLIST-VH': 'CL Vehiculo', 'CHARLA': 'Charla', 'COMITE': 'Acta Comite',
+    'HALLAZGO': 'Hallazgo', 'OBS-CONDUCTA': 'Obs Conducta', 'PERMISO-AR': 'Permiso AR', 'ENTREGA-EPP': 'Entrega EPP', 'FIRMA-PTS': 'Firma PTS', 'AUDITORIA-MENSUAL': 'Auditoria',
+    'AUDITORIA': 'Auditoria', 'PRE-AUDITORIA': 'Pre Auditoria', 'FR-RAPIDO': 'FR Rapido', 'FR-DETALLADO': 'FR Detallado', 'DECLARACION': 'Declaracion' };
+  var MESC = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  // Nombre: «CL Equipo N1911 - Nov2026 - ABC.pdf» (N + día y mes; al final, parte del ID para no sobrescribir otro del mismo día)
+  window.gpPdfName = function (formCode, fechaISO, id) {
+    var sig = PDF_SIGLA[formCode] || 'Registro';
+    if (formCode === 'CHARLA') { var t = $('.document-sheet [name="tipo_actividad"]'); if (t && /capacitaci/i.test(t.value)) sig = 'Capacitacion'; }
+    var m = String(fechaISO || '').match(/^(\d{4})-(\d{2})-(\d{2})/), d = m ? m : null;
+    if (!d) { var n = new Date(); d = [0, String(n.getFullYear()), ('0' + (n.getMonth() + 1)).slice(-2), ('0' + n.getDate()).slice(-2)]; }
+    var suf = String(id || '').split('-')[1] || '';
+    return (sig + ' N' + d[3] + d[2] + ' - ' + MESC[+d[2] - 1] + d[1] + (suf ? ' - ' + suf : '')).replace(/[\\\/:*?"<>|#%]+/g, ' ') + '.pdf';
+  };
+  function loadIn(win, src) {
+    return new Promise(function (ok, ko) { var sc = win.document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = function () { ko(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.')); }; win.document.head.appendChild(sc); });
+  }
+  window.gpMakePdf = async function (name) {
+    if (typeof window.buildPrintDocumentHtml !== 'function') throw new Error('Este formulario no puede generar PDF.');
+    var html = window.buildPrintDocumentHtml();
+    var ifr = document.createElement('iframe'); ifr.setAttribute('aria-hidden', 'true');
+    ifr.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;height:1123px;border:0;background:#fff';
+    document.body.appendChild(ifr);
+    try {
+      await new Promise(function (ok) { ifr.onload = ok; ifr.srcdoc = html; });
+      var w = ifr.contentWindow;
+      await new Promise(function (ok) { setTimeout(ok, 450); });
+      try { if (typeof w.fitPages === 'function') w.fitPages(); } catch (e) {}
+      for (var i = 0; i < PDF_LIBS.length; i++) await loadIn(w, PDF_LIBS[i]);
+      var imgs = [].slice.call(w.document.images).filter(function (im) { return !im.complete; });
+      await Promise.all(imgs.map(function (im) { return new Promise(function (ok) { im.onload = im.onerror = ok; }); }));
+      var pages = [].slice.call(w.document.querySelectorAll('.print-page'));
+      if (!pages.length) pages = [w.document.body];
+      var pdf = new w.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+      for (var k = 0; k < pages.length; k++) {
+        var cv = await w.html2canvas(pages[k], { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: 794 });
+        if (k) pdf.addPage();
+        var ratio = cv.height / cv.width, hmm = Math.min(297, 210 * ratio);
+        pdf.addImage(cv.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, hmm, undefined, 'FAST');
+      }
+      return { blob: new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' }), name: name || 'Registro.pdf' };
+    } finally { setTimeout(function () { ifr.remove(); }, 300); }
+  };
+  window.gpDownloadPdf = async function (formCode, btn) {
+    var old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'Generando PDF…'; }
+    try {
+      var f = $('.document-sheet [name="fecha_evento"]') || $('.document-sheet input[type="date"]'), id = $('.document-sheet [name="registro_id"]');
+      var r = await window.gpMakePdf(window.gpPdfName(formCode, f ? f.value : '', id ? id.value : ''));
+      var a = document.createElement('a'); a.href = URL.createObjectURL(r.blob); a.download = r.name; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    } catch (e) { toast(String(e.message || e), 'error'); }
+    if (btn) { btn.disabled = false; btn.textContent = old; }
+  };
+
   window.addEventListener('load', function () {
     setTimeout(function () {
       if (isForm()) initForm();
