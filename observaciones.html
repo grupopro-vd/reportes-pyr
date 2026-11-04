@@ -76,18 +76,30 @@ tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
 .sheet .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #d4d4d8;border-top-color:var(--red);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes sp{to{transform:rotate(360deg)}}
 .drop{display:none}
+.vtabs{display:none;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.vtabs button{flex:none;border:1px solid var(--line);background:#fff;border-radius:99px;height:34px;padding:0 13px;font-size:12.5px;font-weight:800;color:#3f3f46;cursor:pointer}
+.vtabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}@media(max-width:900px){.vtabs{display:flex}}
+.flab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}.gcount{font-size:12px;font-weight:800;color:var(--mute);margin-left:auto}
+.vh{display:flex;align-items:baseline;gap:10px;margin:2px 0 10px}.vh h2{margin:0;font-size:19px;font-weight:800}.vh span{color:var(--mute);font-size:13px;font-weight:700}
+.toplist{display:grid;gap:6px}.ti{display:flex;align-items:center;gap:8px;font-size:13px}.ti b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tn{width:22px;height:22px;border-radius:50%;background:#f4f4f5;display:grid;place-items:center;font-size:11px;font-weight:800}
+.comply{text-align:center;padding:18px 0}.comply .big{font-size:52px;font-weight:800;line-height:1}.comply .sub{color:#52525b;font-weight:700;font-size:13px;margin-top:8px}.comply .tag{display:inline-block;margin-top:10px;background:#f4f4f5;border-radius:99px;padding:4px 10px;font-size:11.5px;font-weight:800;color:#52525b}
+.notes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}@media(max-width:900px){.notes{grid-template-columns:1fr 1fr}}
+.nt{border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:#3f3f46}.nt b{display:block;font-size:13px;margin-bottom:3px}.nt.g{background:var(--okb)}.nt.r{background:var(--badb)}.nt.b{background:var(--blueb)}.nt.y{background:var(--midb)}
+@media(max-width:700px){.filters{position:static}.filters select,.filters input{flex:1 1 45%;max-width:none;min-width:0}.flab{flex-basis:100%}}
+.card.w6{grid-column:span 6}@media(max-width:1100px){.card.w6{grid-column:span 12}}
 </style>
 </head>
 <body>
 <nav class="side" aria-label="Secciones">
   <a class="lg" href="./"><span><img src="logo.png" alt="Grupo Pro"></span>PRO EHS</a>
   <div class="sh">Observaciones</div>
-  <a class="nv" href="#resumen">Resumen</a>
-  <a class="nv" href="#escalamiento">Escalamiento</a>
-  <a class="nv" href="#cumplimiento">Cumplimiento y cierre</a>
-  <a class="nv" href="#areas">Áreas y empresas</a>
-  <a class="nv" href="#personas">Observadores y personas</a>
-  <a class="nv" href="#detalle">Detalle</a>
+  <a class="nv" href="#v-resumen" data-v="resumen">Resumen</a>
+  <a class="nv" href="#v-semana" data-v="semana">Por semana</a>
+  <a class="nv" href="#v-conductas" data-v="conductas">Conductas</a>
+  <a class="nv" href="#v-gestion" data-v="gestion">Feedback y procesos</a>
+  <a class="nv" href="#v-cierre" data-v="cierre">Cumplimiento y cierre</a>
+  <a class="nv" href="#v-centros" data-v="centros">Centros</a>
+  <a class="nv" href="#v-observadores" data-v="observadores">Observadores</a>
+  <a class="nv" href="#v-detalle" data-v="detalle">Detalle completo</a>
   <div class="sh">Herramientas</div>
   <a class="nv" href="./">Inicio</a>
   <a class="nv" href="calendario.html">Calendario</a>
@@ -147,8 +159,8 @@ function days(a,b){var x=Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:
 function loadScript(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=function(){ko(new Error('No se pudo cargar '+src.split('/').pop()))};document.head.appendChild(s)})}
 
 var PCA=null,ACC=null,REP=null,ME='',ADMIN=false,MINE=null;
-var APP=[],IMP=[],SEG={},SEGTAG=null,ROWS=[],CH={},F={centro:'',anio:'',per:'all',res:'',tipo:'',esc:'',emp:'',area:'',obsr:'',est:'',q:''};
-try{var sf=JSON.parse(localStorage.getItem('gpObsFiltros')||'null');if(sf)Object.assign(F,sf,{q:''})}catch(e){}
+var APP=[],IMP=[],SEG={},SEGTAG=null,ROWS=[],CH={},F={centro:'',sem:'',tipo:'',res:'',proc:'',obsr:'',est:'',q:''};
+try{var sf=JSON.parse(localStorage.getItem('gpObsFiltros')||'null');if(sf)Object.keys(F).forEach(function(k){if(k!=='q'&&typeof sf[k]==='string')F[k]=sf[k]})}catch(e){}
 
 async function token(){try{return (await PCA.acquireTokenSilent({scopes:CFG.scopes,account:ACC})).accessToken}
   catch(e){try{sessionStorage.setItem('gpVolver','observaciones.html')}catch(_){}await PCA.acquireTokenRedirect({scopes:CFG.scopes,account:ACC});throw new Error('Redirigiendo a Microsoft…')}}
@@ -164,7 +176,7 @@ async function init(){
   ACC=PCA.getActiveAccount()||PCA.getAllAccounts()[0]||null;
   if(!ACC){$('#auth').innerHTML='<div class="who"><b>Inicia sesión para ver las observaciones</b><small>Usa tu cuenta Microsoft @grupopro.cl. Cada persona ve solo los centros que tiene asignados.</small></div><button class="btn dark ms" id="inBtn" type="button"><i><b style="background:#f25022"></b><b style="background:#7fba00"></b><b style="background:#00a4ef"></b><b style="background:#ffb900"></b></i>Iniciar sesión</button>';
     $('#inBtn').onclick=function(){try{sessionStorage.setItem('gpVolver','observaciones.html')}catch(e){}PCA.loginRedirect({scopes:CFG.scopes,prompt:'select_account'})};
-    $('#app').innerHTML='<div class="empty">Sin sesión también puedes <b>importar un Excel</b> con el formato del consolidado para ver sus métricas.</div>';$('#dlBtn').disabled=false;return}
+    componer();$('#dlBtn').disabled=false;return}
   PCA.setActiveAccount(ACC);ME=String(ACC.username||'').toLowerCase();ADMIN=CFG.admins.indexOf(ME)>=0;MINE=ADMIN?null:(ACCESO[ME]||[]);
   $('#auth').innerHTML='<div class="who">Conectado como <b>'+esc(ACC.name||ACC.username)+'</b><small>'+esc(ACC.username)+(ADMIN?' · administrador · todos los centros':' · '+(MINE.length?MINE.join(', '):'sin centros asignados'))+'</small></div><button class="btn" id="rfBtn" type="button">Actualizar</button><button class="btn" id="outBtn" type="button">Salir</button>';
   $('#outBtn').onclick=function(){PCA.logoutRedirect({account:ACC,postLogoutRedirectUri:location.href})};
@@ -214,7 +226,7 @@ function desdeApp(o){if(!o||!o.fecha)return null;var wk=isoWeek(o.fecha),s=SEG[o
     tipo:o.tipo_obs||'',resultado:o.resultado||(f?'Negativa':'Positiva'),conFalta:f,area:o.area||'',gerencia:o.gerencia||'',persona:o.persona||'',cargo:o.cargo||'',empresa:o.empresa||'',lugar:o.lugar||'',
     observacion:[o.descripcion,detalle].filter(Boolean).join(' — '),tipoFalta:s.tipo_falta||o.tipo_falta||'',escalamiento:s.escalamiento||o.escalamiento||'',
     observador:o.observador||o.reporter||'',supervisor:s.supervisor||o.supervisor||'',prevencionista:o.prevencionista||'',tope:s.fecha_tope||o.fecha_tope||'',cierre:s.fecha_cierre||'',
-    medida:o.medida||'',feedback:o.feedback||'',nota:s.nota||'',estadoSeg:s.estado||'',segBy:s.by||'',segAt:s.at||'',graves:(o.graves||[]).length};
+    medida:o.medida||'',feedback:o.feedback||'',fb:o.feedback==='Sí',fbNo:o.feedback==='No',seguras:o.seguras||[],mejoraL:o.mejora||[],gravesL:o.graves||[],noCumple:o.no_cumple||[],cargoObs:o.cargo_observador||'',nota:s.nota||'',estadoSeg:s.estado||'',segBy:s.by||'',segAt:s.at||'',graves:(o.graves||[]).length};
   r.estado=estado(r);return r}
 function estado(r){if(!r.conFalta)return 'Sin falta';if(r.estadoSeg)return r.estadoSeg;if(r.cierre)return 'Cerrado';if(r.tope&&r.tope<HOY)return 'Caducado';return 'Pendiente'}
 function toISOx(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return iso(v);if(typeof v==='number'){var d=new Date(Math.round((v-25569)*86400000));return iso(new Date(d.getTime()+d.getTimezoneOffset()*60000))}
@@ -232,7 +244,7 @@ async function importar(file){
           area:String(get('area')).trim(),gerencia:String(get('ger')).trim(),persona:String(get('per')).trim(),cargo:'',empresa:String(get('emp')).trim(),lugar:'',observacion:String(get('obs')).trim(),
           tipoFalta:String(get('tf')).trim(),escalamiento:String(get('esc')).trim(),observador:String(get('obsr')).trim(),supervisor:String(get('sup')).trim(),prevencionista:String(get('prev')).trim(),
           tope:toISOx(get('tope')),cierre:toISOx(get('cie')),medida:'',feedback:'',nota:'',estadoSeg:String(get('est')).trim().replace(/^./,function(c){return c.toUpperCase()}),graves:0};
-        r.cd=cdNom(r.centro);r.estado=estado(r);add.push(r)})});
+        if(/felicit/i.test(r.escalamiento)){r.conFalta=false;r.resultado='Positiva'}r.cd=cdNom(r.centro);r.estado=estado(r);add.push(r)})});
     if(!add.length)throw new Error('No encontré columnas del consolidado (Observación, Tipo de falta, Fecha inicio).');
     IMP=IMP.concat(add);componer();msgTop('ok','Se sumaron '+add.length+' observaciones de «'+file.name+'». Solo se muestran aquí; no se guardan en SharePoint.');
   }catch(e){msgTop('err','No se pudo importar: '+e.message)}}
@@ -241,119 +253,203 @@ function msgTop(k,t){var a=$('#app');var d=document.createElement('div');d.class
 // ---------- Filtros y render ----------
 function uniq(a){var s={};a.forEach(function(x){if(x)s[x]=1});return Object.keys(s).sort(function(x,y){return x.localeCompare(y,'es')})}
 function componer(){ROWS=APP.concat(IMP);$('#dlBtn').disabled=false;render()}
-function filtrar(skipPer){var wks=uniq(ROWS.map(wkKey)).filter(function(k){return !/^0/.test(k)});var lim=F.per==='all'?null:wks.slice(-(+F.per));
+function filtrar(){var wks=wksDe(ROWS),lim=null;if(/^u\d+$/.test(F.sem))lim=wks.slice(-(+F.sem.slice(1)));
   return ROWS.filter(function(r){
-    if(F.centro&&r.centro!==F.centro)return false;if(F.anio&&String(r.anio)!==F.anio)return false;if(!skipPer&&lim&&lim.indexOf(wkKey(r))<0)return false;
-    if(F.res==='falta'&&!r.conFalta)return false;if(F.res==='pos'&&r.conFalta)return false;if(F.tipo&&r.tipo!==F.tipo)return false;
-    if(F.esc&&(r.escalamiento||'Sin escalamiento')!==F.esc)return false;if(F.emp&&r.empresa!==F.emp)return false;if(F.area&&r.area!==F.area)return false;if(F.obsr&&r.observador!==F.obsr)return false;if(F.est&&r.estado!==F.est)return false;
-    if(F.q){var t=norm([r.persona,r.observacion,r.tipoFalta,r.area,r.empresa,r.observador,r.supervisor,r.id].join(' '));if(t.indexOf(norm(F.q))<0)return false}
+    if(F.centro&&r.centro!==F.centro)return false;if(lim&&lim.indexOf(wkKey(r))<0)return false;if(F.sem&&!lim&&wkKey(r)!==F.sem)return false;
+    if(F.res==='neg'&&!r.conFalta)return false;if(F.res==='pos'&&r.conFalta)return false;if(F.tipo&&r.tipo!==F.tipo)return false;
+    if(F.proc&&proceso(r)!==F.proc)return false;if(F.obsr&&r.observador!==F.obsr)return false;if(F.est&&r.estado!==F.est)return false;
+    if(F.q){var t=norm([r.persona,r.observacion,r.tipoFalta,r.area,r.empresa,r.observador,r.supervisor,r.id,r.escalamiento].join(' '));if(t.indexOf(norm(F.q))<0)return false}
     return true})}
 function sel(id,lab,vals,cur){return '<select id="'+id+'" aria-label="'+lab+'"><option value="">'+lab+'</option>'+vals.map(function(v){var x=typeof v==='string'?[v,v]:v;return '<option value="'+esc(x[0])+'"'+(x[0]===cur?' selected':'')+'>'+esc(x[1])+'</option>'}).join('')+'</select>'}
 function cnt(rows,fn){var m={};rows.forEach(function(r){var k=fn(r);if(k==null||k==='')return;m[k]=(m[k]||0)+1});return m}
 function top(m,n){return Object.keys(m).map(function(k){return [k,m[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,n||999)}
 function corto(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s}
 
+// ---------- Vistas ----------
+var VIEWS=[['resumen','Resumen'],['semana','Por semana'],['conductas','Conductas'],['gestion','Feedback y procesos'],['cierre','Cumplimiento y cierre'],['centros','Centros'],['observadores','Observadores'],['detalle','Detalle']];
+var VIEW='resumen';try{VIEW=localStorage.getItem('gpObsView')||'resumen'}catch(e){}
+if(!VIEWS.some(function(v){return v[0]===VIEW}))VIEW='resumen';
+var PROCS=['Feedback','Proceso de mejora','Carta de amonestación','Comentario / escalamiento GDI','Bloqueo / desvinculación','Felicitación','Sin gestión registrada'];
+var PC={'Feedback':'#1d4ed8','Proceso de mejora':'#0f766e','Carta de amonestación':'#bd0926','Comentario / escalamiento GDI':'#b45309','Bloqueo / desvinculación':'#18181b','Felicitación':'#16623f','Sin gestión registrada':'#a1a1aa'};
+var POS='#16623f',NEG='#bd0926';
+function proceso(r){var e=norm(r.escalamiento);if(/amonest/.test(e))return 'Carta de amonestación';if(/mejora/.test(e))return 'Proceso de mejora';if(/desvincul|bloqueo/.test(e))return 'Bloqueo / desvinculación';
+  if(/gdi/.test(e))return 'Comentario / escalamiento GDI';if(/felicit/.test(e))return 'Felicitación';if(/feedback/.test(e)||r.fb)return 'Feedback';return 'Sin gestión registrada'}
+function conFb(r){return !!r.fb||/feedback/.test(norm(r.escalamiento))}
+var pctS=function(a,b){return b?Math.round(a/b*100)+' %':'—'};
+function kp(v,l,c,dark){return '<div class="kpi'+(dark?' dark':'')+'"><b'+(c?' style="color:'+c+'"':'')+'>'+v+'</b><span>'+l+'</span></div>'}
+function card(w,t,body,extra){return '<div class="card '+w+'"'+(extra||'')+'><h3>'+t+'</h3>'+body+'</div>'}
+function cv(id,tall){return '<div class="cv'+(tall?' tall':'')+'"><canvas id="'+id+'"></canvas></div>'}
+function wksDe(rows){return uniq(rows.map(wkKey)).filter(function(k){return !/^0/.test(k)}).sort()}
+
 function render(){
-  try{localStorage.setItem('gpObsFiltros',JSON.stringify(F))}catch(e){}
+  try{localStorage.setItem('gpObsFiltros',JSON.stringify(F));localStorage.setItem('gpObsView',VIEW)}catch(e){}
+  $$('.side a.nv[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===VIEW)});
   var rows=filtrar(),faltas=rows.filter(function(r){return r.conFalta});
-  var h='<div class="filters">'+
+  var allW=wksDe(ROWS);
+  var h='<div class="vtabs" role="tablist">'+VIEWS.map(function(v){return '<button type="button" data-v="'+v[0]+'" class="'+(VIEW===v[0]?'on':'')+'">'+v[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="filters"><span class="flab">Filtrar por</span>'+
     sel('fC','Todos los centros',uniq(ROWS.map(function(r){return r.centro})),F.centro)+
-    sel('fA','Todos los años',uniq(ROWS.map(function(r){return String(r.anio)})).filter(function(x){return x!=='0'}),F.anio)+
-    '<span class="seg" role="group" aria-label="Semanas">'+[['4','Últimas 4'],['8','Últimas 8'],['12','Últimas 12'],['all','Todas']].map(function(x){return '<button type="button" data-per="'+x[0]+'" class="'+(F.per===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'</span>'+
-    sel('fR','Todas (con y sin falta)',[['falta','Solo con falta'],['pos','Solo positivas']],F.res)+
+    sel('fW','Todas las semanas',[['u4','Últimas 4 semanas'],['u8','Últimas 8 semanas'],['u12','Últimas 12 semanas']].concat(allW.slice().reverse().map(function(k){return [k,'Semana '+(+k.slice(5))+' · '+k.slice(0,4)]})),F.sem)+
     sel('fT','Todos los tipos',uniq(ROWS.map(function(r){return r.tipo})),F.tipo)+
-    sel('fE','Todo escalamiento',ESC.concat(['Sin escalamiento']).filter(function(e){return ROWS.some(function(r){return (r.escalamiento||'Sin escalamiento')===e})}).concat(uniq(ROWS.map(function(r){return r.escalamiento})).filter(function(e){return ESC.indexOf(e)<0})),F.esc)+
-    sel('fS','Todos los estados',['Pendiente','Cerrado','Caducado','Sin falta'],F.est)+
-    sel('fM','Todas las empresas',uniq(ROWS.map(function(r){return r.empresa})),F.emp)+
-    sel('fAr','Todas las áreas',uniq(ROWS.map(function(r){return r.area})),F.area)+
+    sel('fR','Positivas y negativas',[['pos','Solo positivas'],['neg','Solo negativas']],F.res)+
+    sel('fP','Toda gestión',PROCS.filter(function(p){return ROWS.some(function(r){return proceso(r)===p})}),F.proc)+
     sel('fO','Todos los observadores',uniq(ROWS.map(function(r){return r.observador})),F.obsr)+
-    '<input id="fQ" type="search" placeholder="Buscar persona, falta…" value="'+esc(F.q)+'">'+
-    '<button class="fx" id="fX" type="button">✕ Limpiar</button></div>';
-  if(!ROWS.length){h+='<div class="empty"><b>Aún no hay observaciones de conducta enviadas desde la app.</b><br>Cuando tu equipo empiece a registrarlas en «Observación de conducta», aparecerán aquí con sus métricas.<br>Mientras tanto puedes <b>importar un Excel</b> del consolidado para ver el dashboard con datos históricos.</div>';$('#app').innerHTML=h;bindF();return}
-  var cerr=faltas.filter(function(r){return r.estado==='Cerrado'}),pend=faltas.filter(function(r){return r.estado==='Pendiente'}),cad=faltas.filter(function(r){return r.estado==='Caducado'});
-  var tc=cerr.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return Math.max(0,days(r.fecha,r.cierre))});
-  var prom=tc.length?(tc.reduce(function(a,b){return a+b},0)/tc.length):null;
-  var reinc=top(cnt(faltas,function(r){return r.persona?norm(r.persona):''})).filter(function(x){return x[1]>1}).length;
-  h+='<section class="blk" id="resumen"><h2>Resumen</h2><div class="kpis">'+
-    '<div class="kpi dark"><b>'+rows.length+'</b><span>observaciones</span></div>'+
-    '<div class="kpi"><b>'+faltas.length+'</b><span>con falta ('+(rows.length?Math.round(faltas.length/rows.length*100):0)+' %)</span></div>'+
-    '<div class="kpi"><b style="color:var(--ok)">'+(rows.length-faltas.length)+'</b><span>positivas</span></div>'+
-    '<div class="kpi"><b style="color:'+(faltas.length&&cerr.length/faltas.length>=.9?'var(--ok)':'var(--mid)')+'">'+(faltas.length?Math.round(cerr.length/faltas.length*100):0)+' %</b><span>de faltas cerradas</span></div>'+
-    '<div class="kpi"><b style="color:var(--mid)">'+pend.length+'</b><span>pendientes de cierre</span></div>'+
-    '<div class="kpi"><b style="color:var(--bad)">'+cad.length+'</b><span>caducadas</span></div>'+
-    '<div class="kpi"><b>'+(prom==null?'—':prom.toFixed(1))+'</b><span>días promedio de cierre</span></div>'+
-    '<div class="kpi"><b>'+reinc+'</b><span>personas reincidentes</span></div></div>'+tendHTML(rows)+
-    '<div class="grid"><div class="card w8"><h3>Observaciones por semana</h3><div class="cv"><canvas id="cWk"></canvas></div></div>'+
-    '<div class="card w4"><h3>Distribución de escalamientos</h3><div class="cv"><canvas id="cEsc"></canvas></div></div>'+
-    '<div class="card w4"><h3>Estado de cumplimiento</h3><div class="cv"><canvas id="cEst"></canvas></div><div class="note">Meta: cerrar el 90 % de las faltas dentro de la fecha tope.</div></div>'+
-    '<div class="card w8"><h3>Top tipos de falta</h3><div class="cv tall"><canvas id="cTf"></canvas></div></div>'+
-    (ROWS.some(function(r){return r.src==='app'})&&!F.centro&&uniq(rows.map(function(r){return r.centro})).length>1?'<div class="card w12"><h3>Observaciones por centro</h3><div class="cv"><canvas id="cCen"></canvas></div></div>':'')+
-    '</div></section>';
-  h+='<section class="blk" id="escalamiento"><h2>Escalamiento</h2><div class="grid"><div class="card w8"><h3>Escalamiento por semana</h3><div class="cv"><canvas id="cEscW"></canvas></div></div>'+
-    '<div class="card w4"><h3>Conductas más observadas (app)</h3><div class="cv tall"><canvas id="cCond"></canvas></div></div></div></section>';
-  h+='<section class="blk" id="cumplimiento"><h2>Cumplimiento y cierre</h2><div class="grid"><div class="card w8"><h3>Cierre por semana (faltas)</h3><div class="cv"><canvas id="cCie"></canvas></div></div>'+
-    '<div class="card w4"><h3>Días promedio de cierre por escalamiento</h3><div class="cv"><canvas id="cDias"></canvas></div></div></div></section>';
-  h+='<section class="blk" id="areas"><h2>Áreas y empresas</h2><div class="grid"><div class="card"><h3>Faltas por área del colaborador</h3><div class="cv"><canvas id="cArea"></canvas></div></div>'+
-    '<div class="card"><h3>Faltas por empresa</h3><div class="cv"><canvas id="cEmp"></canvas></div></div></div></section>';
-  h+='<section class="blk" id="personas"><h2>Observadores y personas</h2><div class="grid"><div class="card w4"><h3>Observaciones por observador (top 12)</h3><div class="cv tall"><canvas id="cObs"></canvas></div></div>'+
-    '<div class="card w4"><h3>Cierres por jefatura (top 12)</h3><div class="cv tall"><canvas id="cSup"></canvas></div></div>'+
-    '<div class="card w4"><h3>Personas con más faltas</h3><div id="reinc"></div></div></div></section>';
-  h+='<section class="blk" id="detalle"><h2>Detalle de observaciones <span class="src">('+rows.length+')</span></h2><div class="tw"><table><thead><tr><th>Sem.</th><th>Fecha</th><th>Centro</th><th>Área</th><th>Persona</th><th>Empresa</th><th>Tipo de falta</th><th>Observación</th><th>Escalamiento</th><th>Estado</th><th>Observador</th></tr></thead><tbody>'+
-    rows.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'')}).slice(0,600).map(function(r){
-      return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+r.semana+'</td><td>'+fdl(r.fecha)+'</td><td>'+esc(r.cd||r.centro)+'</td><td>'+esc(r.area)+'</td><td>'+esc(r.persona)+'</td><td>'+esc(r.empresa)+'</td><td>'+esc(corto(r.tipoFalta,60))+'</td><td class="obs">'+esc(corto(r.observacion,140))+'</td><td>'+esc(r.escalamiento)+'</td><td>'+pill(r.estado)+'</td><td>'+esc(r.observador)+(r.src==='excel'?'<div class="src">importado</div>':'')+'</td></tr>'}).join('')+
-    '</tbody></table></div>'+(rows.length>600?'<div class="note">Se muestran las 600 más recientes. La descarga en Excel incluye todas.</div>':'')+'<div class="note">Toca una fila para ver el detalle'+(ROWS.some(function(r){return r.src==='app'})?' y registrar el cierre (estado, fecha real de cierre y jefatura).':'.')+'</div></section>';
+    sel('fS','Todo estado de cierre',['Pendiente','Cerrado','Caducado'],F.est)+
+    '<input id="fQ" type="search" placeholder="Buscar persona, conducta…" value="'+esc(F.q)+'">'+
+    '<button class="fx" id="fX" type="button">✕ Limpiar</button><span class="gcount">'+rows.length+' de '+ROWS.length+'</span></div>';
+  if(!ROWS.length){h+='<div class="empty"><b>Aún no hay observaciones de conducta enviadas desde la app.</b><br>Cuando tu equipo las registre en «Observación de conducta», aparecerán aquí con sus gráficos, métricas y tendencias.<br><br>'+
+      '<button class="btn dark" id="demoBtn" type="button">Ver cómo se verá (datos de ejemplo)</button> <label class="btn">⭳ Importar un Excel<input id="impIn2" type="file" accept=".xlsx,.xls" hidden></label></div>';
+    $('#app').innerHTML=h;bindF();return}
+  if(ROWS.some(function(r){return r.src==='demo'}))h+='<div class="msg info"><b>Datos de ejemplo.</b> No son observaciones reales: sirven para ver cómo funciona el tablero. <button class="fx" id="demoOff" type="button">Quitar ejemplo</button></div>';
+  var V=VIEW==='__all'?VIEWS.map(function(v){return v[0]}):[VIEW];
+  V.forEach(function(v){h+=vista(v,rows,faltas)});
   $('#app').innerHTML=h;bindF();graficos(rows,faltas);
   $$('tr.r').forEach(function(tr){tr.onclick=function(){abrir(ROWS.filter(function(r){return r.id===tr.dataset.id})[0])}});
 }
-function tendHTML(rows){var wk=uniq(rows.map(wkKey)).filter(function(k){return !/^0/.test(k)}).sort();if(wk.length<2)return '';
+function vista(v,rows,faltas){
+  var n=rows.length,pos=rows.filter(function(r){return !r.conFalta}),neg=faltas,fb=rows.filter(conFb);
+  var pm=rows.filter(function(r){return proceso(r)==='Proceso de mejora'}),ca=rows.filter(function(r){return proceso(r)==='Carta de amonestación'});
+  var cerr=faltas.filter(function(r){return r.estado==='Cerrado'}),pend=faltas.filter(function(r){return r.estado==='Pendiente'}),cad=faltas.filter(function(r){return r.estado==='Caducado'});
+  var tit=function(t,s){return '<section class="blk" id="v-'+v+'"><div class="vh"><h2>'+t+'</h2>'+(s?'<span>'+s+'</span>':'')+'</div>'};
+  if(v==='resumen'){
+    var tops=top(cnt(rows,function(r){return r.persona?r.persona.trim():''}),8);
+    var pc=faltas.length?Math.round(cerr.length/faltas.length*100):null;
+    return tit('Resumen ejecutivo',F.centro||'Todos los centros')+'<div class="kpis">'+kp(n,'observaciones',null,1)+kp(pos.length,'positivas · '+pctS(pos.length,n),POS)+kp(neg.length,'negativas · '+pctS(neg.length,n),NEG)+
+      kp(fb.length,'con feedback · '+pctS(fb.length,n),'#1d4ed8')+kp(pm.length,'procesos de mejora','#0f766e')+kp(ca.length,'cartas de amonestación',NEG)+
+      kp(pc==null?'—':pc+' %','de faltas cerradas',pc==null?null:pc>=90?POS:'#b45309')+kp(uniq(rows.map(function(r){return r.observador})).length,'observadores activos')+'</div>'+tendHTML(rows)+
+      '<div class="grid">'+card('w8','Observaciones por semana · positivas vs negativas',cv('cSem'))+card('w4','Por tipo de observación',cv('cTipo'))+
+      card('w4','Gestión aplicada',cv('cProc'))+card('w8','Conductas a mejorar más frecuentes',cv('cMej'))+
+      card('w6','Top colaboradores observados',tops.length?'<div class="toplist">'+tops.map(function(x,i){var p=rows.filter(function(r){return (r.persona||'').trim()===x[0]});var ng=p.filter(function(r){return r.conFalta}).length;
+        return '<div class="ti"><span class="tn">'+(i+1)+'</span><b>'+esc(x[0])+'</b><span class="pill p-ok">'+(x[1]-ng)+' +</span><span class="pill p-bad">'+ng+' −</span></div>'}).join('')+'</div>':'<div class="note">Sin datos.</div>')+
+      card('w6','Estado de cumplimiento','<div class="comply"><div class="big" style="color:'+(pc==null?'#a1a1aa':pc>=90?POS:'#b45309')+'">'+(pc==null?'—':pc+' %')+'</div><div class="sub">'+cerr.length+' de '+faltas.length+' faltas cerradas · '+pend.length+' pendientes · '+cad.length+' caducadas</div><div class="tag">Meta: cerrar el 90 % dentro de la fecha tope</div></div>')+
+      '</div></section>';}
+  if(v==='semana'){
+    var w=wksDe(rows);var tb=w.slice().reverse().map(function(k){var x=rows.filter(function(r){return wkKey(r)===k}),y=x.filter(function(r){return r.conFalta});
+      return '<tr><td><b>'+wkLab(k)+'</b></td><td>'+x.length+'</td><td style="color:'+POS+'">'+(x.length-y.length)+'</td><td style="color:'+NEG+'">'+y.length+'</td><td>'+pctS(x.length-y.length,x.length)+'</td><td>'+x.filter(conFb).length+'</td><td>'+x.filter(function(r){return proceso(r)==='Proceso de mejora'}).length+'</td><td>'+x.filter(function(r){return proceso(r)==='Carta de amonestación'}).length+'</td><td>'+pctS(y.filter(function(r){return r.estado==='Cerrado'}).length,y.length)+'</td></tr>'}).join('');
+    var best=w.map(function(k){return [k,rows.filter(function(r){return wkKey(r)===k}).length]}).sort(function(a,b){return b[1]-a[1]})[0];
+    return tit('Distribución por semana',w.length+' semanas')+'<div class="grid">'+card('w12','Observaciones por semana · positivas, negativas y % positivas',cv('cSem2',1))+'</div>'+
+      '<div class="kpis" style="margin-top:12px">'+kp(w.length?(n/w.length).toFixed(1):'—','observaciones promedio por semana')+kp(best?wkLab(best[0]):'—','semana con más observaciones'+(best?' ('+best[1]+')':''))+kp(pctS(pos.length,n),'positivas en el período',POS)+kp(pctS(fb.length,n),'con feedback','#1d4ed8')+'</div>'+tendHTML(rows)+
+      '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Semana</th><th>Obs.</th><th>Positivas</th><th>Negativas</th><th>% positivas</th><th>Feedback</th><th>Proc. mejora</th><th>Carta amon.</th><th>% cierre faltas</th></tr></thead><tbody>'+tb+'</tbody></table></div></section>';}
+  if(v==='conductas'){
+    var tipos=uniq(rows.map(function(r){return r.tipo})).slice(0,4);
+    var seg={},mej={},gra={};rows.forEach(function(r){(r.seguras||[]).forEach(function(c){seg[c]=(seg[c]||0)+1});(r.mejoraL||[]).concat(r.noCumple||[]).forEach(function(c){mej[c]=(mej[c]||0)+1});(r.gravesL||[]).forEach(function(c){gra[c]=(gra[c]||0)+1})});
+    var tS=top(seg,1)[0],tM=top(mej,1)[0],tG=top(gra,1)[0],tT=top(cnt(rows,function(r){return r.tipo}),1)[0];
+    return tit('Análisis por tipo de conducta')+'<div class="kpis">'+tipos.map(function(t){var x=rows.filter(function(r){return r.tipo===t});var p=x.filter(function(r){return !r.conFalta}).length;return kp(x.length,esc(t)+' · '+pctS(p,x.length)+' positivas')}).join('')+'</div>'+
+      '<div class="grid">'+card('w6','Balance positiva / negativa por tipo',cv('cBal'))+card('w6','Tipo de falta (matriz GDI)',cv('cTf',1))+
+      card('w4','Conductas seguras más observadas',cv('cSeg',1))+card('w4','Conductas a mejorar / no cumple',cv('cMej2',1))+card('w4','Conductas graves',cv('cGra',1))+
+      card('w12','Lectura de las conductas','<div class="notes"><div class="nt g"><b>Conductas positivas</b>'+pos.length+' de '+n+' observaciones ('+pctS(pos.length,n)+').'+(tS?' La más repetida: «'+esc(tS[0])+'» ('+tS[1]+').':'')+'</div>'+
+        '<div class="nt r"><b>Conductas negativas</b>'+neg.length+' observaciones con falta ('+pctS(neg.length,n)+').'+(tM?' La más repetida: «'+esc(tM[0])+'» ('+tM[1]+').':'')+'</div>'+
+        '<div class="nt b"><b>Tipo más observado</b>'+(tT?esc(tT[0])+' con '+tT[1]+' observaciones.':'—')+'</div>'+
+        '<div class="nt y"><b>Conductas graves</b>'+(tG?Object.keys(gra).reduce(function(a,k){return a+gra[k]},0)+' registros. La más repetida: «'+esc(tG[0])+'».':'Sin conductas graves en el período.')+'</div></div>')+'</div></section>';}
+  if(v==='gestion'){
+    var sinFb=rows.filter(function(r){return r.fbNo}).length,otros=rows.filter(function(r){var p=proceso(r);return p==='Comentario / escalamiento GDI'||p==='Bloqueo / desvinculación'}).length;
+    var cs=uniq(rows.map(function(r){return r.centro}));var ps=PROCS.filter(function(p){return rows.some(function(r){return proceso(r)===p})});
+    return tit('Feedback y procesos','qué se hizo después de cada observación')+'<div class="kpis">'+kp(fb.length,'con feedback · '+pctS(fb.length,n),'#1d4ed8',1)+kp(sinFb,'sin feedback registrado','#b45309')+kp(pm.length,'procesos de mejora','#0f766e')+kp(ca.length,'cartas de amonestación',NEG)+
+      kp(otros,'escalamientos GDI / bloqueo')+kp(rows.filter(function(r){return proceso(r)==='Felicitación'}).length,'felicitaciones',POS)+kp(pctS(neg.filter(function(r){return proceso(r)!=='Sin gestión registrada'}).length,neg.length),'faltas con gestión')+kp(neg.filter(function(r){return proceso(r)==='Sin gestión registrada'}).length,'faltas sin gestión',NEG)+'</div>'+
+      '<div class="grid">'+card('w8','Gestión aplicada por semana',cv('cProcW'))+card('w4','Gestión aplicada',cv('cProc2'))+card('w4','¿Se hizo feedback?',cv('cFb'))+card('w8','Gestión en observaciones negativas',cv('cProcNeg'))+'</div>'+
+      '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Centro</th>'+ps.map(function(p){return '<th>'+esc(p)+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>'+
+      cs.map(function(c){var x=rows.filter(function(r){return r.centro===c});return '<tr><td><b>'+esc(c)+'</b></td>'+ps.map(function(p){return '<td>'+x.filter(function(r){return proceso(r)===p}).length+'</td>'}).join('')+'<td><b>'+x.length+'</b></td></tr>'}).join('')+'</tbody></table></div></section>';}
+  if(v==='cierre'){
+    var tc=cerr.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return Math.max(0,days(r.fecha,r.cierre))});var prom=tc.length?(tc.reduce(function(a,b){return a+b},0)/tc.length):null;
+    var pl=pend.concat(cad).sort(function(a,b){return (a.tope||'9').localeCompare(b.tope||'9')}).slice(0,15);
+    return tit('Cumplimiento y cierre','solo observaciones con falta')+'<div class="kpis">'+kp(faltas.length,'faltas',null,1)+kp(pctS(cerr.length,faltas.length),'cerradas',POS)+kp(pend.length,'pendientes','#b45309')+kp(cad.length,'caducadas',NEG)+'</div>'+
+      '<div class="kpis">'+kp(prom==null?'—':prom.toFixed(1),'días promedio de cierre')+kp(top(cnt(faltas,function(r){return r.persona?norm(r.persona):''})).filter(function(x){return x[0]&&x[1]>1}).length,'personas reincidentes')+'</div>'+
+      '<div class="grid">'+card('w8','Cierre por semana',cv('cCie'))+card('w4','Estado de cumplimiento',cv('cEst'))+card('w6','Días promedio de cierre por gestión',cv('cDias'))+
+      card('w6','Próximas a vencer y caducadas',pl.length?'<div class="tw" style="max-height:300px"><table><tbody>'+pl.map(function(r){return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+fdl(r.tope)+'</td><td>'+esc(r.persona)+'</td><td>'+esc(r.cd||r.centro)+'</td><td>'+pill(r.estado)+'</td></tr>'}).join('')+'</tbody></table></div><div class="note">Toca una fila para registrar el cierre.</div>':'<div class="note">No hay faltas pendientes.</div>')+'</div></section>';}
+  if(v==='centros'){
+    var cs2=uniq(rows.map(function(r){return r.centro}));
+    return tit('Comparación por centro')+'<div class="grid">'+card('w12','Observaciones por centro · positivas vs negativas',cv('cCen'))+'</div>'+
+      '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Centro</th><th>Obs.</th><th>% positivas</th><th>Negativas</th><th>% feedback</th><th>Proc. mejora</th><th>Carta amon.</th><th>% cierre faltas</th><th>Observadores</th></tr></thead><tbody>'+
+      cs2.map(function(c){var x=rows.filter(function(r){return r.centro===c}),y=x.filter(function(r){return r.conFalta});return '<tr><td><b>'+esc(c)+'</b></td><td>'+x.length+'</td><td style="color:'+POS+'">'+pctS(x.length-y.length,x.length)+'</td><td style="color:'+NEG+'">'+y.length+'</td><td>'+pctS(x.filter(conFb).length,x.length)+'</td><td>'+x.filter(function(r){return proceso(r)==='Proceso de mejora'}).length+'</td><td>'+x.filter(function(r){return proceso(r)==='Carta de amonestación'}).length+'</td><td>'+pctS(y.filter(function(r){return r.estado==='Cerrado'}).length,y.length)+'</td><td>'+uniq(x.map(function(r){return r.observador})).length+'</td></tr>'}).join('')+'</tbody></table></div></section>';}
+  if(v==='observadores'){
+    return tit('Desempeño por observador')+'<div class="grid">'+card('w8','Actividad por observador · positivas vs negativas',cv('cObsv',1))+card('w4','Observaciones por cargo del observador',cv('cCargo',1))+
+      card('w6','Cierres por jefatura',cv('cSup'))+card('w6','Personas con más faltas','<div id="reinc"></div>')+'</div></section>';}
+  if(v==='detalle'){
+    return tit('Detalle de observaciones','('+n+')')+'<div class="tw"><table><thead><tr><th>Sem.</th><th>Fecha</th><th>Centro</th><th>Tipo</th><th>Resultado</th><th>Persona</th><th>Observación / conducta</th><th>Gestión</th><th>Feedback</th><th>Estado</th><th>Observador</th></tr></thead><tbody>'+
+      rows.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'')}).slice(0,600).map(function(r){
+        return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+r.semana+'</td><td>'+fdl(r.fecha)+'</td><td>'+esc(r.cd||r.centro)+'</td><td>'+esc(r.tipo)+'</td><td>'+(r.conFalta?'<span class="pill p-bad">Negativa</span>':'<span class="pill p-ok">Positiva</span>')+'</td><td>'+esc(r.persona)+'</td><td class="obs">'+esc(corto(r.observacion||r.tipoFalta,140))+'</td><td>'+esc(proceso(r))+'</td><td>'+(conFb(r)?'Sí':r.fbNo?'No':'—')+'</td><td>'+(r.conFalta?pill(r.estado):'')+'</td><td>'+esc(r.observador)+(r.src!=='app'?'<div class="src">'+(r.src==='demo'?'ejemplo':'importado')+'</div>':'')+'</td></tr>'}).join('')+
+      '</tbody></table></div>'+(n>600?'<div class="note">Se muestran las 600 más recientes. La descarga en Excel incluye todas.</div>':'')+'<div class="note">Toca una fila para ver el detalle y registrar el cierre.</div></section>';}
+  return '';
+}
+function tendHTML(rows){var wk=wksDe(rows);if(wk.length<2)return '';
   var n=Math.min(4,Math.floor(wk.length/2)),ult=wk.slice(-n),ant=wk.slice(-2*n,-n);
-  var m=function(ws){var x=rows.filter(function(r){return ws.indexOf(wkKey(r))>=0}),y=x.filter(function(r){return r.conFalta});return {o:x.length/ws.length,f:y.length&&x.length?y.length/x.length:null,c:y.length?y.filter(function(r){return r.estado==='Cerrado'}).length/y.length:null}};
+  var m=function(ws){var x=rows.filter(function(r){return ws.indexOf(wkKey(r))>=0}),y=x.filter(function(r){return r.conFalta});return {o:x.length/ws.length,p:x.length?(x.length-y.length)/x.length:null,f:x.length?x.filter(conFb).length/x.length:null,c:y.length?y.filter(function(r){return r.estado==='Cerrado'}).length/y.length:null}};
   var A=m(ant),U=m(ult);
   var ch=function(lab,a,b,pc,sube){if(a==null||b==null)return '';var d=b-a,st=Math.abs(d)<(pc?0.005:0.05)?0:(d>0)===sube?1:-1;var f=function(v){return pc?Math.round(v*100)+' %':(Math.round(v*10)/10)};
     return '<div class="kpi"><b style="color:'+(st>0?'var(--ok)':st<0?'var(--bad)':'#52525b')+'">'+(d>0&&st?'↑ ':d<0&&st?'↓ ':'→ ')+f(b)+'</b><span>'+lab+' · antes '+f(a)+'</span></div>'};
-  return '<div class="note" style="margin:12px 0 6px;font-weight:700">Tendencia: últimas '+n+' semanas vs las '+n+' anteriores</div><div class="kpis">'+
-    ch('observaciones por semana',A.o,U.o,false,true)+ch('% con falta',A.f,U.f,true,false)+ch('% de faltas cerradas',A.c,U.c,true,true)+'</div>'}
+  return '<div class="note" style="margin:4px 0 6px;font-weight:800;color:#3f3f46">Tendencia: últimas '+n+' semanas vs las '+n+' anteriores</div><div class="kpis">'+
+    ch('observaciones por semana',A.o,U.o,false,true)+ch('% positivas',A.p,U.p,true,true)+ch('% con feedback',A.f,U.f,true,true)+ch('% de faltas cerradas',A.c,U.c,true,true)+'</div>'}
 function pill(e){var c={Cerrado:'p-ok',Pendiente:'p-mid',Caducado:'p-bad','Sin falta':'p-gray'}[e]||'p-blue';return '<span class="pill '+c+'">'+esc(e==='Sin falta'?'Positiva':e)+'</span>'}
-function bindF(){var m={fC:'centro',fA:'anio',fR:'res',fT:'tipo',fE:'esc',fS:'est',fM:'emp',fAr:'area',fO:'obsr'};
+function bindF(){var m={fC:'centro',fW:'sem',fT:'tipo',fR:'res',fP:'proc',fO:'obsr',fS:'est'};
   Object.keys(m).forEach(function(id){var el=document.getElementById(id);if(el)el.onchange=function(){F[m[id]]=el.value;render()}});
-  $$('[data-per]').forEach(function(b){b.onclick=function(){F.per=b.dataset.per;render()}});
+  $$('[data-v]').forEach(function(b){b.onclick=function(e){e.preventDefault();VIEW=b.dataset.v;render();window.scrollTo(0,0)}});
   var q=$('#fQ');if(q){var t;q.oninput=function(){clearTimeout(t);t=setTimeout(function(){F.q=q.value;render();var n=$('#fQ');n.focus();n.setSelectionRange(n.value.length,n.value.length)},350)}}
-  var x=$('#fX');if(x)x.onclick=function(){F={centro:'',anio:'',per:'all',res:'',tipo:'',esc:'',emp:'',area:'',obsr:'',est:'',q:''};render()}}
+  var x=$('#fX');if(x)x.onclick=function(){F=filtrosVacios();render()};
+  var d=$('#demoBtn');if(d)d.onclick=async function(){d.disabled=true;try{await loadScript(CFG.chart)}catch(e){}IMP=IMP.concat(demo());componer()};
+  var d2=$('#demoOff');if(d2)d2.onclick=function(){IMP=IMP.filter(function(r){return r.src!=='demo'});componer()};
+  var i2=$('#impIn2');if(i2)i2.onchange=function(){var f=this.files[0];this.value='';if(f)importar(f)}}
+function filtrosVacios(){return {centro:'',sem:'',tipo:'',res:'',proc:'',obsr:'',est:'',q:''}}
+
+// ---------- Datos de ejemplo (solo en pantalla) ----------
+function demo(){var seed=7;var rnd=function(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646};var pick=function(a){return a[Math.floor(rnd()*a.length)]};
+  var C=['Walmart Peñón','Walmart Pudahuel','Walmart Lo Aguirre','Walmart La Farfana','Líder La Reina'],T=['Conducta general','PARE (detención en cruces)','Almacenamiento con apilador'];
+  var OB=[['Alexandra Fuentes','Prevencionista'],['Milize Basaure','Supervisora'],['Karen Donoso','Jefa de turno'],['Natividad Liquitay','Prevencionista'],['Sara Quisbert','Prevencionista'],['Felipe Díaz','Supervisor']];
+  var P=['Juan Pérez','Camila Rojas','Diego Muñoz','Valeria Soto','Matías González','Fernanda Silva','Ignacio Reyes','Josefa Morales','Benjamín Castro','Antonia Herrera','Tomás Vargas','Catalina Núñez','Vicente Torres','Martina Flores'];
+  var S=['Usa EPP completo','Respeta senda peatonal','Se detiene en señal PARE','Hace check list antes de operar','Mantiene orden y aseo'],M=['Usa celular mientras camina','No toca bocina en intersección','Carga mal apilada en rack','Exceso de velocidad con apilador','No usa guantes'],G=['Transporta personas en el equipo','Opera sin autorización'];
+  var out=[],hoy=new Date();for(var i=0;i<220;i++){var d=new Date(hoy.getTime()-Math.floor(rnd()*70)*864e5);if(d.getDay()===0)d=new Date(d.getTime()-864e5);var f=iso(d),wk=isoWeek(f),o=pick(OB),neg=rnd()<0.36,grave=neg&&rnd()<0.12;
+    var esc=neg?(grave?'Carta de amonestación':rnd()<0.55?'Proceso de mejora':rnd()<0.5?'Comentario GDI':''):'';var fb=rnd()<(neg?0.8:0.6);
+    var tope=neg?iso(new Date(d.getTime()+7*864e5)):'',cierre=neg&&rnd()<0.8?iso(new Date(d.getTime()+Math.floor(rnd()*9)*864e5)):'';if(cierre&&cierre>HOY)cierre='';
+    var mj=neg&&!grave?[pick(M)]:[],gv=grave?[pick(G)]:[],sg=neg?[]:[pick(S)];
+    var r={src:'demo',id:'EJEMPLO-'+(i+1),centro:pick(C),anio:wk.y,semana:wk.w,fecha:f,hora:'',turno:pick(['A','B','C']),tipo:pick(T),resultado:neg?'Negativa':'Positiva',conFalta:neg,area:pick(['Recepción','Despacho','Picking','Almacenamiento']),gerencia:'',persona:pick(P),cargo:'Operario logístico',empresa:'Grupo Pro',lugar:'',
+      observacion:(neg?mj.concat(gv):sg).join(' · '),tipoFalta:neg?(grave?'Grave: conducta de alto riesgo':'Leve: conducta a mejorar'):'',escalamiento:esc,observador:o[0],cargoObs:o[1],supervisor:cierre?pick(['Jefe de turno A','Jefe de turno B']):'',prevencionista:'',tope:tope,cierre:cierre,
+      medida:'',feedback:fb?'Sí':'No',fb:fb,fbNo:!fb,seguras:sg,mejoraL:mj,gravesL:gv,noCumple:[],nota:'',estadoSeg:'',graves:gv.length};r.cd=cdNom(r.centro);r.estado=estado(r);out.push(r)}
+  return out}
 
 // ---------- Gráficos ----------
 function base(extra){return Object.assign({responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false,labels:{font:{family:'Manrope',size:11},boxWidth:12}},tooltip:{titleFont:{family:'Manrope'},bodyFont:{family:'Manrope'}}},
   scales:{x:{grid:{display:false},ticks:{font:{family:'Manrope',size:10},color:'#52525b'}},y:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0,font:{family:'Manrope',size:10},color:'#52525b'}}}},extra||{})}
+var LEG={display:true,position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}};
 function mk(id,cfg){var el=document.getElementById(id);if(!el)return;if(CH[id])CH[id].destroy();CH[id]=new Chart(el,cfg)}
-function hbar(id,pairs,color){mk(id,{type:'bar',data:{labels:pairs.map(function(p){return corto(p[0],48)}),datasets:[{data:pairs.map(function(p){return p[1]}),backgroundColor:color||'#bd0926',borderRadius:4}]},
+function hbar(id,pairs,color){if(!document.getElementById(id))return;if(!pairs.length){vacio(id);return}mk(id,{type:'bar',data:{labels:pairs.map(function(p){return corto(p[0],48)}),datasets:[{data:pairs.map(function(p){return p[1]}),backgroundColor:color||NEG,borderRadius:4}]},
   options:base({indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0,font:{family:'Manrope',size:10}}},y:{grid:{display:false},ticks:{font:{family:'Manrope',size:10.5},color:'#3f3f46'}}}})})}
-function donut(id,m,colors){var k=Object.keys(m).filter(function(x){return m[x]});mk(id,{type:'doughnut',data:{labels:k,datasets:[{data:k.map(function(x){return m[x]}),backgroundColor:k.map(function(x,i){return (colors&&colors[x])||PAL[i%PAL.length]}),borderWidth:2,borderColor:'#fff'}]},
-  options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}}}}})}
+function donut(id,m,colors){var k=Object.keys(m).filter(function(x){return m[x]});if(!k.length){vacio(id);return}mk(id,{type:'doughnut',data:{labels:k,datasets:[{data:k.map(function(x){return m[x]}),backgroundColor:k.map(function(x,i){return (colors&&colors[x])||PAL[i%PAL.length]}),borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}}}}})}
+function vacio(id){var c=document.getElementById(id);if(c)c.parentNode.innerHTML='<div class="note" style="padding-top:40px;text-align:center">Sin datos para mostrar con los filtros actuales.</div>'}
+function stackW(id,rows,series,pctLine){var w=wksDe(rows);if(!document.getElementById(id))return;if(!w.length){vacio(id);return}
+  var ds=series.map(function(s){return {type:'bar',label:s[0],data:w.map(function(k){return rows.filter(function(r){return wkKey(r)===k&&s[1](r)}).length}),backgroundColor:s[2],borderRadius:2,stack:'a',yAxisID:'y'}});
+  if(pctLine)ds.push({type:'line',label:'% positivas',data:w.map(function(k){var x=rows.filter(function(r){return wkKey(r)===k});return x.length?Math.round(x.filter(function(r){return !r.conFalta}).length/x.length*100):null}),borderColor:'#18181b',backgroundColor:'#18181b',pointRadius:3,tension:.3,yAxisID:'y2'});
+  var sc={x:{stacked:true,grid:{display:false},ticks:{font:{family:'Manrope',size:10}}},y:{stacked:true,beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0}}};
+  if(pctLine)sc.y2={position:'right',min:0,max:100,grid:{display:false},ticks:{callback:function(v){return v+' %'},font:{family:'Manrope',size:10}}};
+  mk(id,{data:{labels:w.map(wkLab),datasets:ds},options:base({plugins:{legend:LEG},scales:sc})})}
 function graficos(rows,faltas){
-  var wks=uniq(rows.map(wkKey)).filter(function(k){return !/^0/.test(k)});
-  mk('cWk',{type:'bar',data:{labels:wks.map(wkLab),datasets:[{label:'Con falta',data:wks.map(function(w){return faltas.filter(function(r){return wkKey(r)===w}).length}),backgroundColor:'#bd0926',borderRadius:3},
-    {label:'Positivas',data:wks.map(function(w){return rows.filter(function(r){return !r.conFalta&&wkKey(r)===w}).length}),backgroundColor:'#16623f',borderRadius:3}]},
-    options:base({plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{family:'Manrope',size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}})});
-  donut('cEsc',cnt(faltas,function(r){return r.escalamiento||'Sin escalamiento'}),EC);
+  var PN=[['Positivas',function(r){return !r.conFalta},POS],['Negativas',function(r){return r.conFalta},NEG]];
+  stackW('cSem',rows,PN,true);stackW('cSem2',rows,PN,true);
+  donut('cTipo',cnt(rows,function(r){return r.tipo||'Sin tipo'}));
+  var pr=cnt(rows,proceso);donut('cProc',pr,PC);donut('cProc2',pr,PC);
+  donut('cProcNeg',cnt(faltas,proceso),PC);if(CH.cProcNeg)CH.cProcNeg.options.cutout='0%';
+  var mej={};rows.forEach(function(r){(r.mejoraL||[]).concat(r.noCumple||[]).forEach(function(c){mej[c]=(mej[c]||0)+1})});
+  if(!Object.keys(mej).length)mej=cnt(faltas,function(r){return r.tipoFalta||''});
+  hbar('cMej',top(mej,8),'#b45309');hbar('cMej2',top(mej,10),'#b45309');
+  var seg={},gra={};rows.forEach(function(r){(r.seguras||[]).forEach(function(c){seg[c]=(seg[c]||0)+1});(r.gravesL||[]).forEach(function(c){gra[c]=(gra[c]||0)+1})});
+  hbar('cSeg',top(seg,10),POS);hbar('cGra',top(gra,10),NEG);
+  hbar('cTf',top(cnt(faltas,function(r){return r.tipoFalta||'Sin clasificar'}),10),NEG);
+  if(document.getElementById('cBal')){var ts=uniq(rows.map(function(r){return r.tipo||'Sin tipo'}));mk('cBal',{type:'bar',data:{labels:ts.map(function(t){return corto(t,30)}),datasets:PN.map(function(s){return {label:s[0],data:ts.map(function(t){return rows.filter(function(r){return (r.tipo||'Sin tipo')===t&&s[1](r)}).length}),backgroundColor:s[2],borderRadius:3}})},
+    options:base({indexAxis:'y',plugins:{legend:LEG},scales:{x:{stacked:true,beginAtZero:true,ticks:{precision:0}},y:{stacked:true,grid:{display:false}}}})})}
+  stackW('cProcW',rows,PROCS.filter(function(p){return rows.some(function(r){return proceso(r)===p})}).map(function(p){return [p,function(r){return proceso(r)===p},PC[p]]}),false);
+  var fbm={};rows.forEach(function(r){var k=conFb(r)?'Sí, con feedback':r.fbNo?'No':'Sin dato';fbm[k]=(fbm[k]||0)+1});donut('cFb',fbm,{'Sí, con feedback':'#1d4ed8','No':'#b45309','Sin dato':'#d4d4d8'});
+  stackW('cCie',faltas,['Cerrado','Pendiente','Caducado'].map(function(e){return [e,function(r){return r.estado===e},SC[e]]}),false);
   donut('cEst',cnt(faltas,function(r){return r.estado}),SC);
-  hbar('cTf',top(cnt(faltas,function(r){return r.tipoFalta||'Sin clasificar'}),10),'#bd0926');
-  if(document.getElementById('cCen')){var cc=uniq(rows.map(function(r){return r.centro}));mk('cCen',{type:'bar',data:{labels:cc,datasets:[{label:'Con falta',data:cc.map(function(c){return faltas.filter(function(r){return r.centro===c}).length}),backgroundColor:'#bd0926',borderRadius:3},{label:'Positivas',data:cc.map(function(c){return rows.filter(function(r){return !r.conFalta&&r.centro===c}).length}),backgroundColor:'#16623f',borderRadius:3}]},
-    options:base({plugins:{legend:{display:true,position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}})})}
-  var escs=uniq(faltas.map(function(r){return r.escalamiento||'Sin escalamiento'}));
-  mk('cEscW',{type:'bar',data:{labels:wks.map(wkLab),datasets:escs.map(function(e,i){return {label:e,data:wks.map(function(w){return faltas.filter(function(r){return wkKey(r)===w&&(r.escalamiento||'Sin escalamiento')===e}).length}),backgroundColor:EC[e]||PAL[i%PAL.length],borderRadius:2}})},
-    options:base({plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Manrope',size:10.5},boxWidth:10}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}})});
-  var cond={};rows.forEach(function(r){if(r.src!=='app')return;String(r.observacion||'').split(' — ').slice(-1)[0].split(' · ').forEach(function(c){c=c.trim();if(c&&r.conFalta)cond[c]=(cond[c]||0)+1})});
-  var tc2=top(cond,10);if(tc2.length)hbar('cCond',tc2,'#b45309');else{var cv=document.getElementById('cCond');if(cv)cv.parentNode.innerHTML='<div class="note" style="padding-top:30px">Aparecerá cuando haya observaciones con falta enviadas desde la app (conductas marcadas y preguntas «No cumple»).</div>'}
-  mk('cCie',{type:'bar',data:{labels:wks.map(wkLab),datasets:['Cerrado','Pendiente','Caducado'].map(function(e){return {label:e,data:wks.map(function(w){return faltas.filter(function(r){return wkKey(r)===w&&r.estado===e}).length}),backgroundColor:SC[e],borderRadius:2}})},
-    options:base({plugins:{legend:{display:true,position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}})});
-  var dm={},dn={};faltas.forEach(function(r){if(r.estado==='Cerrado'&&r.cierre&&r.fecha){var e=r.escalamiento||'Sin escalamiento';dm[e]=(dm[e]||0)+Math.max(0,days(r.fecha,r.cierre));dn[e]=(dn[e]||0)+1}});
-  var dk=Object.keys(dm);mk('cDias',{type:'bar',data:{labels:dk,datasets:[{data:dk.map(function(k){return +(dm[k]/dn[k]).toFixed(1)}),backgroundColor:dk.map(function(k,i){return EC[k]||PAL[i]}),borderRadius:4}]},options:base({scales:{x:{grid:{display:false},ticks:{font:{family:'Manrope',size:10}}},y:{beginAtZero:true}}})});
-  hbar('cArea',top(cnt(faltas,function(r){return r.area||'Sin área'}),12),'#18181b');
-  hbar('cEmp',top(cnt(faltas,function(r){return r.empresa||'Sin empresa'}),12),'#0f766e');
-  hbar('cObs',top(cnt(rows,function(r){return r.observador}),12),'#1d4ed8');
-  hbar('cSup',top(cnt(faltas.filter(function(r){return r.estado==='Cerrado'}),function(r){return r.supervisor}),12),'#16623f');
-  var pm={},pn={};faltas.forEach(function(r){if(!r.persona)return;var k=norm(r.persona);pm[k]=(pm[k]||0)+1;pn[k]=pn[k]||r.persona+(r.area?' · '+r.area:'')});
-  var tp=top(pm,10).filter(function(x){return x[1]>1});
-  $('#reinc').innerHTML=tp.length?'<table><tbody>'+tp.map(function(x){return '<tr><td>'+esc(pn[x[0]])+'</td><td style="text-align:right"><span class="pill p-bad">'+x[1]+' faltas</span></td></tr>'}).join('')+'</tbody></table><div class="note">Personas con 2 o más faltas en el período filtrado.</div>':'<div class="note">Nadie tiene más de una falta en el período filtrado.</div>';
+  if(document.getElementById('cDias')){var dm={},dn={};faltas.forEach(function(r){if(r.estado==='Cerrado'&&r.cierre&&r.fecha){var e=proceso(r);dm[e]=(dm[e]||0)+Math.max(0,days(r.fecha,r.cierre));dn[e]=(dn[e]||0)+1}});
+    var dk=Object.keys(dm);if(!dk.length)vacio('cDias');else mk('cDias',{type:'bar',data:{labels:dk,datasets:[{data:dk.map(function(k){return +(dm[k]/dn[k]).toFixed(1)}),backgroundColor:dk.map(function(k){return PC[k]||'#71717a'}),borderRadius:4}]},options:base({scales:{x:{grid:{display:false},ticks:{font:{family:'Manrope',size:10}}},y:{beginAtZero:true,title:{display:true,text:'días'}}}})})}
+  if(document.getElementById('cCen')){var cc=uniq(rows.map(function(r){return r.centro}));mk('cCen',{type:'bar',data:{labels:cc.map(cdNom),datasets:PN.map(function(s){return {label:s[0],data:cc.map(function(c){return rows.filter(function(r){return r.centro===c&&s[1](r)}).length}),backgroundColor:s[2],borderRadius:3}})},
+    options:base({plugins:{legend:LEG},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}})})}
+  if(document.getElementById('cObsv')){var ob=top(cnt(rows,function(r){return r.observador}),15).map(function(x){return x[0]});mk('cObsv',{type:'bar',data:{labels:ob.map(function(o){return corto(o,28)}),datasets:PN.map(function(s){return {label:s[0],data:ob.map(function(o){return rows.filter(function(r){return r.observador===o&&s[1](r)}).length}),backgroundColor:s[2],borderRadius:3}})},
+    options:base({indexAxis:'y',plugins:{legend:LEG},scales:{x:{stacked:true,beginAtZero:true,ticks:{precision:0}},y:{stacked:true,grid:{display:false}}}})})}
+  hbar('cCargo',top(cnt(rows,function(r){return r.cargoObs||'Sin cargo'}),10),'#1d4ed8');
+  hbar('cSup',top(cnt(faltas.filter(function(r){return r.estado==='Cerrado'}),function(r){return r.supervisor}),12),POS);
+  var rc=$('#reinc');if(rc){var pm={},pn={};faltas.forEach(function(r){if(!r.persona)return;var k=norm(r.persona);pm[k]=(pm[k]||0)+1;pn[k]=pn[k]||r.persona+(r.area?' · '+r.area:'')});
+    var tp=top(pm,10).filter(function(x){return x[1]>1});
+    rc.innerHTML=tp.length?'<table><tbody>'+tp.map(function(x){return '<tr><td>'+esc(pn[x[0]])+'</td><td style="text-align:right"><span class="pill p-bad">'+x[1]+' faltas</span></td></tr>'}).join('')+'</tbody></table><div class="note">Personas con 2 o más faltas en el período filtrado.</div>':'<div class="note">No hay personas con 2 o más faltas en el período.</div>'}
 }
 
 // ---------- Detalle y cierre ----------
@@ -385,11 +481,11 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
     var wb=new ExcelJS.Workbook();wb.creator='PRO EHS · Grupo Pro';wb.created=new Date();
     var ws=wb.addWorksheet('Listado',{views:[{state:'frozen',ySplit:1}]});
     var cols=[['Año',10],['Semana',11],['CD',10],['Área colaborador',16],['Gerencia',22],['Persona trabajadora',28],['Empresa',14],['Observación',57],['Tipo de falta',70],['Escalamiento',24],['Observador',24],['Supervisor (Jefatura) Cierre',24],['Estado de cumplimiento',22],['Prevencionista turno',24],['Fecha inicio observación',18],['Fecha tope cierre observación',20],['Fecha real cierre observación',20],
-      ['Centro',20],['Tipo de observación',24],['Resultado',12],['Lugar',20],['Turno',10],['Cargo',20],['Medida / plan de acción',40],['Feedback inmediato',12],['ID registro',22]];
+      ['Centro',20],['Tipo de observación',24],['Resultado',12],['Lugar',20],['Turno',10],['Cargo',20],['Medida / plan de acción',40],['Feedback inmediato',12],['Gestión aplicada',24],['ID registro',22]];
     ws.columns=cols.map(function(c){return {header:c[0],width:c[1]}});
     var d=function(s){if(!s)return null;var p=s.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]))};
     rows.forEach(function(r){ws.addRow([r.anio||'',r.semana?r.semana+'°':'',r.cd||r.centro,r.area,r.gerencia,r.persona,r.empresa,r.observacion,r.tipoFalta,r.escalamiento,r.observador,r.supervisor,r.conFalta?r.estado:'Positiva (sin falta)',r.prevencionista,d(r.fecha),d(r.tope),d(r.cierre),
-      r.centro,r.tipo,r.conFalta?'Con falta':'Positiva',r.lugar,r.turno,r.cargo,r.medida,r.feedback,r.id])});
+      r.centro,r.tipo,r.conFalta?'Con falta':'Positiva',r.lugar,r.turno,r.cargo,r.medida,conFb(r)?'Sí':r.feedback,proceso(r),r.id])});
     var hr=ws.getRow(1);hr.height=42.75;hr.eachCell(function(c,i){c.font={bold:true,color:{argb:'FFFFFFFF'},name:'Calibri',size:11};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:i>17?'FF18181B':'FF4472C4'}};c.alignment={wrapText:true,vertical:'middle',horizontal:'center'};c.border={bottom:{style:'thin',color:{argb:'FFFFFFFF'}}}});
     [15,16,17].forEach(function(i){ws.getColumn(i).numFmt='dd-mm-yy'});
     ws.eachRow(function(row,n){if(n===1)return;row.alignment={vertical:'top',wrapText:false};row.getCell(8).alignment={wrapText:true,vertical:'top'};
@@ -411,7 +507,7 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
     top(cnt(f,function(r){return r.tipoFalta||'Sin clasificar'}),15).forEach(function(x){rs.addRow([corto(x[0],120),x[1]])});
     // Métricas y tendencias
     var mt=wb.addWorksheet('Métricas y tendencias',{views:[{showGridLines:false}]});
-    mt.columns=[{width:30},{width:14},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:14}];
+    mt.columns=[{width:30},{width:14},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:14},{width:12},{width:12},{width:12}];
     var NEG={argb:'FF18181B'},BL={argb:'FFFFFFFF'};
     function head(r){var x=mt.addRow(r);x.font={bold:true,color:BL};x.alignment={horizontal:'center',vertical:'middle',wrapText:true};x.height=30;x.eachCell(function(c){c.fill={type:'pattern',pattern:'solid',fgColor:NEG}});return x}
     function titulo(t){var x=mt.addRow([t]);x.font={bold:true,size:13,color:{argb:'FFBD0926'}};x.height=22}
@@ -424,7 +520,7 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
     mt.addRow([(F.centro||'Todos los centros')+' · '+rows.length+' observaciones · generado el '+new Date().toLocaleDateString('es-CL')]).font={color:{argb:'FF71717A'}};
     mt.addRow([]);titulo('Indicadores');
     head(['Indicador','Valor','Meta / nota']);
-    [['Observaciones',rows.length,''],['Con falta',f.length,''],['% con falta',pct(f.length,rows.length),''],['Positivas (sin falta)',rows.length-f.length,''],
+    [['Observaciones',rows.length,''],['Con falta',f.length,''],['% con falta',pct(f.length,rows.length),''],['Positivas (sin falta)',rows.length-f.length,''],['% positivas',pct(rows.length-f.length,rows.length),''],['Con feedback',rows.filter(conFb).length,''],['% con feedback',pct(rows.filter(conFb).length,rows.length),''],['Procesos de mejora',rows.filter(function(r){return proceso(r)==='Proceso de mejora'}).length,''],['Cartas de amonestación',rows.filter(function(r){return proceso(r)==='Carta de amonestación'}).length,''],
      ['% de faltas cerradas',pct(cer.length,f.length),'Meta: 90 %'],['Pendientes de cierre',pe.length,''],['Caducadas',ca.length,'Fuera de fecha tope'],
      ['Días promedio de cierre',pr==null?'—':Math.round(pr*10)/10,''],['Personas reincidentes',rein,'2 o más faltas']].forEach(function(k){var x=mt.addRow(k);x.getCell(1).font={bold:true};
        if(/^%/.test(k[0])&&k[1]!=null){x.getCell(2).numFmt='0%'}x.getCell(2).alignment={horizontal:'center'};x.eachCell(function(c){c.border={bottom:{style:'thin',color:{argb:'FFE4E4E7'}}}})});
@@ -439,10 +535,10 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
         x.getCell(4).font={bold:true,color:{argb:/mejora/.test(k[3])?'FF16623F':/empeora/.test(k[3])?'FFBD0926':'FF52525B'}}})}
     // Tendencia semanal
     mt.addRow([]);titulo('Tendencia semanal');
-    head(['Semana','Observaciones','Con falta','Positivas','% con falta','Cerradas','Pendientes','Caducadas','% cierre','Días prom. cierre']);
+    head(['Semana','Observaciones','Con falta','Positivas','% con falta','Cerradas','Pendientes','Caducadas','% cierre','Días prom. cierre','Con feedback','Proc. mejora','Carta amon.']);
     wk.forEach(function(w){var x=rows.filter(function(r){return wkKey(r)===w}),y=x.filter(function(r){return r.conFalta}),c=y.filter(function(r){return r.estado==='Cerrado'});
       var d=c.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return days(r.fecha,r.cierre)});
-      var row=mt.addRow([wkLab(w),x.length,y.length,x.length-y.length,pct(y.length,x.length),c.length,y.filter(function(r){return r.estado==='Pendiente'}).length,y.filter(function(r){return r.estado==='Caducado'}).length,pct(c.length,y.length),d.length?Math.round(d.reduce(function(a,b){return a+b},0)/d.length*10)/10:'—']);
+      var row=mt.addRow([wkLab(w),x.length,y.length,x.length-y.length,pct(y.length,x.length),c.length,y.filter(function(r){return r.estado==='Pendiente'}).length,y.filter(function(r){return r.estado==='Caducado'}).length,pct(c.length,y.length),d.length?Math.round(d.reduce(function(a,b){return a+b},0)/d.length*10)/10:'—',x.filter(conFb).length,x.filter(function(r){return proceso(r)==='Proceso de mejora'}).length,x.filter(function(r){return proceso(r)==='Carta de amonestación'}).length]);
       row.getCell(5).numFmt='0%';row.getCell(9).numFmt='0%';row.alignment={horizontal:'center'};row.eachCell(function(c){c.border={bottom:{style:'thin',color:{argb:'FFE4E4E7'}}}})});
     // Tendencia mensual
     var mesK=function(r){return (r.fecha||'').slice(0,7)},MS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -456,7 +552,8 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
     if(cs.length>1&&wk.length){mt.addRow([]);titulo('Observaciones por centro y semana');head(['Semana'].concat(cs));
       wk.forEach(function(w){var row=mt.addRow([wkLab(w)].concat(cs.map(function(c){return rows.filter(function(r){return wkKey(r)===w&&(r.cd||r.centro)===c}).length})));row.alignment={horizontal:'center'}})}
     // Gráficos del dashboard (tal como se ven con los filtros aplicados)
-    var gr=[['cWk','Observaciones por semana'],['cEscW','Escalamiento por semana'],['cCie','Cierre por semana (faltas)'],['cEst','Estado de cumplimiento'],['cEsc','Distribución de escalamientos'],['cTf','Top tipos de falta']].filter(function(g){return CH[g[0]]});
+    var prevV=VIEW;VIEW='__all';render();await new Promise(function(ok){setTimeout(ok,120)});
+    var gr=[['cSem','Observaciones por semana · positivas vs negativas'],['cTipo','Por tipo de observación'],['cProc','Gestión aplicada'],['cProcW','Gestión aplicada por semana'],['cFb','¿Se hizo feedback?'],['cMej','Conductas a mejorar más frecuentes'],['cSeg','Conductas seguras más observadas'],['cBal','Balance positiva / negativa por tipo'],['cCen','Observaciones por centro'],['cCie','Cierre por semana (faltas)'],['cEst','Estado de cumplimiento'],['cObsv','Actividad por observador']].filter(function(g){return CH[g[0]]&&document.getElementById(g[0])});
     if(gr.length){var gs=wb.addWorksheet('Gráficos',{views:[{showGridLines:false}]});gs.getColumn(1).width=4;var fila=1;
       gs.getCell('B1').value='Gráficos · Observaciones de conducta';gs.getCell('B1').font={bold:true,size:15};fila=3;
       gr.forEach(function(g){var ch=CH[g[0]],cv=ch.canvas,w=cv.width,h=cv.height;
@@ -465,15 +562,14 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
         var id=wb.addImage({base64:tmp.toDataURL('image/png'),extension:'png'});
         gs.addImage(id,{tl:{col:1,row:fila},ext:{width:Math.round(ch.width*Math.min(1,720/ch.width)),height:Math.round(ch.height*Math.min(1,720/ch.width))}});
         fila+=Math.ceil(ch.height*Math.min(1,720/ch.width)/20)+3})}
+    VIEW=prevV;render();
     var buf=await wb.xlsx.writeBuffer();var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Consolidado_Observaciones_Conducta_'+(F.centro?F.centro.replace(/\s+/g,'_')+'_':'')+HOY+'.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
-  }catch(e){msgTop('err','No se pudo generar el Excel: '+e.message)}
+  }catch(e){if(VIEW==='__all'){VIEW='resumen';render()}msgTop('err','No se pudo generar el Excel: '+e.message)}
   btn.disabled=false;btn.textContent=old}
 $('#dlBtn').onclick=descargar;
 $('#impIn').onchange=function(){var f=this.files[0];this.value='';if(f)importar(f)};
 
-// Marca la sección visible en el menú lateral
-document.addEventListener('scroll',function(){var y=window.scrollY+90,cur='';$$('section.blk').forEach(function(s){if(s.offsetTop<=y)cur=s.id});$$('.side a.nv[href^="#"]').forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+cur)})},{passive:true});
 init();
 })();
 </script>
