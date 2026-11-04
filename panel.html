@@ -235,6 +235,18 @@ function pushSnapshot(){
   fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelSnapshot',items:items,pins:DATA.pinHash,by:ACCOUNT?ACCOUNT.username:''})}).catch(function(){});
 }
 var DRIVE=null;
+// Copia a Gestión SSO de las actividades sin formulario (check list de andenes/emergencia y estadística)
+var GS_BASE='General/Gestión SSO Grupo Pro/',GS_STD={puerto:'A. Walmart Puerto',penon:'B. Walmart Peñon',aguirre:'C. Walmart Lo Aguirre',reina:'D. Lider La Reina',delivery:'K. Walmart La Farfana'},
+  GS_EST={puerto:'A. Walmart Puerto',penon:'B. Walmart Peñon',aguirre:'C. Walmart Lo Aguirre',reina:'D. Lider La Reina',delivery:'H. Walmart La Farfana'},MESC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function gsKey(c){var s=String(c||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();return /aguirre/.test(s)?'aguirre':/puerto|pudahuel/.test(s)?'puerto':/penon|san bernardo/.test(s)?'penon':/reina|local 95/.test(s)?'reina':/farfana|delivery/.test(s)?'delivery':''}
+function gsDest(it){var t=it.Title||'',k=gsKey(it.Centro),d=todayISO,mn=+d.slice(5,7),dia=d.slice(8,10)+MESC[mn-1]+d.slice(0,4);
+  if(/anden|emergencia/i.test(t)){var cf=GS_STD[k]||('Z. '+it.Centro);return {path:'Carpeta B.8 - CL Forms/'+cf+'/'+mn+'. '+MES[mn-1],base:(/anden/i.test(t)?'CL Andenes':'CL Emergencia')+' - '+dia}}
+  if(it.Tipo==='Estadística'||/estad[ií]stica/i.test(t)){var m=String(it.Mes||thisMonth),em=+m.slice(5,7);return {path:'Carpeta B.6 - Estadistica/A. Estadística por CC/'+(GS_EST[k]||('Z. '+it.Centro)),base:'Estadística '+MES[em-1]+' '+m.slice(0,4)}}
+  return null}
+function gsName(gd,f,i){var ext=(String(f.name).match(/\.[a-z0-9]{2,5}$/i)||[''])[0];return gd.base+(i?' ('+(i+1)+')':'')+ext}
+var DOCS=null;async function docsDrive(){if(DOCS)return DOCS;var d=await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl');DOCS=(d.value.filter(function(x){return /\/Shared%20Documents$|\/Documentos%20compartidos$|\/Shared Documents$/i.test(x.webUrl)||x.name==='Documentos'})[0]||{}).id;return DOCS}
+async function copiaGS(it){var gd=gsDest(it);if(!gd||!evid.length)return;var dr=await docsDrive();if(!dr)return;
+  for(var i=0;i<evid.length;i++){var path=GS_BASE+gd.path+'/'+gsName(gd,evid[i],i);await g('/drives/'+dr+'/root:/'+encPath(path)+':/content?@microsoft.graph.conflictBehavior=rename',{method:'PUT',body:evid[i].blob})}}
 async function drive(){if(DRIVE)return DRIVE;var d=await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl');DRIVE=(d.value.filter(function(x){return /\/ReportesPYR$/i.test(decodeURIComponent(x.webUrl))})[0]||d.value[0]).id;return DRIVE}
 function encPath(p){return p.split('/').map(encodeURIComponent).join('/')}
 async function upload(path,blob){var dr=await drive();
@@ -375,7 +387,7 @@ $('#shGo').onclick=async function(){
   var line=todayISO.split('-').reverse().join('-')+' · '+est+' · '+nom+(com?': '+com:'');
   try{
     if(MODE==='ms'){
-      var evUrl='';if(evid.length){var fo=evFolder(it);for(var i=0;i<evid.length;i++){msg.innerHTML='<div class="msg info">Subiendo evidencia '+(i+1)+' de '+evid.length+'…</div>';await upload(fo+'/'+todayISO+'_'+evid[i].name,evid[i].blob)}evUrl=await folderUrl(fo)}
+      var evUrl='';if(evid.length){var fo=evFolder(it);for(var i=0;i<evid.length;i++){msg.innerHTML='<div class="msg info">Subiendo evidencia '+(i+1)+' de '+evid.length+'…</div>';await upload(fo+'/'+todayISO+'_'+evid[i].name,evid[i].blob)}evUrl=await folderUrl(fo);try{msg.innerHTML='<div class="msg info">Copiando a Gestión SSO…</div>';await copiaGS(it)}catch(e){console.error('copiaGS',e)}}
       var fields={Estado:est,Avance:((it.Avance?it.Avance+'\n':'')+line).slice(-4000),ReportadoPor:nom};
       if(est==='Realizada')fields.FechaRealizada=todayISO+'T12:00:00Z';if(evUrl)fields.Evidencia=evUrl.slice(0,255);
       await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:fields});
@@ -401,7 +413,7 @@ async function sendEvidence(it,folder,est,com,nom){
   var data={grupo:'Gestion',archivos:evid.map(function(f){return f.name}),folderPath:folder,fileBase:base,form:'Avance de actividad',formCode:'PROGRAMA-AVANCE',recordId:id,sentAt:new Date().toISOString(),
     reporter:{name:nom,email:'',cc:''},fields:{tipo:'Avance: '+est,persona:nom,fecha:todayISO,lugar:it.Title,area:it.Tipo||'',centro:it.Centro},summary:it.Title+' · '+est+(com?' · '+com:'')};
   var backup=[{name:base+'_datos.json',mimeType:'application/json',base64:await b64(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}))}];
-  for(var i=0;i<evid.length;i++)backup.push({name:base+'_'+evid[i].name,mimeType:evid[i].blob.type||'application/octet-stream',base64:await b64(evid[i].blob)});
+  var gd=gsDest(it);for(var i=0;i<evid.length;i++)backup.push({name:gd?gsName(gd,evid[i],i):base+'_'+evid[i].name,mimeType:evid[i].blob.type||'application/octet-stream',base64:await b64(evid[i].blob)});
   var r=await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,form:'Avance de actividad',formCode:'PROGRAMA-AVANCE',recordId:id,subject:'[Avance de actividad] '+it.Title+' · '+est+' · '+it.Centro,
     reporterName:nom,reporterEmail:'',cc:'',textBody:data.summary,htmlBody:esc(data.summary),attachments:[],sentAt:data.sentAt,notify:false,emailOptional:true,folderPath:folder+'/'+base,fileBase:base,
     fields:Object.assign({fecha_limite:'',responsable:it.Responsable||''},data.fields),grupo:'Gestion',backupFiles:backup})}).then(function(r){return r.json()});

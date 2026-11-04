@@ -406,14 +406,17 @@
     'HALLAZGO': 'Hallazgo', 'OBS-CONDUCTA': 'Obs Conducta', 'PERMISO-AR': 'Permiso AR', 'ENTREGA-EPP': 'Entrega EPP', 'FIRMA-PTS': 'Firma PTS', 'AUDITORIA-MENSUAL': 'Auditoria',
     'AUDITORIA': 'Auditoria', 'PRE-AUDITORIA': 'Pre Auditoria', 'FR-RAPIDO': 'FR Rapido', 'FR-DETALLADO': 'FR Detallado', 'DECLARACION': 'Declaracion' };
   var MESC = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  // Nombre: «CL Equipo N1911 - Nov2026 - ABC.pdf» (N + día y mes; al final, parte del ID para no sobrescribir otro del mismo día)
+  // Nombre: «CL Equipo N1911 - 19Nov2026» (N = número de máquina). Resto: «Charla - 19Nov2026 - ABC» (ABC = parte del ID, evita sobrescribir).
   window.gpPdfName = function (formCode, fechaISO, id) {
-    var sig = PDF_SIGLA[formCode] || 'Registro';
-    if (formCode === 'CHARLA') { var t = $('.document-sheet [name="tipo_actividad"]'); if (t && /capacitaci/i.test(t.value)) sig = 'Capacitacion'; }
-    var m = String(fechaISO || '').match(/^(\d{4})-(\d{2})-(\d{2})/), d = m ? m : null;
-    if (!d) { var n = new Date(); d = [0, String(n.getFullYear()), ('0' + (n.getMonth() + 1)).slice(-2), ('0' + n.getDate()).slice(-2)]; }
-    var suf = String(id || '').split('-')[1] || '';
-    return (sig + ' N' + d[3] + d[2] + ' - ' + MESC[+d[2] - 1] + d[1] + (suf ? ' - ' + suf : '')).replace(/[\\\/:*?"<>|#%]+/g, ' ') + '.pdf';
+    var sig = PDF_SIGLA[formCode] || 'Registro', v = function (n) { var e = $('.document-sheet [name="' + n + '"]'); return e ? String(e.value || '').trim() : ''; };
+    if (formCode === 'CHARLA' && /capacitaci/i.test(v('tipo_actividad'))) sig = 'Capacitacion';
+    var m = String(fechaISO || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) { var n = new Date(); m = [0, String(n.getFullYear()), ('0' + (n.getMonth() + 1)).slice(-2), ('0' + n.getDate()).slice(-2)]; }
+    var fecha = m[3] + MESC[+m[2] - 1] + m[1], suf = String(id || '').split('-')[1] || '';
+    var nombre;
+    if (formCode === 'CHECKLIST-EQ') { var eq = v('lugar').replace(/[^0-9A-Za-z-]/g, ''); nombre = sig + (eq ? ' N' + eq : '') + ' - ' + fecha + (eq ? '' : (suf ? ' - ' + suf : '')); }
+    else nombre = sig + ' - ' + fecha + (suf ? ' - ' + suf : '');
+    return nombre.replace(/[\\\/:*?"<>|#%]+/g, ' ') + '.pdf';
   };
   function loadIn(win, src) {
     return new Promise(function (ok, ko) { var sc = win.document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = function () { ko(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.')); }; win.document.head.appendChild(sc); });
