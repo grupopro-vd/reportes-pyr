@@ -128,10 +128,11 @@
       '<span class="bp"><b style="color:' + c + '">' + (p == null ? '—' : p + '%') + '</b><small>' + (r.t ? r.ok + ' de ' + r.t : 'no programado') + '</small></span></' + (href ? 'a' : 'div') + '>';
   }
   function formHref(it) {
-    var f = FORM[it.Tipo]; if (it.Tipo === 'Check list de equipos' && /emergencia|anden/i.test(it.Title || '')) f = null;
+    var obs = it.Tipo === 'Observación de conducta' || /^Observaci[oó]n de (conducta|almacenamiento)/i.test(it.Title || '');
+    var f = obs ? 'observacion_conducta.html' : FORM[it.Tipo]; if (it.Tipo === 'Check list de equipos' && /emergencia|anden/i.test(it.Title || '')) f = null;
     if (!f) return null;
     return f + '?act=' + encodeURIComponent(it.id) + '&c=' + encodeURIComponent(it.Centro) + '&t=' + encodeURIComponent(it.Title) + '&tipo=' + encodeURIComponent(it.Tipo) +
-      (it.Tipo === 'Observación de conducta' ? (/pare/i.test(it.Title) ? '&modo=pare' : /apilador/i.test(it.Title) ? '&modo=almac' : '&modo=conducta') : '');
+      (obs ? (/pare/i.test(it.Title) ? '&modo=pare' : /apilador|almacenamiento/i.test(it.Title) ? '&modo=almac' : '&modo=conducta') : '');
   }
   function dotColor(it) { var i = progIdx(it); return i >= 0 ? PROG[i].c : '#71717a'; }
 
