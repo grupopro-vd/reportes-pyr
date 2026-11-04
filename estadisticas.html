@@ -200,7 +200,7 @@ async function readFile(item){var r=await g('/drives/'+DRIVE+'/items/'+item.id+'
     else if(/plan|kpi/i.test(n)){res.plan=res.plan.concat(parsePlan(wb.Sheets[n],n.replace(/^kpi\s*/i,'').trim()))}});
   return res}
 async function listXlsx(path){try{var d=await g('/drives/'+DRIVE+'/root:'+encPath(CFG.base+(path?'/'+path:''))+':/children?$select=id,name,file,lastModifiedDateTime&$top=200');
-  return (d.value||[]).filter(function(x){return x.file&&/\.xlsx$/i.test(x.name)&&!/^~\$/.test(x.name)})}catch(e){return null}}
+  return (d.value||[]).filter(function(x){return x.file&&/\.xlsx$/i.test(x.name)&&!/^~\$/.test(x.name)&&!/respaldo|backup|copia|cambios carga|lista empleados/i.test(x.name)})}catch(e){return null}}
 async function source(key){if(SRC[key])return SRC[key];
   var c=CENTROS.filter(function(x){return x.k===key})[0],files=await listXlsx(c?c.folder:''),res={rows:[],plan:[],flags:{},files:[],denied:files===null};
   var seen={},key=function(r){return norm(r.rut).replace(/[^0-9k]/g,'')+'|'+r.fecha+'|'+r.tipo};
@@ -221,8 +221,9 @@ var DIAS_SENT=false;
 function pushDias(rows){if(DIAS_SENT||!isAdmin)return;DIAS_SENT=true;try{
   var ok=rows.filter(function(r){return r.fecha&&r.tipo==='Trabajo'&&!/sin cobertura|rechaz/i.test(r.estado)&&r.dias>0}),hace=new Date(Date.now()-365*864e5).toISOString().slice(0,10),anio=String(new Date().getFullYear()),m={},corte='';
   rows.forEach(function(r){if(r.fecha&&r.fecha>corte)corte=r.fecha});
+  var d45=new Date(Date.now()-45*864e5).toISOString().slice(0,10),rec=rows.filter(function(r){return r.fecha&&r.fecha>=d45}).sort(function(a,b){return b.fecha.localeCompare(a.fecha)}).slice(0,150).map(function(r){return {f:r.fecha,suc:r.suc,nom:r.nom,tipo:r.tipo,est:r.estado,ctp:r.ctp,dias:r.dias}});
   ok.forEach(function(r){var k=norm(r.suc);var x=m[k]=m[k]||{suc:r.suc,ult:'',n12:0,ny:0,dy:0};if(r.fecha>x.ult)x.ult=r.fecha;if(r.fecha>=hace)x.n12++;if(r.fecha.slice(0,4)===anio){x.ny++;x.dy+=r.dias}});
-  fetch('https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',{method:'POST',body:JSON.stringify({key:'GP-PYR-2026',action:'estadSnap',anio:anio,by:ACC?(ACC.name||ACC.username):'',corte:corte,list:Object.keys(m).map(function(k){return m[k]})})}).catch(function(){})}catch(e){}}
+  fetch('https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',{method:'POST',body:JSON.stringify({key:'GP-PYR-2026',action:'estadSnap',anio:anio,by:ACC?(ACC.name||ACC.username):'',corte:corte,rec:rec,list:Object.keys(m).map(function(k){return m[k]})})}).catch(function(){})}catch(e){}}
 async function open(){[].forEach.call(document.querySelectorAll('#views button'),function(b){b.classList.toggle('on',b.dataset.k===VIEW)});
   $('#dash').innerHTML='<div class="loading"><span class="spin"></span>Leyendo datos…</div>';
   try{var c=CENTROS.filter(function(x){return x.k===VIEW})[0],s;
