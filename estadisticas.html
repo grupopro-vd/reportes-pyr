@@ -217,10 +217,10 @@ function buildViews(mine){var v=(isAdmin?[{k:'macro',n:'Macro HSE · Todos'}]:[]
 // Envía al reporte diario la fecha del último accidente del trabajo por sucursal (solo administrador)
 var DIAS_SENT=false;
 function pushDias(rows){if(DIAS_SENT||!isAdmin)return;DIAS_SENT=true;try{
-  var ok=rows.filter(function(r){return r.fecha&&r.tipo==='Trabajo'&&!/sin cobertura|rechaz/i.test(r.estado)}),hace=new Date(Date.now()-365*864e5).toISOString().slice(0,10),m={},corte='';
+  var ok=rows.filter(function(r){return r.fecha&&r.tipo==='Trabajo'&&!/sin cobertura|rechaz/i.test(r.estado)&&r.dias>0}),hace=new Date(Date.now()-365*864e5).toISOString().slice(0,10),anio=String(new Date().getFullYear()),m={},corte='';
   rows.forEach(function(r){if(r.fecha&&r.fecha>corte)corte=r.fecha});
-  ok.forEach(function(r){var k=norm(r.suc);var x=m[k]=m[k]||{suc:r.suc,ult:'',n12:0};if(r.fecha>x.ult)x.ult=r.fecha;if(r.fecha>=hace)x.n12++});
-  fetch('https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',{method:'POST',body:JSON.stringify({key:'GP-PYR-2026',action:'estadSnap',by:ACC?(ACC.name||ACC.username):'',corte:corte,list:Object.keys(m).map(function(k){return m[k]})})}).catch(function(){})}catch(e){}}
+  ok.forEach(function(r){var k=norm(r.suc);var x=m[k]=m[k]||{suc:r.suc,ult:'',n12:0,ny:0,dy:0};if(r.fecha>x.ult)x.ult=r.fecha;if(r.fecha>=hace)x.n12++;if(r.fecha.slice(0,4)===anio){x.ny++;x.dy+=r.dias}});
+  fetch('https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',{method:'POST',body:JSON.stringify({key:'GP-PYR-2026',action:'estadSnap',anio:anio,by:ACC?(ACC.name||ACC.username):'',corte:corte,list:Object.keys(m).map(function(k){return m[k]})})}).catch(function(){})}catch(e){}}
 async function open(){[].forEach.call(document.querySelectorAll('#views button'),function(b){b.classList.toggle('on',b.dataset.k===VIEW)});
   $('#dash').innerHTML='<div class="loading"><span class="spin"></span>Leyendo datos…</div>';
   try{var c=CENTROS.filter(function(x){return x.k===VIEW})[0],s;
