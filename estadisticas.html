@@ -184,6 +184,8 @@ function parseSheet(ws,file,sheet){var a=XLSX.utils.sheet_to_json(ws,{header:1,r
   var out=[];a.slice(hi+1).forEach(function(r){var v=function(k){return I[k]>=0?r[I[k]]:''};var rut=String(v('rut')).trim(),nom=String(v('nom')).trim(),fe=toDate(v('fecha'));
     if(!rut&&!nom)return;if(!fe&&!String(v('tipo')).trim())return;
     var ctp=String(v('ctp')).toUpperCase().indexOf('CTP')>=0?'CTP':(String(v('ctp')).toUpperCase().indexOf('STP')>=0?'STP':'Sin dato');
+    // La columna CTP/STP es una fórmula según «Días licencia»; si viene vacía o desactualizada, se calcula igual que la fórmula
+    if(I.dias>=0){var dl=num(v('dias'));if(dl>0)ctp='CTP';else if(ctp==='Sin dato')ctp='STP'}
     out.push({rs:String(v('rs')).trim()||'Sin dato',suc:String(v('suc')).trim().replace(/\s+/g,' ')||'Sin dato',nom:nom,rut:rut,area:cap(v('area'))||'',tipo:normTipo(v('tipo')),estado:normEstado(v('estado')),
       det:String(v('det')).trim(),parte:cap(v('parte')),clas:cap(v('clas')),fecha:fe,ctp:ctp,nacc:I.nacc>=0?num(v('nacc')):1,dias:num(v('dias')),src:file+' › '+sheet})});
   return {rows:out,hasDet:I.det>=0,hasParte:I.parte>=0,hasClas:I.clas>=0,hasArea:I.area>=0}}
