@@ -95,7 +95,7 @@
     var v = function (n) { var el = document.querySelector('.document-sheet [name="' + n + '"]'); return el ? String(el.value || '').trim() : ''; };
     var r = function (n) { var el = document.querySelector('.document-sheet [name="' + n + '"]:checked'); return el ? el.value : ''; };
     d.extra = { descripcion: v('descripcion').slice(0, 400), criticidad: r('criticidad'), accion_correctiva: v('accion_correctiva').slice(0, 300), tipo_hallazgo: r('tipo_hallazgo') || v('tipo_otro'),
-      correo_responsable: v('correo_responsable'), tema: v('tema'), tipo_actividad: v('tipo_actividad'), area: v('area'), lugar: v('lugar') };
+      correo_responsable: v('correo_responsable'), tema: v('tema'), tipo_actividad: v('tipo_actividad'), area: v('area'), lugar: v('lugar'), categoria_evento: v('categoria_evento') };
     var act = getAct(); if (act && act.id) { d.programaId = String(act.id); d.programaTitle = act.title || ''; }
     return d;
   }
