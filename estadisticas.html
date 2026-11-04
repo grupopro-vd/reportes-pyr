@@ -214,10 +214,17 @@ function buildViews(mine){var v=(isAdmin?[{k:'macro',n:'Macro HSE · Todos'}]:[]
   $('#app').innerHTML=(v.length>1?'<div class="views" id="views">'+v.map(function(x){return '<button type="button" data-k="'+x.k+'" class="'+(x.k==='macro'?'macro':'')+'">'+esc(x.n)+'</button>'}).join('')+'</div>':'')+'<div id="dash"></div>';
   [].forEach.call(document.querySelectorAll('#views button'),function(b){b.onclick=function(){VIEW=b.dataset.k;F={};try{sessionStorage.setItem('gpEstView',VIEW)}catch(e){}open()}});
   open()}
+// Envía al reporte diario la fecha del último accidente del trabajo por sucursal (solo administrador)
+var DIAS_SENT=false;
+function pushDias(rows){if(DIAS_SENT||!isAdmin)return;DIAS_SENT=true;try{
+  var ok=rows.filter(function(r){return r.fecha&&r.tipo==='Trabajo'&&!/sin cobertura|rechaz/i.test(r.estado)}),hace=new Date(Date.now()-365*864e5).toISOString().slice(0,10),m={},corte='';
+  rows.forEach(function(r){if(r.fecha&&r.fecha>corte)corte=r.fecha});
+  ok.forEach(function(r){var k=norm(r.suc);var x=m[k]=m[k]||{suc:r.suc,ult:'',n12:0};if(r.fecha>x.ult)x.ult=r.fecha;if(r.fecha>=hace)x.n12++});
+  fetch('https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',{method:'POST',body:JSON.stringify({key:'GP-PYR-2026',action:'estadSnap',by:ACC?(ACC.name||ACC.username):'',corte:corte,list:Object.keys(m).map(function(k){return m[k]})})}).catch(function(){})}catch(e){}}
 async function open(){[].forEach.call(document.querySelectorAll('#views button'),function(b){b.classList.toggle('on',b.dataset.k===VIEW)});
   $('#dash').innerHTML='<div class="loading"><span class="spin"></span>Leyendo datos…</div>';
   try{var c=CENTROS.filter(function(x){return x.k===VIEW})[0],s;
-    if(VIEW==='macro'){s=await source('macro');ROWS=s.rows;PLAN=s.plan;META={flags:s.flags,files:s.files,titulo:'Todos los centros',macro:true}}
+    if(VIEW==='macro'){s=await source('macro');pushDias(s.rows);ROWS=s.rows;PLAN=s.plan;META={flags:s.flags,files:s.files,titulo:'Todos los centros',macro:true}}
     else{s=await source(c.k);var rows=s.rows.filter(function(r){return c.re.test(r.suc)}),flags=s.flags,files=s.files,plan=s.plan,fb='';
       if(!rows.length){var m=await source('macro');var mr=m.rows.filter(function(r){return c.re.test(r.suc)});if(mr.length){rows=mr;flags=m.flags;files=m.files;plan=[];fb='Datos del Excel general (la carpeta del centro no tiene datos)'}}
       ROWS=rows;PLAN=plan;META={flags:flags,files:files,titulo:c.n,macro:false,fb:fb,denied:s.denied}}
