@@ -282,7 +282,7 @@ function render(){
     '<div class="kpi"><b style="color:var(--mid)">'+pend.length+'</b><span>pendientes de cierre</span></div>'+
     '<div class="kpi"><b style="color:var(--bad)">'+cad.length+'</b><span>caducadas</span></div>'+
     '<div class="kpi"><b>'+(prom==null?'—':prom.toFixed(1))+'</b><span>días promedio de cierre</span></div>'+
-    '<div class="kpi"><b>'+reinc+'</b><span>personas reincidentes</span></div></div>'+
+    '<div class="kpi"><b>'+reinc+'</b><span>personas reincidentes</span></div></div>'+tendHTML(rows)+
     '<div class="grid"><div class="card w8"><h3>Observaciones por semana</h3><div class="cv"><canvas id="cWk"></canvas></div></div>'+
     '<div class="card w4"><h3>Distribución de escalamientos</h3><div class="cv"><canvas id="cEsc"></canvas></div></div>'+
     '<div class="card w4"><h3>Estado de cumplimiento</h3><div class="cv"><canvas id="cEst"></canvas></div><div class="note">Meta: cerrar el 90 % de las faltas dentro de la fecha tope.</div></div>'+
@@ -305,6 +305,14 @@ function render(){
   $('#app').innerHTML=h;bindF();graficos(rows,faltas);
   $$('tr.r').forEach(function(tr){tr.onclick=function(){abrir(ROWS.filter(function(r){return r.id===tr.dataset.id})[0])}});
 }
+function tendHTML(rows){var wk=uniq(rows.map(wkKey)).filter(function(k){return !/^0/.test(k)}).sort();if(wk.length<2)return '';
+  var n=Math.min(4,Math.floor(wk.length/2)),ult=wk.slice(-n),ant=wk.slice(-2*n,-n);
+  var m=function(ws){var x=rows.filter(function(r){return ws.indexOf(wkKey(r))>=0}),y=x.filter(function(r){return r.conFalta});return {o:x.length/ws.length,f:y.length&&x.length?y.length/x.length:null,c:y.length?y.filter(function(r){return r.estado==='Cerrado'}).length/y.length:null}};
+  var A=m(ant),U=m(ult);
+  var ch=function(lab,a,b,pc,sube){if(a==null||b==null)return '';var d=b-a,st=Math.abs(d)<(pc?0.005:0.05)?0:(d>0)===sube?1:-1;var f=function(v){return pc?Math.round(v*100)+' %':(Math.round(v*10)/10)};
+    return '<div class="kpi"><b style="color:'+(st>0?'var(--ok)':st<0?'var(--bad)':'#52525b')+'">'+(d>0&&st?'↑ ':d<0&&st?'↓ ':'→ ')+f(b)+'</b><span>'+lab+' · antes '+f(a)+'</span></div>'};
+  return '<div class="note" style="margin:12px 0 6px;font-weight:700">Tendencia: últimas '+n+' semanas vs las '+n+' anteriores</div><div class="kpis">'+
+    ch('observaciones por semana',A.o,U.o,false,true)+ch('% con falta',A.f,U.f,true,false)+ch('% de faltas cerradas',A.c,U.c,true,true)+'</div>'}
 function pill(e){var c={Cerrado:'p-ok',Pendiente:'p-mid',Caducado:'p-bad','Sin falta':'p-gray'}[e]||'p-blue';return '<span class="pill '+c+'">'+esc(e==='Sin falta'?'Positiva':e)+'</span>'}
 function bindF(){var m={fC:'centro',fA:'anio',fR:'res',fT:'tipo',fE:'esc',fS:'est',fM:'emp',fAr:'area',fO:'obsr'};
   Object.keys(m).forEach(function(id){var el=document.getElementById(id);if(el)el.onchange=function(){F[m[id]]=el.value;render()}});
@@ -401,6 +409,62 @@ async function descargar(){var btn=$('#dlBtn');btn.disabled=true;var old=btn.tex
     top(cnt(f,function(r){return r.escalamiento||'Sin escalamiento'})).forEach(function(x){rs.addRow(x)});
     rs.addRow([]);var h3=rs.addRow(['Tipo de falta (top 15)','Faltas']);h3.font={bold:true,color:{argb:'FFFFFFFF'}};h3.eachCell(function(c){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF18181B'}}});
     top(cnt(f,function(r){return r.tipoFalta||'Sin clasificar'}),15).forEach(function(x){rs.addRow([corto(x[0],120),x[1]])});
+    // Métricas y tendencias
+    var mt=wb.addWorksheet('Métricas y tendencias',{views:[{showGridLines:false}]});
+    mt.columns=[{width:30},{width:14},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:12},{width:14}];
+    var NEG={argb:'FF18181B'},BL={argb:'FFFFFFFF'};
+    function head(r){var x=mt.addRow(r);x.font={bold:true,color:BL};x.alignment={horizontal:'center',vertical:'middle',wrapText:true};x.height=30;x.eachCell(function(c){c.fill={type:'pattern',pattern:'solid',fgColor:NEG}});return x}
+    function titulo(t){var x=mt.addRow([t]);x.font={bold:true,size:13,color:{argb:'FFBD0926'}};x.height=22}
+    var cer=f.filter(function(r){return r.estado==='Cerrado'}),pe=f.filter(function(r){return r.estado==='Pendiente'}),ca=f.filter(function(r){return r.estado==='Caducado'});
+    var tcs=cer.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return Math.max(0,days(r.fecha,r.cierre))});
+    var pr=tcs.length?tcs.reduce(function(a,b){return a+b},0)/tcs.length:null;
+    var rein=top(cnt(f,function(r){return r.persona?norm(r.persona):''})).filter(function(x){return x[0]&&x[1]>1}).length;
+    var pct=function(a,b){return b?a/b:null};
+    var t0=mt.addRow(['Métricas y tendencias · Observaciones de conducta']);t0.font={bold:true,size:15};
+    mt.addRow([(F.centro||'Todos los centros')+' · '+rows.length+' observaciones · generado el '+new Date().toLocaleDateString('es-CL')]).font={color:{argb:'FF71717A'}};
+    mt.addRow([]);titulo('Indicadores');
+    head(['Indicador','Valor','Meta / nota']);
+    [['Observaciones',rows.length,''],['Con falta',f.length,''],['% con falta',pct(f.length,rows.length),''],['Positivas (sin falta)',rows.length-f.length,''],
+     ['% de faltas cerradas',pct(cer.length,f.length),'Meta: 90 %'],['Pendientes de cierre',pe.length,''],['Caducadas',ca.length,'Fuera de fecha tope'],
+     ['Días promedio de cierre',pr==null?'—':Math.round(pr*10)/10,''],['Personas reincidentes',rein,'2 o más faltas']].forEach(function(k){var x=mt.addRow(k);x.getCell(1).font={bold:true};
+       if(/^%/.test(k[0])&&k[1]!=null){x.getCell(2).numFmt='0%'}x.getCell(2).alignment={horizontal:'center'};x.eachCell(function(c){c.border={bottom:{style:'thin',color:{argb:'FFE4E4E7'}}}})});
+    // Tendencia: últimas 4 semanas vs las 4 anteriores
+    var wk=uniq(rows.map(wkKey)).filter(function(k){return !/^0/.test(k)}).sort();
+    if(wk.length>=2){var n=Math.min(4,Math.floor(wk.length/2)),ult=wk.slice(-n),ant=wk.slice(-2*n,-n);
+      var m=function(ws){var x=rows.filter(function(r){return ws.indexOf(wkKey(r))>=0}),y=x.filter(function(r){return r.conFalta});return {o:x.length/ws.length,f:pct(y.length,x.length),c:pct(y.filter(function(r){return r.estado==='Cerrado'}).length,y.length)}};
+      var A=m(ant),U=m(ult),fl=function(a,b,mejorSube){if(a==null||b==null)return '—';var d=b-a;if(Math.abs(d)<0.005)return '→ estable';return (d>0?'↑ sube':'↓ baja')+((d>0)===mejorSube?' (mejora)':' (empeora)')};
+      mt.addRow([]);titulo('Tendencia: últimas '+n+' semanas vs las '+n+' anteriores');head(['Indicador','Anteriores','Últimas','Tendencia']);
+      [['Observaciones por semana',A.o,U.o,fl(A.o,U.o,true),'0.0'],['% con falta',A.f,U.f,fl(A.f,U.f,false),'0%'],['% de faltas cerradas',A.c,U.c,fl(A.c,U.c,true),'0%']].forEach(function(k){
+        var x=mt.addRow([k[0],k[1]==null?'—':k[1],k[2]==null?'—':k[2],k[3]]);x.getCell(1).font={bold:true};[2,3].forEach(function(i){x.getCell(i).numFmt=k[4];x.getCell(i).alignment={horizontal:'center'}});
+        x.getCell(4).font={bold:true,color:{argb:/mejora/.test(k[3])?'FF16623F':/empeora/.test(k[3])?'FFBD0926':'FF52525B'}}})}
+    // Tendencia semanal
+    mt.addRow([]);titulo('Tendencia semanal');
+    head(['Semana','Observaciones','Con falta','Positivas','% con falta','Cerradas','Pendientes','Caducadas','% cierre','Días prom. cierre']);
+    wk.forEach(function(w){var x=rows.filter(function(r){return wkKey(r)===w}),y=x.filter(function(r){return r.conFalta}),c=y.filter(function(r){return r.estado==='Cerrado'});
+      var d=c.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return days(r.fecha,r.cierre)});
+      var row=mt.addRow([wkLab(w),x.length,y.length,x.length-y.length,pct(y.length,x.length),c.length,y.filter(function(r){return r.estado==='Pendiente'}).length,y.filter(function(r){return r.estado==='Caducado'}).length,pct(c.length,y.length),d.length?Math.round(d.reduce(function(a,b){return a+b},0)/d.length*10)/10:'—']);
+      row.getCell(5).numFmt='0%';row.getCell(9).numFmt='0%';row.alignment={horizontal:'center'};row.eachCell(function(c){c.border={bottom:{style:'thin',color:{argb:'FFE4E4E7'}}}})});
+    // Tendencia mensual
+    var mesK=function(r){return (r.fecha||'').slice(0,7)},MS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    var ms=uniq(rows.map(mesK)).filter(Boolean).sort();
+    if(ms.length){mt.addRow([]);titulo('Tendencia mensual');head(['Mes','Observaciones','Con falta','Positivas','% con falta','Cerradas','Pendientes','Caducadas','% cierre']);
+      ms.forEach(function(k){var x=rows.filter(function(r){return mesK(r)===k}),y=x.filter(function(r){return r.conFalta}),c=y.filter(function(r){return r.estado==='Cerrado'}).length;
+        var row=mt.addRow([MS[+k.slice(5)-1]+' '+k.slice(0,4),x.length,y.length,x.length-y.length,pct(y.length,x.length),c,y.filter(function(r){return r.estado==='Pendiente'}).length,y.filter(function(r){return r.estado==='Caducado'}).length,pct(c,y.length)]);
+        row.getCell(5).numFmt='0%';row.getCell(9).numFmt='0%';row.alignment={horizontal:'center'}})}
+    // Semanas por centro
+    var cs=uniq(rows.map(function(r){return r.cd||r.centro})).filter(Boolean);
+    if(cs.length>1&&wk.length){mt.addRow([]);titulo('Observaciones por centro y semana');head(['Semana'].concat(cs));
+      wk.forEach(function(w){var row=mt.addRow([wkLab(w)].concat(cs.map(function(c){return rows.filter(function(r){return wkKey(r)===w&&(r.cd||r.centro)===c}).length})));row.alignment={horizontal:'center'}})}
+    // Gráficos del dashboard (tal como se ven con los filtros aplicados)
+    var gr=[['cWk','Observaciones por semana'],['cEscW','Escalamiento por semana'],['cCie','Cierre por semana (faltas)'],['cEst','Estado de cumplimiento'],['cEsc','Distribución de escalamientos'],['cTf','Top tipos de falta']].filter(function(g){return CH[g[0]]});
+    if(gr.length){var gs=wb.addWorksheet('Gráficos',{views:[{showGridLines:false}]});gs.getColumn(1).width=4;var fila=1;
+      gs.getCell('B1').value='Gráficos · Observaciones de conducta';gs.getCell('B1').font={bold:true,size:15};fila=3;
+      gr.forEach(function(g){var ch=CH[g[0]],cv=ch.canvas,w=cv.width,h=cv.height;
+        var tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;var cx=tmp.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(cv,0,0);
+        gs.getCell('B'+fila).value=g[1];gs.getCell('B'+fila).font={bold:true,size:12};
+        var id=wb.addImage({base64:tmp.toDataURL('image/png'),extension:'png'});
+        gs.addImage(id,{tl:{col:1,row:fila},ext:{width:Math.round(ch.width*Math.min(1,720/ch.width)),height:Math.round(ch.height*Math.min(1,720/ch.width))}});
+        fila+=Math.ceil(ch.height*Math.min(1,720/ch.width)/20)+3})}
     var buf=await wb.xlsx.writeBuffer();var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Consolidado_Observaciones_Conducta_'+(F.centro?F.centro.replace(/\s+/g,'_')+'_':'')+HOY+'.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
   }catch(e){msgTop('err','No se pudo generar el Excel: '+e.message)}
