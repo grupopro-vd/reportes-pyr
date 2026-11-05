@@ -167,7 +167,7 @@ var CFG={
 var GRAPH='https://graph.microsoft.com/v1.0';
 var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder Lo Barnechea','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas','Walmart La Farfana'];
 var FORM={'Charla':'charlas.html','Capacitación':'charlas.html','Inducción':'charlas.html','Comité Paritario':'comite.html','Auditoría Mensual':'auditoria_mensual.html',
-  'Pre Auditoría':'pre_auditoria.html','Check list de equipos':'check_list_equipos.html','Check list de arnés':'check_list_arnes.html','Check list de EPP':'check_list_epp.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html','Observación de conducta':'observacion_conducta.html'};
+  'Pre Auditoría':'pre_auditoria.html','Check list de equipos':'check_list_equipos.html','Check list de arnés':'check_list_arnes.html','Check list de EPP':'check_list_epp.html','Caminata':'caminata.html','Acta de caminata':'caminata.html','Inspección / Hallazgos':'hallazgos.html','Inspección':'hallazgos.html','Entrega de EPP':'entrega_epp.html','Observación de conducta':'observacion_conducta.html'};
 var MES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var $=function(s){return document.querySelector(s)}, $$=function(s){return [].slice.call(document.querySelectorAll(s))};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
@@ -376,7 +376,7 @@ function render(){
 }
 function esObs(it){return it.Tipo==='Observación de conducta'||/^Observaci[oó]n de (conducta|almacenamiento)/i.test(it.Title||'')}
 function formFor(it){if(esObs(it))return 'observacion_conducta.html';var f=FORM[it.Tipo];if(it.Tipo==='Check list de equipos'&&/emergencia|anden/i.test(it.Title||''))return null;return f||null}
-var FLAB={'hallazgos.html':'🔍 Registrar hallazgo','check_list_equipos.html':'✅ Hacer check list','check_list_arnes.html':'✅ Hacer check list','check_list_epp.html':'✅ Hacer check list','observacion_conducta.html':'👁 Hacer observación','charlas.html':'🗣 Registrar charla','comite.html':'📝 Registrar acta','auditoria_mensual.html':'📋 Hacer auditoría','pre_auditoria.html':'📋 Hacer pre auditoría','entrega_epp.html':'🦺 Registrar entrega'};
+var FLAB={'hallazgos.html':'🔍 Registrar hallazgo','check_list_equipos.html':'✅ Hacer check list','check_list_arnes.html':'✅ Hacer check list','check_list_epp.html':'✅ Hacer check list','caminata.html':'🚶 Hacer caminata','observacion_conducta.html':'👁 Hacer observación','charlas.html':'🗣 Registrar charla','comite.html':'📝 Registrar acta','auditoria_mensual.html':'📋 Hacer auditoría','pre_auditoria.html':'📋 Hacer pre auditoría','entrega_epp.html':'🦺 Registrar entrega'};
 function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=formFor(it);
   var meta=[it.Mes?'📅 '+(it.Fecha?fd(it.Fecha)+' · SN '+snDe(it.Fecha).w:mesTxt(it.Mes)):'',it.Tipo?'🏷 '+esc(it.Tipo):'',it.Programa?'📚 '+esc(it.Programa):'',it.DirigidoA?'👥 '+esc(it.DirigidoA):'',it.Responsable?'👤 '+esc(it.Responsable):'',!$('#fCentro').value?'📍 '+esc(it.Centro):''].filter(Boolean);
   return '<div class="act'+(s.late?' late':'')+'"><div class="t">'+esc(it.Title)+'</div><span class="pill st-'+lab.replace(/ /g,'-')+'">'+esc(lab)+(s.late&&s.e!=='Pendiente'?' · '+esc(s.e):'')+'</span>'+

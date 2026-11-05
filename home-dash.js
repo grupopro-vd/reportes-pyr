@@ -12,7 +12,7 @@
     { n: 'Charla ACHS', m: /achs|mutual/, c: '#15803d' }
   ];
   var FORM = { 'Charla': 'charlas.html', 'Capacitación': 'charlas.html', 'Inducción': 'charlas.html', 'Comité Paritario': 'comite.html', 'Auditoría Mensual': 'auditoria_mensual.html', 'Pre Auditoría': 'pre_auditoria.html',
-    'Check list de equipos': 'check_list_equipos.html', 'Check list de arnés': 'check_list_arnes.html', 'Check list de EPP': 'check_list_epp.html', 'Inspección': 'hallazgos.html', 'Inspección / Hallazgos': 'hallazgos.html',
+    'Check list de equipos': 'check_list_equipos.html', 'Check list de arnés': 'check_list_arnes.html', 'Check list de EPP': 'check_list_epp.html', 'Caminata': 'caminata.html', 'Acta de caminata': 'caminata.html', 'Inspección': 'hallazgos.html', 'Inspección / Hallazgos': 'hallazgos.html',
     'Entrega de EPP': 'entrega_epp.html', 'Observación de conducta': 'observacion_conducta.html' };
   var CTA = { 'charlas.html': 'Registrar', 'comite.html': 'Acta', 'hallazgos.html': 'Hacer', 'observacion_conducta.html': 'Observar', 'check_list_equipos.html': 'Hacer', 'check_list_arnes.html': 'Hacer', 'check_list_epp.html': 'Hacer' };
   var MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];

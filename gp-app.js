@@ -409,7 +409,7 @@
 
   /* ---------------- PDF del registro (reemplaza al Word) ---------------- */
   var PDF_LIBS = ['vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'].map(function (u) { return new URL(u, document.baseURI).href; });
-  var PDF_SIGLA = { 'CHECKLIST-EQ': 'CL Equipo', 'CHECKLIST-ARNES': 'CL Arnes', 'CHECKLIST-EPP': 'CL EPP', 'CHECKLIST-VH': 'CL Vehiculo', 'CHARLA': 'Charla', 'COMITE': 'Acta Comite',
+  var PDF_SIGLA = { 'CHECKLIST-EQ': 'CL Equipo', 'CHECKLIST-ARNES': 'CL Arnes', 'CHECKLIST-EPP': 'CL EPP', 'CAMINATA': 'Acta Caminata', 'CHECKLIST-VH': 'CL Vehiculo', 'CHARLA': 'Charla', 'COMITE': 'Acta Comite',
     'HALLAZGO': 'Hallazgo', 'OBS-CONDUCTA': 'Obs Conducta', 'PERMISO-AR': 'Permiso AR', 'ENTREGA-EPP': 'Entrega EPP', 'FIRMA-PTS': 'Firma PTS', 'AUDITORIA-MENSUAL': 'Auditoria',
     'AUDITORIA': 'Auditoria', 'PRE-AUDITORIA': 'Pre Auditoria', 'FR-RAPIDO': 'FR Rapido', 'FR-DETALLADO': 'FR Detallado', 'DECLARACION': 'Declaracion' };
   var MESC = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
