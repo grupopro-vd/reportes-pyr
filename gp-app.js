@@ -428,7 +428,129 @@
   function loadIn(win, src) {
     return new Promise(function (ok, ko) { var sc = win.document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = function () { ko(new Error('No se pudo cargar el generador de PDF. Revisa la conexión.')); }; win.document.head.appendChild(sc); });
   }
+  /* ---- PDF con texto real: HTML limpio (sin estilos de pantalla) convertido en el servidor ---- */
+  var PDF_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', PDF_KEY = 'GP-PYR-2026';
+  function pdfEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  async function blankImg(src) {
+    return new Promise(function (ok) {
+      var im = new Image(); im.onload = function () {
+        try { var w = Math.min(160, im.naturalWidth || 1), h = Math.max(1, Math.round(w * (im.naturalHeight || 1) / (im.naturalWidth || 1))), c = document.createElement('canvas'); c.width = w; c.height = h;
+          var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h); var d = x.getImageData(0, 0, w, h).data, n = 0;
+          for (var i = 0; i < d.length; i += 4) { if (d[i + 3] > 30 && (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200)) n++; } ok(n < 6); } catch (e) { ok(false); } };
+      im.onerror = function () { ok(true); }; im.src = src;
+    });
+  }
+  async function cleanPdfHtml(src) {
+    var doc = new DOMParser().parseFromString(src, 'text/html');
+    [].slice.call(doc.querySelectorAll('script,style,template,[hidden],.hide-on-print,.hide-on-word,.error-text,.screen-only-note,.conditional-note,.list-help,.smart-tip,.signature-tools,button,datalist')).forEach(function (x) { x.remove(); });
+    var F = 'font-family:Arial,Helvetica,sans-serif;';
+    var sigs = [].slice.call(doc.querySelectorAll('img[alt="Firma"]'));
+    for (var i = 0; i < sigs.length; i++) { if (await blankImg(sigs[i].getAttribute('src'))) sigs[i].setAttribute('data-blank', '1'); }
+    function txt(n) { return String(n.textContent || '').replace(/ /g, ' ').trim(); }
+    function cell(node) {
+      var vals = [].slice.call(node.querySelectorAll(':scope .materialized-value'));
+      if (vals.length === 2 && !node.querySelector('img,label,.materialized-check') && /^\d{1,2}:\d{2}$/.test(txt(vals[0]))) {
+        var b = txt(vals[1]); return pdfEsc(txt(vals[0]) + (/^\d{1,2}:\d{2}$/.test(b) ? ' – ' + b : ''));
+      }
+      var out = '';
+      node.childNodes.forEach(function (n) {
+        if (n.nodeType === 3) { out += pdfEsc(n.nodeValue.replace(/\s+/g, ' ')); return; }
+        if (n.nodeType !== 1) return;
+        var t = n.tagName;
+        if (t === 'BR') { out += '<br>'; return; }
+        if (t === 'IMG') { if (n.getAttribute('alt') === 'Firma') { if (!n.getAttribute('data-blank')) out += '<img src="' + n.getAttribute('src') + '" height="48" style="height:48px">'; } return; }
+        if (n.classList.contains('materialized-check')) { out += /☒|✔|X/.test(n.textContent) ? '<b>■</b>' : '□'; return; }
+        if (n.classList.contains('materialized-value')) { var v = String(n.textContent || '').replace(/ /g, ' ').trim(); out += pdfEsc(v).replace(/\n/g, '<br>'); if (t === 'DIV' && v) out += '<br>'; return; }
+        if (t === 'LABEL') { var inner = cell(n).trim(); if (inner) out += '<span style="margin-right:10px">' + inner + '</span> '; return; }
+        if (n.classList.contains('warning-box') || n.classList.contains('hint-box')) { var w = txt(n); if (w && !/^Total asistentes:\s*0$/i.test(w)) out += '<div style="font-weight:bold">' + pdfEsc(w) + '</div>'; return; }
+        var inner2 = cell(n); out += inner2 + (/^(DIV|P|LI)$/.test(t) && inner2.trim() ? '<br>' : '');
+      });
+      return out.replace(/(<br>\s*)+$/, '').trim();
+    }
+    function photos(grid) {
+      var h = '';
+      [].slice.call(grid.querySelectorAll('.photo-card')).forEach(function (c) {
+        var im = c.querySelector('img'); if (!im) return; var cap = txt(c).replace(/Eliminar/g, '').trim();
+        h += '<div style="page-break-inside:avoid;margin:6px 0 10px;text-align:center"><img src="' + im.getAttribute('src') + '" width="600" style="width:600px;max-width:100%">' + (cap ? '<div style="' + F + 'font-size:9pt;color:#555;margin-top:3px">' + pdfEsc(cap) + '</div>' : '') + '</div>';
+      });
+      return h;
+    }
+    var BD = 'border:1px solid #c8c8c8;', html = '';
+    function table(tb) {
+      var rows = [].slice.call(tb.querySelectorAll('tr')).filter(function (tr) { return tr.closest('table') === tb; }), out = '', photoHtml = '', removed = 0, kept = 0, cols = 6;
+      rows.forEach(function (tr) {
+        if (tr.classList.contains('dyn-row')) {
+          var hasVal = [].slice.call(tr.querySelectorAll('.materialized-value')).some(function (v) { return txt(v); }) || !!tr.querySelector('img[alt="Firma"]:not([data-blank])');
+          if (!hasVal) { removed++; return; }
+          kept++;
+        }
+        var grid = tr.querySelector('.photo-grid');
+        if (grid) { photoHtml += photos(grid); if (!txt(tr).replace(grid.textContent, '').trim()) return; }
+        if (tr.classList.contains('dyn-head')) { out += '<!--DYNHEAD-->'; }
+        var sec = tr.classList.contains('section-row'), sub = tr.classList.contains('subsection-row');
+        var cells = [].slice.call(tr.children); if (!cells.length) return;
+        var r = '<tr>';
+        cells.forEach(function (c) {
+          var span = c.getAttribute('colspan') || '1', st = F + BD + 'padding:4px 6px;font-size:9pt;vertical-align:top;';
+          if (sec) st += 'color:#bd0926;font-weight:bold;font-size:10pt;border-left:4px solid #bd0926;border-bottom:2px solid #bd0926;padding-top:7px;';
+          else if (sub) st += 'color:#7a0619;font-weight:bold;';
+          else if (c.classList.contains('label') || c.tagName === 'TH') st += 'color:#333333;font-weight:bold;';
+          if (/text-align:\s*center/.test(c.getAttribute('style') || '') || c.classList.contains('check-cell')) st += 'text-align:center;';
+          r += '<td colspan="' + span + '" style="' + st + '">' + (cell(c) || '&nbsp;') + '</td>';
+        });
+        if (!sec && !sub && !/<td[^>]*>(?!&nbsp;<\/td>)/.test(r.replace(/<td[^>]*>&nbsp;<\/td>/g, ''))) return;
+        out += r + '</tr>';
+      });
+      out = kept ? out.replace(/<!--DYNHEAD-->/g, '') : out.replace(/<!--DYNHEAD--><tr>[\s\S]*?<\/tr>/g, '');
+      if (removed && !kept) out += '<tr><td colspan="' + cols + '" style="' + F + BD + 'padding:6px;font-size:9pt;font-style:italic;color:#444">Sin registros digitales en esta tabla' + (tb.ownerDocument.querySelector('.photo-card') ? ': ver la hoja física en el respaldo fotográfico.' : '.') + '</td></tr>';
+      if (photoHtml && !/<tr><td[^>]*>(?!&nbsp;)[^<]/.test(out.replace(/<tr><td colspan="\d+" style="[^"]*border-left:4px solid #bd0926[^"]*">[^<]*<\/td><\/tr>/g, ''))) out = '';
+      var hasRows = out.indexOf('<tr>') >= 0;
+      var t = hasRows ? '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin:0 0 8px">' + out + '</table>' : '';
+      return { t: t, photos: photoHtml, removed: removed };
+    }
+    var meta = doc.querySelector('[data-header-meta]'), logo = doc.querySelector('.header-white img'), foot = doc.querySelector('.doc-footer');
+    var pages = [].slice.call(doc.querySelectorAll('.print-page')); if (!pages.length) pages = [doc.body];
+    var allPhotos = '';
+    pages.forEach(function (pg, pi) {
+      var body = pg.querySelector('.fit-body') || pg, part = '';
+      [].slice.call(body.children).forEach(function (el) {
+        if (el.classList.contains('doc-title')) { part += '<div style="' + F + 'text-align:center;font-weight:bold;font-size:13pt;text-decoration:underline;margin:10px 0 8px">' + pdfEsc(txt(el)) + '</div>'; return; }
+        if (el.tagName === 'TABLE') {
+          var r = table(el); allPhotos += r.photos;
+          part += r.t;
+          return;
+        }
+        if (el.classList.contains('photo-grid')) { allPhotos += photos(el); return; }
+        if (el.classList.contains('warning-box') || el.classList.contains('legal-note')) { var w = txt(el); if (w) part += '<div style="' + F + 'font-size:8.5pt;color:#444444;border:1px solid #dddddd;padding:5px 7px;margin:0 0 8px">' + pdfEsc(w) + '</div>'; return; }
+      });
+      if (!part) return;
+      html += '<div' + (html ? ' style="margin-top:14px"' : '') + '>' + part + '</div>';
+    });
+    if (allPhotos) html += '<div style="page-break-before:always"><div style="' + F + 'color:#bd0926;font-weight:bold;font-size:10pt;padding:4px 6px;border-left:4px solid #bd0926;border-bottom:2px solid #bd0926;margin-bottom:8px">RESPALDO FOTOGRÁFICO</div>' + allPhotos + '</div>';
+    var head = '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin-bottom:6px"><tr>' +
+      '<td style="' + F + 'color:#1d1d1b;font-weight:bold;font-size:10pt;padding:6px 8px;width:38%;border-bottom:3px solid #bd0926">DEPARTAMENTO DE<br>PREVENCIÓN DE RIESGOS (PYR)</td>' +
+      '<td style="' + F + 'color:#555555;font-size:7pt;padding:6px 8px;width:26%;border-bottom:3px solid #bd0926">' + pdfEsc(meta ? meta.textContent.trim() : '').replace(/\n/g, '<br>') + '</td>' +
+      '<td style="text-align:right;padding:4px 8px;width:36%;border-bottom:3px solid #bd0926">' + (logo ? '<img src="' + logo.getAttribute('src') + '" height="44" style="height:44px">' : '') + '</td></tr></table>';
+    var ft = foot ? '<div style="' + F + 'font-size:7pt;color:#666;border-top:1px solid #ccc;margin-top:12px;padding-top:4px">' + pdfEsc(txt(foot).replace(/\s{2,}/g, ' · ')) + '</div>' : '';
+    return '<html><head><meta charset="utf-8"><style>@page{size:A4;margin:12mm 12mm 12mm 12mm}body{margin:0;' + F + 'color:#111}</style></head><body>' + head + html + ft + '</body></html>';
+  }
+  window.gpCleanPdfHtml = cleanPdfHtml;
+  async function serverPdf(name) {
+    var html = await cleanPdfHtml(window.buildPrintDocumentHtml());
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 60000) : 0;
+    try {
+      var r = await fetch(PDF_ENDPOINT, { method: 'POST', body: JSON.stringify({ key: PDF_KEY, action: 'pdf', name: name, html: html }), signal: ctl ? ctl.signal : undefined });
+      var j = await r.json(); if (!j || !j.ok || !j.b64) throw new Error((j && j.error) || 'Sin PDF');
+      var bin = atob(j.b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return { blob: new Blob([u], { type: 'application/pdf' }), name: name || 'Registro.pdf' };
+    } finally { if (tm) clearTimeout(tm); }
+  }
   window.gpMakePdf = async function (name) {
+    if (typeof window.buildPrintDocumentHtml !== 'function') throw new Error('Este formulario no puede generar PDF.');
+    if (navigator.onLine !== false) { try { return await serverPdf(name); } catch (e) { console.warn('PDF servidor no disponible, se usa el de respaldo', e); } }
+    return rasterPdf(name);
+  };
+  var rasterPdf = async function (name) {
     if (typeof window.buildPrintDocumentHtml !== 'function') throw new Error('Este formulario no puede generar PDF.');
     var html = window.buildPrintDocumentHtml();
     var ifr = document.createElement('iframe'); ifr.setAttribute('aria-hidden', 'true');
