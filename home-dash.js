@@ -14,7 +14,7 @@
   var FORM = { 'Charla': 'charlas.html', 'Capacitación': 'charlas.html', 'Inducción': 'charlas.html', 'Comité Paritario': 'comite.html', 'Auditoría Mensual': 'auditoria_mensual.html', 'Pre Auditoría': 'pre_auditoria.html',
     'Check list de equipos': 'check_list_equipos.html', 'Check list de arnés': 'check_list_arnes.html', 'Check list de EPP': 'check_list_epp.html', 'Caminata': 'caminata.html', 'Acta de caminata': 'caminata.html', 'Inspección': 'hallazgos.html', 'Inspección / Hallazgos': 'hallazgos.html',
     'Entrega de EPP': 'entrega_epp.html', 'Observación de conducta': 'observacion_conducta.html' };
-  var CTA = { 'charlas.html': 'Registrar', 'comite.html': 'Acta', 'hallazgos.html': 'Hacer', 'observacion_conducta.html': 'Observar', 'check_list_equipos.html': 'Hacer', 'check_list_arnes.html': 'Hacer', 'check_list_epp.html': 'Hacer' };
+  var CTA = { 'charlas.html': 'Registrar', 'comite.html': 'Acta', 'hallazgos.html': 'Hacer', 'observacion_conducta.html': 'Observar', 'check_list_equipos.html': 'Hacer', 'check_list_arnes.html': 'Hacer', 'check_list_epp.html': 'Hacer', 'check_list_andenes.html': 'Hacer', 'caminata.html': 'Hacer' };
   var MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   var DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   var IC = {
@@ -128,11 +128,11 @@
       '<span class="bp"><b style="color:' + c + '">' + (p == null ? '—' : p + '%') + '</b><small>' + (r.t ? r.ok + ' de ' + r.t : 'no programado') + '</small></span></' + (href ? 'a' : 'div') + '>';
   }
   function formHref(it) {
-    var obs = it.Tipo === 'Observación de conducta' || /^Observaci[oó]n de (conducta|almacenamiento)/i.test(it.Title || '');
-    var f = obs ? 'observacion_conducta.html' : FORM[it.Tipo]; if (it.Tipo === 'Check list de equipos' && /emergencia|anden/i.test(it.Title || '')) f = null;
+    var obs = it.Tipo === 'Observación de conducta' || /^Observaci[oó]n de (conducta|almacenamiento|seguridad en anden)/i.test(it.Title || '');
+    var f = obs ? 'observacion_conducta.html' : FORM[it.Tipo]; if (it.Tipo === 'Check list de equipos' && /anden/i.test(it.Title || '')) f = 'check_list_andenes.html'; else if (it.Tipo === 'Check list de equipos' && /emergencia/i.test(it.Title || '')) f = null;
     if (!f) return null;
     return f + '?act=' + encodeURIComponent(it.id) + '&c=' + encodeURIComponent(it.Centro) + '&t=' + encodeURIComponent(it.Title) + '&tipo=' + encodeURIComponent(it.Tipo) +
-      (obs ? (/pare/i.test(it.Title) ? '&modo=pare' : /apilador|almacenamiento/i.test(it.Title) ? '&modo=almac' : '&modo=conducta') : '');
+      (obs ? (/pare/i.test(it.Title) ? '&modo=pare' : /apilador|almacenamiento/i.test(it.Title) ? '&modo=almac' : /anden/i.test(it.Title) ? '&modo=anden' : '&modo=conducta') : '');
   }
   function dotColor(it) { var i = progIdx(it); return i >= 0 ? PROG[i].c : '#71717a'; }
 
