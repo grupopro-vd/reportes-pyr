@@ -491,17 +491,19 @@
         var cells = [].slice.call(tr.children); if (!cells.length) return;
         var r = '<tr>';
         cells.forEach(function (c) {
-          var span = c.getAttribute('colspan') || '1', st = F + BD + 'padding:4px 6px;font-size:9pt;vertical-align:top;';
-          if (sec) st += 'color:#bd0926;font-weight:bold;font-size:10pt;border-left:4px solid #bd0926;border-bottom:2px solid #bd0926;padding-top:7px;';
+          var span = c.getAttribute('colspan') || '1', st = F + BD + 'padding:4px 6px;font-size:9.5pt;vertical-align:top;';
+          if (sec) st += 'color:#bd0926;font-weight:bold;font-size:10.5pt;border-left:4px solid #bd0926;border-bottom:2px solid #bd0926;padding-top:7px;';
           else if (sub) st += 'color:#7a0619;font-weight:bold;';
           else if (c.classList.contains('label') || c.tagName === 'TH') st += 'color:#333333;font-weight:bold;';
           if (/text-align:\s*center/.test(c.getAttribute('style') || '') || c.classList.contains('check-cell')) st += 'text-align:center;';
           r += '<td colspan="' + span + '" style="' + st + '">' + (cell(c) || '&nbsp;') + '</td>';
         });
         if (!sec && !sub && !/<td[^>]*>(?!&nbsp;<\/td>)/.test(r.replace(/<td[^>]*>&nbsp;<\/td>/g, ''))) return;
-        out += r + '</tr>';
+        out += (sec ? '<!--S-->' : '') + r + '</tr>';
       });
       out = kept ? out.replace(/<!--DYNHEAD-->/g, '') : out.replace(/<!--DYNHEAD--><tr>[\s\S]*?<\/tr>/g, '');
+      for (var z = 0; z < 4; z++) out = out.replace(/<!--S--><tr>(?:(?!<\/tr>)[\s\S])*<\/tr>(?=<!--S-->|$)/g, '');
+      out = out.replace(/<!--S-->/g, '');
       if (removed && !kept) out += '<tr><td colspan="' + cols + '" style="' + F + BD + 'padding:6px;font-size:9pt;font-style:italic;color:#444">Sin registros digitales en esta tabla' + (tb.ownerDocument.querySelector('.photo-card') ? ': ver la hoja física en el respaldo fotográfico.' : '.') + '</td></tr>';
       if (photoHtml && !/<tr><td[^>]*>(?!&nbsp;)[^<]/.test(out.replace(/<tr><td colspan="\d+" style="[^"]*border-left:4px solid #bd0926[^"]*">[^<]*<\/td><\/tr>/g, ''))) out = '';
       var hasRows = out.indexOf('<tr>') >= 0;
@@ -521,6 +523,22 @@
           return;
         }
         if (el.classList.contains('photo-grid')) { allPhotos += photos(el); return; }
+        if (el.classList.contains('aud-sum')) { var sm = [].slice.call(el.querySelectorAll('b,small,.as-cnt')).map(txt).filter(Boolean).join(' · '); if (sm) part += '<div style="' + F + 'font-size:10.5pt;font-weight:bold;margin:4px 0 8px">Resultado: ' + pdfEsc(sm) + '</div>'; return; }
+        if (el.classList.contains('aud-list')) {
+          var at = '';
+          [].slice.call(el.querySelectorAll('.aa')).forEach(function (aa) {
+            var hh = aa.querySelector('.aa-h'); at += '<tr><td colspan="4" style="' + F + BD + 'padding:6px;font-size:10.5pt;color:#bd0926;font-weight:bold;border-left:4px solid #bd0926;border-bottom:2px solid #bd0926">' + pdfEsc(hh ? [].slice.call(hh.children).map(txt).join(' · ') : '') + '</td></tr>';
+            [].slice.call(aa.querySelectorAll('.ai')).forEach(function (ai) {
+              var n = txt(ai.querySelector('.ai-n') || ai), ttx = txt(ai.querySelector('.ai-t') || ai), res = [].slice.call(ai.querySelectorAll('label')).filter(function (l) { var m = l.querySelector('.materialized-check'); return m && /☒|✔|X/.test(m.textContent); }).map(txt).join(', ');
+              var obs = [].slice.call(ai.querySelectorAll(':scope > .materialized-value, .ai-plan .materialized-value')).map(txt).filter(Boolean).join(' · ');
+              var col = /^No cumple/.test(res) ? '#b3261e' : /^Parcial/.test(res) ? '#b45309' : /^Cumple/.test(res) ? '#16623f' : '#333333';
+              at += '<tr><td style="' + F + BD + 'padding:4px 6px;font-size:9.5pt;width:7%;font-weight:bold">' + pdfEsc(n) + '</td><td style="' + F + BD + 'padding:4px 6px;font-size:9.5pt;width:55%">' + pdfEsc(ttx) + '</td><td style="' + F + BD + 'padding:4px 6px;font-size:9.5pt;width:14%;font-weight:bold;color:' + col + '">' + pdfEsc(res || '—') + '</td><td style="' + F + BD + 'padding:4px 6px;font-size:9pt;width:24%">' + pdfEsc(obs) + '</td></tr>';
+              [].slice.call(ai.querySelectorAll('.ai-ph img')).forEach(function (im) { allPhotos += '<div style="page-break-inside:avoid;margin:6px 0 10px;text-align:center"><img src="' + im.getAttribute('src') + '" width="600" style="width:600px;max-width:100%"><div style="' + F + 'font-size:9pt;color:#555555;margin-top:3px">Ítem ' + pdfEsc(n) + '</div></div>'; });
+            });
+          });
+          if (at) part += '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin:0 0 8px">' + at + '</table>';
+          return;
+        }
         if (el.classList.contains('warning-box') || el.classList.contains('legal-note')) { var w = txt(el); if (w) part += '<div style="' + F + 'font-size:8.5pt;color:#444444;border:1px solid #dddddd;padding:5px 7px;margin:0 0 8px">' + pdfEsc(w) + '</div>'; return; }
       });
       if (!part) return;
