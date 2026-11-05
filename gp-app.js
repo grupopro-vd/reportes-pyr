@@ -245,6 +245,13 @@
     var q = new URLSearchParams(location.search);
     if (q.get('act')) { try { sessionStorage.setItem(actKey(), JSON.stringify({ id: q.get('act'), title: q.get('t') || '', centro: q.get('c') || '', tipo: q.get('tipo') || '' })); } catch (e) {} }
     var act = getAct(); if (!act || !document.querySelector('.document-sheet')) return;
+    // Una observación de conducta del programa no se registra como hallazgo: se abre su formulario
+    if (/^hallazgos$/i.test((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')) && /^Observaci[oó]n de (conducta|almacenamiento)/i.test(act.title || '')) {
+      try { sessionStorage.removeItem(actKey()); } catch (e) {}
+      var modo = /pare/i.test(act.title) ? 'pare' : /almacenamiento|rack/i.test(act.title) ? 'almac' : 'conducta';
+      location.replace('observacion_conducta.html?act=' + encodeURIComponent(act.id) + '&t=' + encodeURIComponent(act.title || '') + '&c=' + encodeURIComponent(act.centro || '') + '&tipo=' + encodeURIComponent(act.tipo || '') + '&modo=' + modo);
+      return;
+    }
     var set = function (sel, val) { var el = document.querySelector(sel); if (el && val && !el.value) { el.value = val; fire(el); } };
     set('.document-sheet [name="centro"]', act.centro);
     set('.document-sheet [name="tema"]', act.title);
