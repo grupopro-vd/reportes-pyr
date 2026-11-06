@@ -190,16 +190,20 @@
     var h = '';
 
     // Cabecera + panel negro
-    var stats = '<div class="kp kpa"><small>Avance ' + esc(PERS[per][1]) + '</small><b style="color:#f87171">' + (R.p == null ? '—' : R.p + '%') + '</b></div>' +
-      '<div class="kp"><small>Realizadas</small><b>' + R.ok + '</b></div><div class="kp"><small>Por hacer</small><b>' + R.todo + '</b></div>' +
-      '<div class="kp"><small>Fuera de plazo</small><b style="color:#fbbf24">' + lateAll + '</b></div>';
+    var pc = function (n) { return R.t ? Math.round(n / R.t * 100) + '%' : '—'; }, porHacer = R.todo + R.val;
+    var kp = function (l, v, sub, c, extra) { return '<div class="kp' + (extra || '') + '"><small>' + l + '</small><b>' + v + '</b><i style="color:' + c + '">' + sub + '</i>' + (extra ? '<div class="kbar"><span style="width:' + (R.p || 0) + '%"></span></div>' : '') + '</div>'; };
+    var stats = kp('Avance ' + esc(PERS[per][1]), R.p == null ? '—' : R.p + '%', R.ok + ' de ' + R.t + ' realizadas', '#4ade80', ' kpa') +
+      kp('Programadas', R.t, '100% actividades', '#7dd3fc') + kp('Realizadas', R.ok, pc(R.ok) + ' cerradas', '#4ade80') +
+      kp('Por hacer', porHacer, pc(porHacer) + ' pendientes', '#fbbf24') + kp('Atrasadas', R.late, pc(R.late) + ' fuera de plazo', '#f87171');
+    var seg = '<div class="seg seg4" role="tablist" aria-label="Periodo">' + ['dia', 'semana', 'mes', 'anio'].map(function (k) { return '<button type="button" role="tab" data-per="' + k + '" title="' + PERS[k][3] + '" aria-label="' + PERS[k][3] + '" aria-selected="' + (per === k) + '">' + PERS[k][0] + '</button>'; }).join('') + '</div>';
     var sync = '<div class="sync">' + (ERR ? '<span class="off">● Sin conexión</span> · datos guardados' : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
     if (admin) {
       var tabs = [''].concat(centros).map(function (c) { return '<button type="button" role="tab" data-c="' + esc(c) + '" aria-selected="' + (c === centro) + '">' + (c ? esc(short(c)) : 'Todo el programa') + '</button>'; }).join('');
       h += '<section class="hero">' +
-        '<div class="htop"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><span class="who">' + esc(nombre || 'Administrador') + ' · administrador <button type="button" class="sw" data-vista="equipo">Vista equipo</button></span></div>' +
+        '<div class="htop"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><span class="who">' + esc(nombre || 'Administrador') + ' · administrador <button type="button" class="sw" data-vista="equipo">Vista equipo</button></span>' + seg.replace('class="seg seg4"', 'class="seg seg4 hseg"') + '</div>' +
+        '<div class="hrng">' + esc(rango) + '</div>' +
         '<div class="tabs" role="tablist" aria-label="Centro">' + tabs + '</div>' +
-        '<div class="kpis">' + ring(R.p, 76, PERS[per][1]) + stats + '</div>' + sync + '</section>';
+        '<div class="kpis">' + stats + '</div>' + sync + '</section>';
     } else {
       var opts = '<option value="">Elige tu centro</option>' + centros.concat(centros.length ? [] : ORDEN).map(function (c) { return '<option' + (c === centro ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
       h += '<header class="thead"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><label class="csel"><span class="sr">Mi centro</span><select id="dCentro">' + opts + '</select></label>' +
@@ -213,7 +217,6 @@
 
     if (admin || centro) {
       // Avance por programa
-      var seg = '<div class="seg seg4" role="tablist" aria-label="Periodo">' + ['dia', 'semana', 'mes', 'anio'].map(function (k) { return '<button type="button" role="tab" data-per="' + k + '" title="' + PERS[k][3] + '" aria-label="' + PERS[k][3] + '" aria-selected="' + (per === k) + '">' + PERS[k][0] + '</button>'; }).join('') + '</div>';
       var progs = PROG.map(function (p, i) { return bar(p.n, resumen(perItems.filter(function (it) { return progIdx(it) === i; }))); }).join('');
       var otros = perItems.filter(function (it) { return progIdx(it) < 0; });
       if (otros.length) progs += bar('Otros', resumen(otros));
