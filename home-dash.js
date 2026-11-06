@@ -3,7 +3,7 @@
   'use strict';
   var ENDPOINT = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', KEY = 'GP-PYR-2026';
   var ADMINS = ['vdiaz@grupopro.cl'];
-  var ORDEN = ['Walmart Peñón', 'Walmart Pudahuel', 'Líder La Reina', 'Walmart Lo Aguirre', 'Walmart La Farfana', 'Líder Lo Barnechea', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
+  var ORDEN = ['Walmart Peñón', 'Walmart Pudahuel', 'Líder La Reina', 'Walmart Lo Aguirre', 'Walmart La Farfana', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
   var PROG = [
     { n: 'Charlas', m: /subcontrat|plan de prevenc|charla semanal/, c: '#1d4ed8' },
     { n: 'Check list', m: /check ?list/, c: '#b45309' },

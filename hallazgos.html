@@ -1006,7 +1006,7 @@ window.addEventListener('beforeprint',fitPages);`;
    files.push({name:'[Content_Types].xml',data:content},{name:'_rels/.rels',data:rootRels},{name:'word/document.xml',data:documentXml},{name:'word/styles.xml',data:styles},{name:'word/footer1.xml',data:footerXml},{name:'word/_rels/document.xml.rels',data:relXml});for(const m of mediaMap.values())files.push({name:'word/media/'+m.name,data:m.bytes});return zipBlob(files)}
  window.exportWord=function(){downloadBlob(buildDocx(),cleanFileName()+'.docx')};
 })();
-</script><datalist id="centrosList"><option>Walmart Pudahuel</option><option>Walmart Peñón</option><option>Walmart Lo Aguirre</option><option>Líder Lo Barnechea</option><option>Líder La Reina</option><option>Oficina Grupo Pro</option></datalist><style id="gpEhsStyles">
+</script><datalist id="centrosList"><option>Walmart Pudahuel</option><option>Walmart Peñón</option><option>Walmart Lo Aguirre</option><option>Líder La Reina</option><option>Oficina Grupo Pro</option></datalist><style id="gpEhsStyles">
 .dyn-del{background:#f4f4f4;border:1px solid #d4d4d4;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
 .dyn-add{margin-top:6px}
 .semaforo{font-weight:800;padding:2px 8px;border-radius:999px;display:inline-block}

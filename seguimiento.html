@@ -144,7 +144,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
 (function(){
 var CFG={endpoint:'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',key:'GP-PYR-2026',
   sp:'https://grupoprocl.sharepoint.com/sites/PYR/ReportesPYR/'};
-var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder Lo Barnechea','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas'];
+var CENTROS=['Walmart Pudahuel','Walmart Peñón','Walmart Lo Aguirre','Líder La Reina','Oficina Grupo Pro','ICB','Transporte TransPRO','Lippi','4 Ruedas'];
 var $=function(s){return document.querySelector(s)},$$=function(s){return [].slice.call(document.querySelectorAll(s))};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
