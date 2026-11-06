@@ -278,7 +278,7 @@ async function libroData(rows){
   ws.columns=cols.map(function(c){return {header:c[0],width:c[1]}});
   var d=function(x){if(!x)return null;var p=String(x).split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]))};
   rows.forEach(function(r){var fb=conFb(r)?'Sí':(r.fbNo?'No':'');
-    ws.addRow([r.anio||'',r.semana||'',r.cd||'',r.centro,r.area,r.persona,r.cargo,r.empresa,r.conFalta?'Negativa':'Positiva',r.tipo,r.observacion,r.tipoFalta,
+    ws.addRow([r.anio||'',r.semana||'',r.cd||'',r.centro,r.area,r.persona,r.cargo,r.empresa,r.conFalta?'Negativa':'Positiva',r.tipo,r.observacion||((r.seguras||[]).length?'Conductas seguras: '+r.seguras.join(' · '):''),r.tipoFalta,
       fb,proceso(r),r.escalamiento,r.supervisor,r.conFalta?r.estado:'Positiva (sin falta)',r.observador,r.prevencionista,d(r.fecha),r.hora,r.turno,r.lugar,d(r.tope),d(r.cierre),r.medida,r.nota,r.id])});
   var hr=ws.getRow(1);hr.height=36;hr.eachCell(function(c){c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF4472C4'}};c.alignment={wrapText:true,vertical:'middle',horizontal:'center'}});
   [20,24,25].forEach(function(i){ws.getColumn(i).numFmt='dd-mm-yyyy'});
