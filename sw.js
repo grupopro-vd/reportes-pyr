@@ -1,10 +1,10 @@
 // Guarda la app y los formularios en el teléfono para que abran rápido y funcionen sin señal.
-const CACHE = 'pro-ehs-v76';
+const CACHE = 'pro-ehs-v77';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'gp-app.js', 'home-dash.js', 'vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js', 'logo.png', 'logo-transparente.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png',
   'rapido.html', 'declaracion.html', 'detallado.html',
   'check_list_equipos.html', 'permiso_trabajo.html', 'entrega_epp.html',
   'hallazgos.html', 'charlas.html', 'comite.html', 'auditoria.html',
-  'auditoria_mensual.html', 'pre_auditoria.html', 'panel.html', 'calendario.html', 'estadisticas.html', 'observaciones.html', 'sugerencias.html', 'observacion_conducta.html', 'seguimiento.html', 'firma_procedimientos.html', 'onboarding.html', 'check_list_arnes.html', 'check_list_epp.html', 'caminata.html', 'check_list_andenes.html', 'check_list_carga.html', 'check_list_emergencias.html', 'check_list_vehiculos.html', 'gp-side.js'];
+  'auditoria_mensual.html', 'pre_auditoria.html', 'panel.html', 'calendario.html', 'estadisticas.html', 'observaciones.html', 'sugerencias.html', 'observacion_conducta.html', 'seguimiento.html', 'firma_procedimientos.html', 'onboarding.html', 'check_list_arnes.html', 'check_list_epp.html', 'caminata.html', 'check_list_andenes.html', 'check_list_carga.html', 'check_list_emergencias.html', 'check_list_vehiculos.html', 'gp-side.js', 'check_list_armado.html', 'check_list_pbyl.html'];
 // Librería para generar los informes PDF de auditoría (se guarda para usarla sin señal)
 const CDN = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).then(() => c.addAll(CDN).catch(() => {}))).then(() => self.skipWaiting())); });
