@@ -246,9 +246,9 @@
     if (q.get('act')) { try { sessionStorage.setItem(actKey(), JSON.stringify({ id: q.get('act'), title: q.get('t') || '', centro: q.get('c') || '', tipo: q.get('tipo') || '' })); } catch (e) {} }
     var act = getAct(); if (!act || !document.querySelector('.document-sheet')) return;
     // Una observación de conducta del programa no se registra como hallazgo: se abre su formulario
-    if (/^hallazgos$/i.test((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')) && /^Observaci[oó]n de (conducta|almacenamiento|seguridad en anden)/i.test(act.title || '')) {
+    if (/^hallazgos$/i.test((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')) && /^Observaci[oó]n de (conducta|almacenamiento|seguridad en anden|carga)/i.test(act.title || '')) {
       try { sessionStorage.removeItem(actKey()); } catch (e) {}
-      var modo = /pare/i.test(act.title) ? 'pare' : /almacenamiento|rack/i.test(act.title) ? 'almac' : /anden/i.test(act.title) ? 'anden' : 'conducta';
+      var modo = /pare/i.test(act.title) ? 'pare' : /almacenamiento|rack/i.test(act.title) ? 'almac' : /anden/i.test(act.title) ? 'anden' : /carga/i.test(act.title) ? 'carga' : 'conducta';
       location.replace('observacion_conducta.html?act=' + encodeURIComponent(act.id) + '&t=' + encodeURIComponent(act.title || '') + '&c=' + encodeURIComponent(act.centro || '') + '&tipo=' + encodeURIComponent(act.tipo || '') + '&modo=' + modo);
       return;
     }
@@ -409,7 +409,7 @@
 
   /* ---------------- PDF del registro (reemplaza al Word) ---------------- */
   var PDF_LIBS = ['vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'].map(function (u) { return new URL(u, document.baseURI).href; });
-  var PDF_SIGLA = { 'CHECKLIST-EQ': 'CL Equipo', 'CHECKLIST-ARNES': 'CL Arnes', 'CHECKLIST-EPP': 'CL EPP', 'CAMINATA': 'Acta Caminata', 'CHECKLIST-ANDEN': 'CL Andenes', 'CHECKLIST-VH': 'CL Vehiculo', 'CHARLA': 'Charla', 'COMITE': 'Acta Comite',
+  var PDF_SIGLA = { 'CHECKLIST-EQ': 'CL Equipo', 'CHECKLIST-ARNES': 'CL Arnes', 'CHECKLIST-EPP': 'CL EPP', 'CAMINATA': 'Acta Caminata', 'CHECKLIST-ANDEN': 'CL Andenes', 'CHECKLIST-CARGA': 'CHL Carga', 'CHECKLIST-VH': 'CL Vehiculo', 'CHARLA': 'Charla', 'COMITE': 'Acta Comite',
     'HALLAZGO': 'Hallazgo', 'OBS-CONDUCTA': 'Obs Conducta', 'PERMISO-AR': 'Permiso AR', 'ENTREGA-EPP': 'Entrega EPP', 'FIRMA-PTS': 'Firma PTS', 'AUDITORIA-MENSUAL': 'Auditoria',
     'AUDITORIA': 'Auditoria', 'PRE-AUDITORIA': 'Pre Auditoria', 'FR-RAPIDO': 'FR Rapido', 'FR-DETALLADO': 'FR Detallado', 'DECLARACION': 'Declaracion' };
   var MESC = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
