@@ -331,7 +331,7 @@ function wksDe(rows){return uniq(rows.map(wkKey)).filter(function(k){return !/^0
 
 function render(){
   try{localStorage.setItem('gpObsFiltros',JSON.stringify(F));localStorage.setItem('gpObsView',VIEW)}catch(e){}
-  $$('.side a.nv[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===VIEW)});
+  $$('a.nv[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===VIEW)});
   var rows=filtrar(),faltas=rows.filter(function(r){return r.conFalta});
   var allW=wksDe(ROWS);
   var h='<div class="vtabs" role="tablist">'+VIEWS.map(function(v){return '<button type="button" data-v="'+v[0]+'" class="'+(VIEW===v[0]?'on':'')+'">'+v[1]+'</button>'}).join('')+'</div>';
@@ -621,5 +621,6 @@ $('#impIn').onchange=function(){var f=this.files[0];this.value='';if(f)importar(
 init();
 })();
 </script>
+<script src="gp-side.js"></script>
 </body>
 </html>
