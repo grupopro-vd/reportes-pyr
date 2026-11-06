@@ -190,7 +190,8 @@
     var h = '';
 
     // Cabecera + panel negro
-    var stats = '<div class="kp"><small>Realizadas</small><b>' + R.ok + '</b></div><div class="kp"><small>Por hacer</small><b>' + R.todo + '</b></div>' +
+    var stats = '<div class="kp kpa"><small>Avance ' + esc(PERS[per][1]) + '</small><b style="color:#f87171">' + (R.p == null ? '—' : R.p + '%') + '</b></div>' +
+      '<div class="kp"><small>Realizadas</small><b>' + R.ok + '</b></div><div class="kp"><small>Por hacer</small><b>' + R.todo + '</b></div>' +
       '<div class="kp"><small>Fuera de plazo</small><b style="color:#fbbf24">' + lateAll + '</b></div>';
     var sync = '<div class="sync">' + (ERR ? '<span class="off">● Sin conexión</span> · datos guardados' : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
     if (admin) {
