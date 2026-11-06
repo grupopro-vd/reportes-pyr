@@ -190,8 +190,8 @@
     var h = '';
 
     // Cabecera + panel negro
-    var stats = '<div class="kp"><b>' + R.ok + '</b><small>realizadas</small></div><div class="kp"><b>' + R.todo + '</b><small>por hacer</small></div>' +
-      '<div class="kp"><b style="color:#fbbf24">' + lateAll + '</b><small>atrasadas</small></div><div class="kp"><b style="color:#93c5fd">' + valAll + '</b><small>por validar</small></div>';
+    var stats = '<div class="kp"><small>Realizadas</small><b>' + R.ok + '</b></div><div class="kp"><small>Por hacer</small><b>' + R.todo + '</b></div>' +
+      '<div class="kp"><small>Fuera de plazo</small><b style="color:#fbbf24">' + lateAll + '</b></div>';
     var sync = '<div class="sync">' + (ERR ? '<span class="off">● Sin conexión</span> · datos guardados' : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
     if (admin) {
       var tabs = [''].concat(centros).map(function (c) { return '<button type="button" role="tab" data-c="' + esc(c) + '" aria-selected="' + (c === centro) + '">' + (c ? esc(short(c)) : 'Todo el programa') + '</button>'; }).join('');

@@ -84,7 +84,7 @@ body{font-family:Manrope,Arial,Helvetica,sans-serif;background:#f7f7f8}
 .tabs button[aria-selected=true]{background:#fff;border-color:#fff;color:#18181b}
 .kpis{display:grid;grid-template-columns:auto repeat(2,minmax(0,1fr));gap:10px 14px;align-items:center}
 .kpis .ring{grid-row:span 2}
-.kp b{display:block;font-size:22px;font-weight:800;line-height:1}.kp small{font-size:11px;color:#a1a1aa;font-weight:600}
+.kp b{display:block;font-size:22px;font-weight:800;line-height:1;margin-top:3px}.kp small{display:block;font-size:11px;color:#a1a1aa;font-weight:600}
 .ring{position:relative;flex:none}.ring svg{display:block}
 .rv{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.05}.rv b{display:block;font-size:19px;font-weight:800}.rv small{display:block;font-size:10px;color:#a1a1aa;font-weight:600}
 .sync{font-size:11px;color:#a1a1aa;font-weight:600}.sync .off{color:#fbbf24}
@@ -133,7 +133,8 @@ body{font-family:Manrope,Arial,Helvetica,sans-serif;background:#f7f7f8}
 .fhead{margin:6px 2px 12px;font-size:17px;font-weight:800}
 .mh .mt{font-family:Manrope,Arial,sans-serif}
 @media(min-width:720px){
- .kpis{grid-template-columns:auto repeat(4,minmax(0,1fr))}.kpis .ring{grid-row:auto}
+ .kpis{grid-template-columns:auto repeat(3,minmax(0,1fr))}.kpis .ring{grid-row:auto}
+ .kp b{font-size:52px;margin-top:6px}.kp small{font-size:15px}
  .dgrid{display:grid;grid-template-columns:1fr 1fr}
  .dgrid>.dcent,.dgrid>.dacts,.dgrid>.dquick{grid-column:1/-1}
  .dquick{grid-template-columns:repeat(8,minmax(0,1fr))}
