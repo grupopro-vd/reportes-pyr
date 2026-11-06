@@ -113,6 +113,7 @@ tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
     <div><h1>Observaciones de conducta</h1><p id="sub">Métricas, tendencias y consolidado de las observaciones enviadas desde la app</p></div>
     <div class="acts">
       <label class="btn" title="Suma un consolidado en Excel con el formato del Listado (solo para ver, no se guarda)">⭳ Importar Excel<input id="impIn" type="file" accept=".xlsx,.xls" hidden></label>
+      <button class="btn" id="spBtn" type="button" hidden title="Actualiza el Excel de data en la carpeta D. Métricas Observaciones">⟳ Excel en SharePoint</button>
       <button class="btn dark" id="dlBtn" type="button" disabled>⭳ Descargar Excel</button>
     </div>
   </div>
@@ -127,7 +128,7 @@ tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
 'use strict';
 var CFG={clientId:'9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f',tenantId:'470d4a25-3e3e-49c6-a6f6-ed59ef49a1c3',
   site:'grupoprocl.sharepoint.com,32881a9e-1d10-427d-8d81-a8e638a346f4,8c2de84d-d5d6-4c85-8258-7ffb421c081f',
-  folder:'PRO_EHS/Terreno/Observaciones_Conducta', seg:'PRO_EHS/Config/obs_seguimiento.json',
+  folder:'PRO_EHS/Terreno/Observaciones_Conducta', dataDrive:'b!nhqIMhAdfUKNgajmOKNG9E3oLYzW1YVMglh_-0IcCB8TjWn42sJPSZnl6HYe8Wv8', dataFile:'General/Gestión SSO Grupo Pro/Carpeta B.6 - Estadistica/D. Métricas Observaciones/Data Observaciones PRO EHS.xlsx', seg:'PRO_EHS/Config/obs_seguimiento.json',
   admins:['vdiaz@grupopro.cl'],scopes:['Sites.ReadWrite.All'],
   msal:'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',
   xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
@@ -252,7 +253,54 @@ function msgTop(k,t){var a=$('#app');var d=document.createElement('div');d.class
 
 // ---------- Filtros y render ----------
 function uniq(a){var s={};a.forEach(function(x){if(x)s[x]=1});return Object.keys(s).sort(function(x,y){return x.localeCompare(y,'es')})}
-function componer(){ROWS=APP.concat(IMP);$('#dlBtn').disabled=false;render()}
+function componer(){ROWS=APP.concat(IMP);$('#dlBtn').disabled=false;if(ADMIN){$('#spBtn').hidden=false;syncData(false)}render()}
+// ---------- Excel de data en SharePoint (todas las observaciones de todos los centros) ----------
+var SYNC_K='gpObsDataSync';
+function firmaData(rows){var s=rows.map(function(r){return r.id+'|'+r.escalamiento+'|'+r.estado+'|'+r.cierre+'|'+r.supervisor+'|'+r.segAt}).sort().join('\n'),h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return rows.length+':'+h}
+async function syncData(force){
+  var rows=APP.filter(function(r){return r.src==='app'});if(!rows.length&&!force)return;
+  var fir=firmaData(rows),prev={};try{prev=JSON.parse(localStorage.getItem(SYNC_K)||'{}')}catch(e){}
+  if(!force&&prev.f===fir&&Date.now()-(prev.t||0)<12*3600e3)return;
+  var btn=$('#spBtn'),old=btn.textContent;btn.disabled=true;btn.textContent='Actualizando Excel…';
+  try{await loadScript(CFG.exceljs);var buf=await libroData(rows);
+    var r=await g('/drives/'+CFG.dataDrive+'/root:/'+encPath(CFG.dataFile)+':/content',{method:'PUT',ct:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',body:buf});
+    try{localStorage.setItem(SYNC_K,JSON.stringify({f:fir,t:Date.now(),url:r&&r.webUrl}))}catch(e){}
+    btn.textContent='✔ Excel actualizado';if(force&&r&&r.webUrl)msgTop('ok','Excel de data actualizado en D. Métricas Observaciones ('+rows.length+' observaciones).');
+  }catch(e){btn.textContent=old;if(force||e.status!==423)msgTop('err','No se pudo actualizar el Excel en SharePoint'+(e.status===423?' (alguien lo tiene abierto; ciérralo e intenta de nuevo)':'')+': '+e.message)}
+  setTimeout(function(){btn.disabled=false;btn.textContent=old},4000)}
+async function libroData(rows){
+  rows=rows.slice().sort(function(a,b){return ((a.fecha||'')+(a.hora||'')).localeCompare((b.fecha||'')+(b.hora||''))});
+  var wb=new ExcelJS.Workbook();wb.creator='PRO EHS · Grupo Pro';wb.created=new Date();
+  var ws=wb.addWorksheet('Data',{views:[{state:'frozen',ySplit:1}]});
+  var cols=[['Año',8],['Semana',9],['CD',12],['Centro',20],['Área colaborador',18],['Colaborador',26],['Cargo',18],['Empresa',16],['Resultado',12],['Tipo de observación',22],['Observación',60],['Tipo de falta',40],
+    ['Feedback',10],['Gestión aplicada',24],['Escalamiento',24],['Supervisor (Jefatura) Cierre',24],['Estado de cumplimiento',20],['Observador',24],['Prevencionista turno',22],
+    ['Fecha observación',14],['Hora',8],['Turno',8],['Lugar',18],['Fecha tope cierre',14],['Fecha cierre observación',14],['Medida / plan de acción',40],['Nota seguimiento',30],['ID registro',24]];
+  ws.columns=cols.map(function(c){return {header:c[0],width:c[1]}});
+  var d=function(x){if(!x)return null;var p=String(x).split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]))};
+  rows.forEach(function(r){var fb=conFb(r)?'Sí':(r.fbNo?'No':'');
+    ws.addRow([r.anio||'',r.semana||'',r.cd||'',r.centro,r.area,r.persona,r.cargo,r.empresa,r.conFalta?'Negativa':'Positiva',r.tipo,r.observacion,r.tipoFalta,
+      fb,proceso(r),r.escalamiento,r.supervisor,r.conFalta?r.estado:'Positiva (sin falta)',r.observador,r.prevencionista,d(r.fecha),r.hora,r.turno,r.lugar,d(r.tope),d(r.cierre),r.medida,r.nota,r.id])});
+  var hr=ws.getRow(1);hr.height=36;hr.eachCell(function(c){c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF4472C4'}};c.alignment={wrapText:true,vertical:'middle',horizontal:'center'}});
+  [20,24,25].forEach(function(i){ws.getColumn(i).numFmt='dd-mm-yyyy'});
+  ws.eachRow(function(row,n){if(n===1)return;row.alignment={vertical:'top'};row.getCell(11).alignment={wrapText:true,vertical:'top'};
+    var v=String(row.getCell(9).value);row.getCell(9).font={bold:true,color:{argb:v==='Negativa'?'FFB3261E':'FF16623F'}};
+    var st=row.getCell(17),e=String(st.value||'');st.fill={type:'pattern',pattern:'solid',fgColor:{argb:e==='Cerrado'?'FFE3F4EA':e==='Pendiente'?'FFFDF0D5':e==='Caducado'?'FFFDE4E2':'FFF4F4F5'}}});
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols.length}};
+  // Resumen por centro
+  var rs=wb.addWorksheet('Resumen por centro',{views:[{state:'frozen',ySplit:3}]});
+  rs.addRow(['Data de observaciones de conducta · todos los centros']).font={bold:true,size:14};
+  rs.addRow(['Actualizado el '+new Date().toLocaleString('es-CL')+' desde PRO EHS · '+rows.length+' observaciones']).font={color:{argb:'FF71717A'}};
+  var H=['Centro','Observaciones','Positivas','Negativas','Con feedback','Proceso de mejora','Carta de amonestación','Otra gestión','Cerradas','Pendientes','Caducadas','% cierre faltas'];
+  var hh=rs.addRow(H);hh.font={bold:true,color:{argb:'FFFFFFFF'}};hh.eachCell(function(c){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF18181B'}};c.alignment={horizontal:'center',wrapText:true}});hh.height=30;
+  rs.columns=H.map(function(h,i){return {width:i?14:24}});
+  var fila=function(nom,x){var y=x.filter(function(r){return r.conFalta}),pr=function(t){return x.filter(function(r){return proceso(r)===t}).length},c=y.filter(function(r){return r.estado==='Cerrado'}).length;
+    var otra=x.filter(function(r){var p=proceso(r);return p!=='Proceso de mejora'&&p!=='Carta de amonestación'&&p!=='Feedback'&&p!=='Sin gestión registrada'}).length;
+    var row=rs.addRow([nom,x.length,x.length-y.length,y.length,x.filter(conFb).length,pr('Proceso de mejora'),pr('Carta de amonestación'),otra,c,y.filter(function(r){return r.estado==='Pendiente'}).length,y.filter(function(r){return r.estado==='Caducado'}).length,y.length?c/y.length:null]);
+    row.getCell(12).numFmt='0%';row.alignment={horizontal:'center'};row.getCell(1).alignment={horizontal:'left'};return row};
+  uniq(rows.map(function(r){return r.centro})).sort().forEach(function(c){fila(c,rows.filter(function(r){return r.centro===c}))});
+  fila('Total',rows).font={bold:true};
+  return await wb.xlsx.writeBuffer()}
+$('#spBtn').onclick=function(){syncData(true)};
 function filtrar(){var wks=wksDe(ROWS),lim=null;if(/^u\d+$/.test(F.sem))lim=wks.slice(-(+F.sem.slice(1)));
   return ROWS.filter(function(r){
     if(F.centro&&r.centro!==F.centro)return false;if(lim&&lim.indexOf(wkKey(r))<0)return false;if(F.sem&&!lim&&wkKey(r)!==F.sem)return false;
