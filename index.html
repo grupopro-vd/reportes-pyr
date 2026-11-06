@@ -144,6 +144,16 @@ body{font-family:Manrope,Arial,Helvetica,sans-serif;background:#f7f7f8}
 @media(min-width:1024px){
  body.has-side .dside{display:flex;flex-direction:column;gap:2px;position:fixed;inset:0 auto 0 0;width:236px;background:#18181b;color:#e4e4e7;padding:18px 12px;overflow-y:auto}
  body.has-side .content{margin-left:236px}
+ body.has-side .dside,body.has-side .content{transition:width .2s,margin-left .2s}
+ .dside .smin{margin-left:auto;width:32px!important;height:32px;padding:0!important;justify-content:center;border-radius:9px;color:#a1a1aa!important}
+ .dside .smin svg{transition:transform .2s}
+ body.side-min .dside{width:68px;padding:18px 10px}
+ body.side-min .content{margin-left:68px}
+ body.side-min .dside .sl{flex-direction:column;padding:0 0 10px;gap:12px}
+ body.side-min .dside .sl b,body.side-min .dside .sh,body.side-min .dside button[data-c],body.side-min .dside a span{display:none}
+ body.side-min .dside .smin{margin:0}body.side-min .dside .smin svg{transform:rotate(180deg)}
+ body.side-min .dside a{justify-content:center;padding:10px 0}
+ body.side-min .dside .sl .lg img{max-width:44px}
  .dside .sl{display:flex;align-items:center;gap:10px;color:#fff;font-size:17px;padding:0 6px 14px}
  .dside .sh{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#71717a;padding:14px 8px 6px}
  .dside button,.dside a{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;color:#d4d4d8;font:600 13.5px Manrope,Arial,sans-serif;padding:8px 10px;border-radius:9px;cursor:pointer;text-decoration:none}
