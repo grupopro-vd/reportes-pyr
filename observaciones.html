@@ -228,7 +228,7 @@ function desdeApp(o){if(!o||!o.fecha)return null;var wk=isoWeek(o.fecha),s=SEG[o
   var detalle=[].concat(o.graves||[],o.mejora||[],(o.no_cumple||[]).map(function(x){return 'No cumple: '+x})).join(' · ');
   var r={src:'app',id:o.id,centro:o.centro||'Sin centro',cd:cdNom(o.centro),anio:wk.y,semana:wk.w,fecha:o.fecha,hora:o.hora||'',turno:o.turno||'',
     tipo:o.tipo_obs||'',resultado:o.resultado||(f?'Negativa':'Positiva'),conFalta:f,area:o.area||'',gerencia:o.gerencia||'',persona:o.persona||'',cargo:o.cargo||'',empresa:o.empresa||'',lugar:o.lugar||'',
-    observacion:[o.descripcion,detalle].filter(Boolean).join(' — '),tipoFalta:s.tipo_falta||o.tipo_falta||'',escalamiento:s.escalamiento||o.escalamiento||'',
+    observacion:(s.observacion_edit!=null&&s.observacion_edit!=='')?s.observacion_edit:[o.descripcion,detalle].filter(Boolean).join(' — '),obsOriginal:[o.descripcion,detalle].filter(Boolean).join(' — '),obsEditada:!!(s.observacion_edit),tipoFalta:s.tipo_falta||o.tipo_falta||'',escalamiento:s.escalamiento||o.escalamiento||'',
     observador:o.observador||o.reporter||'',supervisor:s.supervisor||o.supervisor||'',prevencionista:o.prevencionista||'',tope:s.fecha_tope||o.fecha_tope||'',cierre:s.fecha_cierre||'',
     medida:o.medida||'',feedback:o.feedback||'',fb:o.feedback==='Sí',fbNo:o.feedback==='No',seguras:o.seguras||[],mejoraL:o.mejora||[],gravesL:o.graves||[],noCumple:o.no_cumple||[],cargoObs:o.cargo_observador||'',nota:s.nota||'',estadoSeg:s.estado||'',segBy:s.by||'',segAt:s.at||'',graves:(o.graves||[]).length};
   r.estado=estado(r);return r}
@@ -259,7 +259,7 @@ function uniq(a){var s={};a.forEach(function(x){if(x)s[x]=1});return Object.keys
 function componer(){ROWS=APP.concat(IMP);$('#dlBtn').disabled=false;if(ADMIN){$('#spBtn').hidden=false;syncData(false)}render()}
 // ---------- Excel de data en SharePoint (todas las observaciones de todos los centros) ----------
 var SYNC_K='gpObsDataSync';
-function firmaData(rows){var s=rows.map(function(r){return r.id+'|'+r.escalamiento+'|'+r.estado+'|'+r.cierre+'|'+r.supervisor+'|'+r.segAt}).sort().join('\n'),h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return rows.length+':'+h}
+function firmaData(rows){var s=rows.map(function(r){return r.id+'|'+r.escalamiento+'|'+r.estado+'|'+r.cierre+'|'+r.supervisor+'|'+r.segAt+'|'+r.observacion}).sort().join('\n'),h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return rows.length+':'+h}
 async function syncData(force){
   var rows=APP.filter(function(r){return r.src==='app'});if(!rows.length&&!force)return;
   var fir=firmaData(rows),prev={};try{prev=JSON.parse(localStorage.getItem(SYNC_K)||'{}')}catch(e){}
@@ -505,24 +505,27 @@ function graficos(rows,faltas){
 
 // ---------- Detalle y cierre ----------
 function puedeEditar(r){return r&&r.src==='app'&&ACC&&(ADMIN||(MINE&&MINE.indexOf(r.centro)>=0))}
-function abrir(r){if(!r)return;var b=$('#shBox');var ed=puedeEditar(r)&&r.conFalta;
+function abrir(r){if(!r)return;var b=$('#shBox');var pe=puedeEditar(r),ed=pe&&r.conFalta;
   b.innerHTML='<h3 id="shT">'+esc(r.persona||'Observación')+'</h3><div class="sub">'+esc(r.id)+' · '+esc(r.centro)+' · '+fdl(r.fecha)+(r.hora?' '+esc(r.hora):'')+' · semana '+r.semana+'</div>'+
     '<dl>'+[['Tipo',r.tipo],['Resultado',r.conFalta?'Con falta':'Positiva'],['Área',r.area],['Gerencia',r.gerencia],['Empresa',r.empresa],['Cargo',r.cargo],['Lugar',r.lugar],['Observación',r.observacion],['Tipo de falta',r.tipoFalta],['Escalamiento',r.escalamiento],['Medida',r.medida],['Feedback',r.feedback],['Observador',r.observador],['Prevencionista',r.prevencionista],['Fecha tope',fdl(r.tope)],['Estado',r.estado],['Cierre',fdl(r.cierre)],['Jefatura cierre',r.supervisor],['Nota',r.nota],['Última edición',r.segBy?r.segBy+' · '+new Date(r.segAt).toLocaleString('es-CL'):'']]
       .filter(function(x){return x[1]}).map(function(x){return '<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>'}).join('')+'</dl>'+
+    (pe?'<div class="frm"><label class="full">Corregir texto de la observación<textarea id="eObs" style="height:84px">'+esc(r.observacion)+'</textarea></label>'+(r.obsEditada?'<div class="note full">Texto corregido. Original: '+esc(r.obsOriginal||'(vacío)')+'</div>':'')+'</div>':'')+
     (ed?'<div class="frm"><label>Estado de cumplimiento<select id="eEst">'+ESTADOS.map(function(e){return '<option'+(e===r.estado?' selected':'')+'>'+e+'</option>'}).join('')+'</select></label>'+
       '<label>Fecha real de cierre<input id="eCie" type="date" value="'+esc(r.cierre)+'"></label>'+
       '<label>Jefatura que cierra<input id="eSup" value="'+esc(r.supervisor)+'"></label>'+
       '<label>Escalamiento<select id="eEsc"><option value=""></option>'+ESC.map(function(e){return '<option'+(e===r.escalamiento?' selected':'')+'>'+e+'</option>'}).join('')+'</select></label>'+
       '<label>Fecha tope<input id="eTope" type="date" value="'+esc(r.tope)+'"></label>'+
       '<label class="full">Nota<textarea id="eNota">'+esc(r.nota)+'</textarea></label></div><div id="eMsg"></div>':'')+
-    '<div class="btns"><button class="btn" id="shX" type="button">Cerrar</button>'+(ed?'<button class="btn pri" id="shGo" type="button">Guardar seguimiento</button>':'')+'</div>';
+    (pe&&!ed?'<div id="eMsg"></div>':'')+'<div class="btns"><button class="btn" id="shX" type="button">Cerrar</button>'+(pe?'<button class="btn pri" id="shGo" type="button">'+(ed?'Guardar seguimiento':'Guardar corrección')+'</button>':'')+'</div>';
   $('#sheet').classList.add('on');$('#shX').onclick=function(){$('#sheet').classList.remove('on')};
   var ec=$('#eEst');if(ec)ec.onchange=function(){if(ec.value==='Cerrado'&&!$('#eCie').value)$('#eCie').value=HOY};
   var go=$('#shGo');if(go)go.onclick=async function(){go.disabled=true;$('#eMsg').innerHTML='<div class="msg info"><span class="spin"></span>Guardando en SharePoint…</div>';
-    try{var v={estado:$('#eEst').value,fecha_cierre:$('#eCie').value,supervisor:$('#eSup').value.trim(),escalamiento:$('#eEsc').value,fecha_tope:$('#eTope').value,nota:$('#eNota').value.trim()};
-      if(v.estado==='Cerrado'&&!v.fecha_cierre)v.fecha_cierre=HOY;
-      await guardarSeg(r.id,v);Object.assign(r,{estadoSeg:v.estado,cierre:v.fecha_cierre,supervisor:v.supervisor||r.supervisor,escalamiento:v.escalamiento||r.escalamiento,tope:v.fecha_tope||r.tope,nota:v.nota,segBy:ACC.name||ACC.username,segAt:new Date().toISOString()});r.estado=estado(r);
-      $('#sheet').classList.remove('on');render();msgTop('ok','Seguimiento guardado.')}
+    try{var v={},nt=$('#eObs').value.trim();if(nt!==r.observacion)v.observacion_edit=(nt===r.obsOriginal?'':nt);
+      if(ed){Object.assign(v,{estado:$('#eEst').value,fecha_cierre:$('#eCie').value,supervisor:$('#eSup').value.trim(),escalamiento:$('#eEsc').value,fecha_tope:$('#eTope').value,nota:$('#eNota').value.trim()});
+      if(v.estado==='Cerrado'&&!v.fecha_cierre)v.fecha_cierre=HOY}
+      await guardarSeg(r.id,v);if('observacion_edit' in v){r.observacion=v.observacion_edit||r.obsOriginal;r.obsEditada=!!v.observacion_edit}
+      if(ed){Object.assign(r,{estadoSeg:v.estado,cierre:v.fecha_cierre,supervisor:v.supervisor||r.supervisor,escalamiento:v.escalamiento||r.escalamiento,tope:v.fecha_tope||r.tope,nota:v.nota,segBy:ACC.name||ACC.username,segAt:new Date().toISOString()});r.estado=estado(r)}
+      $('#sheet').classList.remove('on');render();msgTop('ok',ed?'Seguimiento guardado.':'Corrección guardada. El Excel de data se actualiza solo.');try{localStorage.removeItem('gpObsDataSync')}catch(_){}if(typeof syncData==='function')syncData(false)}
     catch(e){go.disabled=false;$('#eMsg').innerHTML='<div class="msg err">No se pudo guardar: '+esc(e.message)+'</div>'}}}
 $('#sheet').onclick=function(e){if(e.target.id==='sheet')$('#sheet').classList.remove('on')};
 
