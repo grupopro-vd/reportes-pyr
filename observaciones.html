@@ -196,16 +196,19 @@ async function cargar(force){
     await loadScript(CFG.chart);
     if(!REP){var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('No encontré la biblioteca ReportesPYR')}
     await leerSeg();
-    // Busca en toda la biblioteca: el respaldo puede guardar en la carpeta del formulario o en la raíz.
-    var files=[],u='/drives/'+REP+"/root/search(q='datos.json')?$select=id,name,eTag,webUrl&$top=500";
-    while(u){var d=await g(u);files=files.concat((d.value||[]).filter(function(f){if(!/_datos\.json$/i.test(f.name))return false;var w=decodeURIComponent(f.webUrl||'').replace(/^.*?\/ReportesPYR\//i,'');return /Observaciones_Conducta\//i.test(w)||w.indexOf('/')<0}));u=d['@odata.nextLink']||null}
+    // Recorre la carpeta de observaciones (la búsqueda de SharePoint tarda en indexar los registros nuevos).
+    var files=[];
+    async function hijos(path){var r=[],u='/drives/'+REP+(path?'/root:/'+encPath(path)+':':'/root')+'/children?$select=id,name,eTag,webUrl,folder&$top=999';while(u){var d=await g(u).catch(function(){return {value:[]}});r=r.concat(d.value||[]);u=d['@odata.nextLink']||null}return r}
+    async function walk(path,depth){var ls=await hijos(path);var subs=[];ls.forEach(function(x){if(x.folder){if(depth<4)subs.push(path+'/'+x.name)}else if(/_datos\.json$/i.test(x.name))files.push(x)});for(var k=0;k<subs.length;k+=8)await Promise.all(subs.slice(k,k+8).map(function(p){return walk(p,depth+1)}))}
+    await walk(CFG.folder,0);
+    (await hijos('').catch(function(){return []})).forEach(function(x){if(!x.folder&&/_datos\.json$/i.test(x.name))files.push(x)});
     var cache=force?{}:cacheGet(),out={},need=files.filter(function(f){var c=cache[f.id];if(c&&c.e===f.eTag){out[f.id]=c;return false}return true});
     for(var i=0;i<need.length;i+=20){
       $('#app').innerHTML='<div class="empty"><span class="spin"></span>Leyendo observaciones '+Math.min(i+20,need.length)+' de '+need.length+'…</div>';
       var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:need.slice(i,i+20).map(function(f,j){return {id:String(j),method:'GET',url:'/drives/'+REP+'/items/'+f.id+''}})})});
-      var urls=(b.responses||[]).map(function(x){return x.body&&x.body['@microsoft.graph.downloadUrl']}).filter(Boolean);
-      var js=await Promise.all(urls.map(function(x){return fetch(x).then(function(r){return r.json()}).catch(function(){return null})}));
-      js.forEach(function(j,k){var f=need[i+k];if(f&&j&&j.obs)out[f.id]={e:f.eTag,d:compact(j)}});
+      var resp=(b.responses||[]);
+      var js=await Promise.all(resp.map(function(x){var u=x.body&&x.body['@microsoft.graph.downloadUrl'];return u?fetch(u).then(function(r){return r.json()}).catch(function(){return null}):null}));
+      js.forEach(function(j,k){var f=need[i+(+resp[k].id)];if(f&&j&&j.obs)out[f.id]={e:f.eTag,d:compact(j)}});
     }
     cacheSet(out);
     APP=Object.keys(out).map(function(k){return desdeApp(out[k].d)}).filter(function(r){return r&&(!MINE||MINE.indexOf(r.centro)>=0)});
