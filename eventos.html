@@ -179,14 +179,17 @@ async function init(){
 
 // ---------- Datos ----------
 function estadoHz(h){if(h.estado==='Cerrado')return 'Cerrado';if(h.limite&&h.limite<HOY)return 'Vencido';return h.estado==='En proceso'?'En proceso':'Abierto'}
-var CACHE_K='gpEvCache1';
+var CACHE_K='gpEvCache2';
 function cacheGet(){try{return JSON.parse(localStorage.getItem(CACHE_K)||'{}')}catch(e){return {}}}
 function cacheSet(c){try{localStorage.setItem(CACHE_K,JSON.stringify(c))}catch(e){}}
 function linea(sum,re){var m=String(sum||'').match(re);return m?m[1].trim():''}
 function marcado(sum,lab){return new RegExp('\\[X\\]\\s*'+lab,'i').test(String(sum||''))}
-function familia(cat,txt,origen){var c=norm(cat+' '+txt);
+function familia(cat,txt,origen){var k=norm(cat);
+  if(/volcamiento|caida de pallet/.test(k))return 'Almacenamiento (volcamiento / caída de pallet)';if(/atropello|colision/.test(k))return 'Equipos móviles (atropello / colisión)';
+  if(/caida de persona/.test(k))return 'Caída de persona';if(/golpe|corte|atrap/.test(k))return 'Golpe, corte o atrapamiento';if(/sobreesfuerzo/.test(k))return 'Sobreesfuerzo';
+  var c=norm(txt);
   if(/trayecto/.test(norm(cat))||/trayecto/.test(norm(origen)))return 'Trayecto';
-  if(/volcam|volco|pallet|tarima|caida de (la )?carga|cayo (la )?carga|cayeron cajas|derrumb/.test(c))return 'Almacenamiento (volcamiento / caída de pallet)';
+  if(/volcam|volco|vuelc|caida de(l)? (un |los )?pallet|cay(o|eron) (el |un |los )?pallet|caida de (la )?carga|cay(o|eron) (la )?carga|cayeron cajas|derrumb|desplom/.test(c))return 'Almacenamiento (volcamiento / caída de pallet)';
   if(/atropell|colisi|choc|impacto con (grua|equipo)|grua.*golpe/.test(c))return 'Equipos móviles (atropello / colisión)';
   if(/caida de persona|resbal|tropez|cay(o|ó) al (piso|suelo)|caida a nivel|caida de altura/.test(c))return 'Caída de persona';
   if(/golpe|corte|atrap|aprisiona|machuc/.test(c))return 'Golpe, corte o atrapamiento';
