@@ -230,7 +230,7 @@
       }
 
       var acc = '<div class="dacts"><a class="dacc" href="rapido.html">' + svg('warn', 20, 2.2) + 'Reportar accidente</a>' + (admin ? '' : '<a class="dcal" href="calendario.html">' + svg('cal', 20, 2) + 'Calendario</a>') + '</div>';
-      var quick = '<nav class="dcard dquick" aria-label="Accesos rápidos">' + QUICK.map(function (q) { if (admin && q.h === 'observacion_conducta.html') q = { l: 'Observaciones', h: 'observaciones.html', i: 'obs' }; return '<a href="' + q.h + '">' + svg(q.i) + '<span>' + q.l + '</span></a>'; }).join('') + '</nav>';
+      var quick = '<nav class="dcard dquick" aria-label="Accesos rápidos">' + QUICK.map(function (q) { if (admin && q.h === 'observacion_conducta.html') q = { l: 'Observaciones', h: 'observaciones.html', i: 'obs' }; else if (admin && q.h === 'hallazgos.html') q = { l: 'Hallazgos y eventos', h: 'eventos.html', i: 'hallazgo' }; return '<a href="' + q.h + '">' + svg(q.i) + '<span>' + q.l + '</span></a>'; }).join('') + '</nav>';
 
       // Escritorio: tabla y por validar
       var tabla = '', val = '';
@@ -255,7 +255,7 @@
     if (side) {
       side.innerHTML = admin ? '<div class="sl"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><b>PRO EHS</b><button type="button" class="smin" data-smin title="Minimizar o expandir el menú" aria-label="Minimizar o expandir el menú"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>' +
         '<div class="sh">Centro</div>' + [''].concat(centros).map(function (c) { return '<button type="button" data-c="' + esc(c) + '" class="' + (c === centro ? 'on' : '') + '">' + (c ? esc(c) : 'Todo el programa') + '</button>'; }).join('') +
-        '<div class="sh">Herramientas</div><a href="calendario.html" title="Calendario">' + svg('cal', 18) + '<span>Calendario</span></a><a href="panel.html" title="Panel de control">' + svg('panel', 18) + '<span>Panel de control</span></a><a href="estadisticas.html" title="Estadísticas">' + svg('est', 18) + '<span>Estadísticas</span></a><a href="observaciones.html" title="Observaciones">' + svg('obs', 18) + '<span>Observaciones</span></a><a href="sugerencias.html#bandeja" title="Sugerencias del equipo">' + svg('charla', 18) + '<span>Sugerencias del equipo</span></a><a href="panel.html" title="Cargar programa">' + svg('up', 18) + '<span>Cargar programa</span></a><a href="#formularios" title="Formularios">' + svg('forms', 18) + '<span>Formularios</span></a>' : '';
+        '<div class="sh">Herramientas</div><a href="calendario.html" title="Calendario">' + svg('cal', 18) + '<span>Calendario</span></a><a href="panel.html" title="Panel de control">' + svg('panel', 18) + '<span>Panel de control</span></a><a href="estadisticas.html" title="Estadísticas">' + svg('est', 18) + '<span>Estadísticas</span></a><a href="observaciones.html" title="Observaciones">' + svg('obs', 18) + '<span>Observaciones</span></a><a href="eventos.html" title="Hallazgos y eventos">' + svg('warn', 18) + '<span>Hallazgos y eventos</span></a><a href="sugerencias.html#bandeja" title="Sugerencias del equipo">' + svg('charla', 18) + '<span>Sugerencias del equipo</span></a><a href="panel.html" title="Cargar programa">' + svg('up', 18) + '<span>Cargar programa</span></a><a href="#formularios" title="Formularios">' + svg('forms', 18) + '<span>Formularios</span></a>' : '';
     }
   }
 

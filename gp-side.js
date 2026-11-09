@@ -24,7 +24,8 @@
     obs: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
     charla: 'M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z',
     up: 'M12 19V5M5 12l7-7 7 7',
-    forms: 'M4 6h16M4 12h16M4 18h10'
+    forms: 'M4 6h16M4 12h16M4 18h10',
+    warn: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'
   };
   var svg = function (k) { return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + IC[k] + '"/></svg>'; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -36,6 +37,7 @@
     { h: 'panel.html', l: 'Panel de control', i: 'panel', p: /^panel/ },
     { h: 'estadisticas.html', l: 'Estadísticas', i: 'est', p: /^estadisticas/ },
     { h: 'observaciones.html', l: 'Observaciones', i: 'obs', p: /^observaciones/, sub: 1 },
+    { h: 'eventos.html', l: 'Hallazgos y eventos', i: 'warn', p: /^eventos/, sub: 1 },
     { h: 'sugerencias.html#bandeja', l: 'Sugerencias del equipo', i: 'charla', p: /^sugerencias/ },
     { h: 'panel.html', l: 'Cargar programa', i: 'up', p: /^$^/ },
     { h: './#formularios', l: 'Formularios', i: 'forms', p: /^$^/ }
