@@ -230,7 +230,7 @@
       }
 
       var acc = '<div class="dacts"><a class="dacc" href="rapido.html">' + svg('warn', 20, 2.2) + 'Reportar accidente</a>' + (admin ? '' : '<a class="dcal" href="calendario.html">' + svg('cal', 20, 2) + 'Calendario</a>') + '</div>';
-      var quick = '<nav class="dcard dquick" aria-label="Accesos rápidos">' + QUICK.map(function (q) { return '<a href="' + q.h + '">' + svg(q.i) + '<span>' + q.l + '</span></a>'; }).join('') + '</nav>';
+      var quick = '<nav class="dcard dquick" aria-label="Accesos rápidos">' + QUICK.map(function (q) { if (admin && q.h === 'observacion_conducta.html') q = { l: 'Observaciones', h: 'observaciones.html', i: 'obs' }; return '<a href="' + q.h + '">' + svg(q.i) + '<span>' + q.l + '</span></a>'; }).join('') + '</nav>';
 
       // Escritorio: tabla y por validar
       var tabla = '', val = '';
@@ -340,7 +340,7 @@
     var a = e.target.closest('a.bar[href="#"]');
     if (a) { e.preventDefault(); st.centro = a.querySelector('.bn').textContent; LS.set('gpHomeCentro', st.centro); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     var q = e.target.closest('a[href="#checklist"],a[href="#formularios"]');
-    if (q) { e.preventDefault(); var t = q.getAttribute('href').slice(1); var m = t === 'checklist' ? document.querySelector('.mod.checklist') : document.getElementById('formularios');
+    if (q) { e.preventDefault(); document.body.classList.add('show-forms'); var t = q.getAttribute('href').slice(1); var m = t === 'checklist' ? document.querySelector('.mod.checklist') : document.getElementById('formularios');
       if (m) { if (t === 'checklist' && !m.classList.contains('open')) m.querySelector('.mh').click(); setTimeout(function () { m.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); } }
   });
   document.addEventListener('change', function (e) {
