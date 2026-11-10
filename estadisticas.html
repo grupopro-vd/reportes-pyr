@@ -151,7 +151,7 @@ async function init(){
   $('#auth').innerHTML='<div class="who">Conectado como <b>'+esc(ACC.name||ACC.username)+'</b><small>'+esc(ACC.username)+(isAdmin?' · administrador':'')+'</small></div><button class="btn" id="outBtn" type="button">Salir</button>';
   $('#outBtn').onclick=function(){PCA.logoutRedirect({account:ACC,postLogoutRedirectUri:location.href})};
   $('#app').innerHTML='<div class="loading"><span class="spin"></span>Leyendo los Excel de SharePoint…</div>';
-  try{await Promise.all([loadScript(CFG.xlsx),loadScript(CFG.chart).then(function(){return loadScript(CFG.dl)})]);
+  try{await Promise.all([loadScript(CFG.xlsx),loadScript(CFG.chart).then(function(){return Promise.all([loadScript(CFG.dl),loadScript('gp-charts.js')])})]);
     var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;
     DRIVE=(ds.filter(function(d){return /Documentos%20compartidos|Shared%20Documents/i.test(d.webUrl)})[0]||ds.filter(function(d){return d.name==='Documentos'})[0]).id;
     REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;

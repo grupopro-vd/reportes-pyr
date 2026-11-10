@@ -91,6 +91,8 @@ tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
 .pnav{display:inline-flex;align-items:center;gap:6px}.pnav button{width:36px;height:36px;border:1px solid #d4d4d8;background:#fff;border-radius:9px;font-weight:800;cursor:pointer}
 .pnav b{font-size:13.5px;min-width:150px;text-align:center}
 .kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:900px){.kpis.k5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{animation:gpk .45s ease-out both}@keyframes gpk{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card h3 .hint{font-weight:600;color:#a1a1aa;font-size:11.5px}
 .kpi i{display:block;font-style:normal;font-size:11.5px;font-weight:800;margin-top:2px}
 </style>
 </head>
@@ -206,7 +208,7 @@ function desdeFR(j){var f=j.fields||{},s=j.summary||'';
 async function cargar(force){
   $('#app').innerHTML='<div class="empty"><span class="spin"></span>Leyendo hallazgos y eventos…</div>';
   try{
-    await loadScript(CFG.chart);
+    await loadScript(CFG.chart);await loadScript('gp-charts.js');
     var hz=fetch(CFG.endpoint+'?hz=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).catch(function(){return {items:[]}});
     if(!REP){var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('No encontré la biblioteca ReportesPYR')}
     var files=[];
@@ -278,8 +280,8 @@ function vistaHz(rows){
   var h='<div class="kpis k5">'+kp(rows.length,'hallazgos en el período','',null,true)+kp(ab,'abiertos o en proceso','#b45309',pc(ab,rows.length))+kp(ve,'vencidos (pasó la fecha límite)','#b3261e',pc(ve,rows.length))+kp(ce,'cerrados','#16623f',pc(ce,rows.length))+
     kp(rows.filter(function(r){return r.crit==='Alta'}).length,'de criticidad alta','#bd0926')+'</div>';
   if(!rows.length)return h+'<div class="empty">No hay hallazgos en este período con los filtros elegidos.</div>'+abiertosAntes();
-  h+='<div class="grid">'+card('w4','Estado',cv('cHzEst'))+card('w4','Tipo de hallazgo',cv('cHzTipo'))+card('w4','Criticidad',cv('cHzCrit'))+
-    card('w6','Por centro · abiertos y cerrados',cv('cHzCen'))+card('w6','Tendencia · hallazgos reportados',cv('cHzTen'))+card('w12','Áreas con más hallazgos',cv('cHzArea'))+'</div>';
+  h+='<div class="grid">'+card('w4','Estado',cv('cHzEst'))+card('w4','Tipo de hallazgo <span class="hint">· toca para filtrar</span>',cv('cHzTipo'))+card('w4','Criticidad',cv('cHzCrit'))+
+    card('w6','Por centro · abiertos y cerrados <span class="hint">· toca para filtrar</span>',cv('cHzCen'))+card('w6','Tendencia · hallazgos reportados',cv('cHzTen'))+card('w12','Áreas con más hallazgos',cv('cHzArea'))+'</div>';
   h+='<section class="blk"><h2>Detalle ('+rows.length+')</h2><div class="tw"><table><thead><tr><th>Fecha</th><th>Centro</th><th>Tipo</th><th>Criticidad</th><th>Área / lugar</th><th>Descripción</th><th>Responsable</th><th>Límite</th><th>Estado</th></tr></thead><tbody>'+
     rows.slice().sort(function(a,b){return b.fecha.localeCompare(a.fecha)}).map(function(r){return '<tr class="r" data-hz="'+esc(r.id)+'"><td>'+fdl(r.fecha)+'</td><td>'+esc(r.centro)+'</td><td>'+esc(r.tipo)+'</td><td>'+pill(r.crit,CRC[r.crit]||'#64748b')+'</td><td>'+esc([r.area,r.lugar].filter(Boolean).join(' · '))+'</td><td class="obs">'+esc(corto(r.descripcion,160))+'</td><td>'+esc(r.responsable)+'</td><td>'+fdl(r.limite)+'</td><td>'+pill(r.est,HZC[r.est])+'</td></tr>'}).join('')+'</tbody></table></div></section>';
   return h+abiertosAntes()}
@@ -291,8 +293,8 @@ function vistaEv(rows){
   var h='<div class="kpis k5">'+kp(rows.length,'eventos reportados','',null,true)+kp(acc,'accidentes','#b3261e',pc(acc,rows.length))+kp(inc,'incidentes','#b45309',pc(inc,rows.length))+
     kp(alm.length,'report events de almacenamiento','#bd0926','volcamiento / caída de pallet')+kp(rows.filter(function(r){return r.lesion}).length,'con personas afectadas','#7e22ce')+'</div>';
   if(!rows.length)return h+'<div class="empty">No hay eventos reportados en este período con los filtros elegidos.</div>';
-  h+='<div class="grid">'+card('w6','Tipo de evento',cv('cEvFam'))+card('w6','Accidente / incidente',cv('cEvTipo'))+
-    card('w6','Por centro',cv('cEvCen'))+card('w6','Tendencia · eventos reportados',cv('cEvTen'))+card('w6','Afectación o daños',cv('cEvDan'))+card('w6','Equipo involucrado',cv('cEvEq'))+'</div>';
+  h+='<div class="grid">'+card('w6','Tipo de evento <span class="hint">· toca para filtrar</span>',cv('cEvFam'))+card('w6','Accidente / incidente',cv('cEvTipo'))+
+    card('w6','Por centro <span class="hint">· toca para filtrar</span>',cv('cEvCen'))+card('w6','Tendencia · eventos reportados',cv('cEvTen'))+card('w6','Afectación o daños',cv('cEvDan'))+card('w6','Equipo involucrado',cv('cEvEq'))+'</div>';
   h+='<section class="blk"><h2>Consolidado de almacenamiento · volcamiento y caída de pallet ('+alm.length+')</h2>'+(alm.length?tablaEv(alm):'<div class="empty">Sin volcamientos ni caídas de pallet en el período.</div>')+'</section>';
   h+='<section class="blk"><h2>Todos los eventos ('+rows.length+')</h2>'+tablaEv(rows)+'</section>';
   h+='<p class="note">Fuente: Flash Report rápido y detallado guardados en SharePoint. Si un evento tiene ambos, cuenta una vez. El tipo de evento sale de la categoría del Flash Report o, si no tiene, de la descripción.</p>';
@@ -301,32 +303,38 @@ function tablaEv(rows){return '<div class="tw"><table><thead><tr><th>Fecha</th><
   rows.slice().sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)}).map(function(r){return '<tr><td>'+fdl(r.fecha)+(r.hora?' '+esc(r.hora):'')+'</td><td>'+esc(r.centro)+'</td><td>'+pill(r.tipo,r.tipo==='Accidente'?'#b3261e':'#b45309')+'</td><td>'+pill(r.cat||r.fam,FAM[r.fam]||'#64748b')+'</td><td>'+esc(r.persona)+'</td><td>'+esc([r.area,r.lugar].filter(Boolean).join(' · '))+'</td><td>'+esc(r.equipo)+'</td><td>'+esc(r.danos.join(', '))+'</td><td class="obs">'+esc(corto(r.desc,180))+'</td></tr>'}).join('')+'</tbody></table></div>'}
 
 // ---------- Gráficos ----------
-function base(extra){return Object.assign({responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
+function base(extra){return Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
   scales:{x:{grid:{display:false},ticks:{font:{family:'Manrope',size:10},color:'#52525b'}},y:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0,font:{family:'Manrope',size:10},color:'#52525b'}}}},extra||{})}
 var LEG={display:true,position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}};
 function mk(id,cfg){var el=document.getElementById(id);if(!el)return;if(CH[id])CH[id].destroy();CH[id]=new Chart(el,cfg)}
 function vacio(id){var c=document.getElementById(id);if(c)c.parentNode.innerHTML='<div class="note" style="padding-top:40px;text-align:center">Sin datos para mostrar.</div>'}
 function donut(id,m,colors){var k=Object.keys(m).filter(function(x){return m[x]});if(!k.length){vacio(id);return}mk(id,{type:'doughnut',data:{labels:k,datasets:[{data:k.map(function(x){return m[x]}),backgroundColor:k.map(function(x,i){return (colors&&colors[x])||PAL[i%PAL.length]}),borderWidth:2,borderColor:'#fff'}]},
-  options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'60%',plugins:{legend:LEG}}})}
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:LEG}}})}
 function hbar(id,ps,color){if(!ps.length){vacio(id);return}mk(id,{type:'bar',data:{labels:ps.map(function(p){return corto(p[0],42)}),datasets:[{data:ps.map(function(p){return p[1]}),backgroundColor:ps.map(function(p){return (typeof color==='object'?color[p[0]]:color)||'#bd0926'}),borderRadius:4}]},
   options:base({indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0}},y:{grid:{display:false},ticks:{font:{family:'Manrope',size:10.5},color:'#3f3f46'}}}})})}
 function stack(id,labels,series){mk(id,{type:'bar',data:{labels:labels,datasets:series.map(function(s){return {label:s[0],data:s[1],backgroundColor:s[2],borderRadius:2,stack:'a'}})},
   options:base({plugins:{legend:LEG},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{family:'Manrope',size:10}}},y:{stacked:true,beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0}}}})})}
 function tendencia(id,src,series){var bk=buckets();var base0=src.filter(function(r){return (!F.centro||r.centro===F.centro)&&(!F.tipo||(VIEW==='hz'?r.tipo:r.fam)===F.tipo)});
   stack(id,bk.map(function(b){return b.l}),series.map(function(s){return [s[0],bk.map(function(b){return base0.filter(function(r){return r.fecha>=b.a&&r.fecha<=b.b&&s[1](r)}).length}),s[2]]}))}
+function clic(id,fn){var ch=CH[id];if(!ch)return;ch.options.onClick=function(e,els){if(!els||!els.length)return;var l=ch.data.labels[els[0].index];fn(String(l))};ch.update('none')}
+function porCentro(l){var c=uniq((VIEW==='hz'?HZ:EV).map(function(r){return r.centro}));return c.filter(function(x){return x===l||x.replace(/^(Walmart|Líder)\s+/,'')===l})[0]||''}
+function porTipo(l){var k=(VIEW==='hz'?uniq(HZ.map(function(r){return r.tipo})):Object.keys(FAM));l=l.replace(/…$/,'');return k.filter(function(x){return x===l||x.indexOf(l)===0})[0]||''}
+function filtrarPor(c,t){if(c)F.centro=(F.centro===c?'':c);if(t)F.tipo=(F.tipo===t?'':t);render()}
 function chartsHz(rows){if(!rows.length)return;
   donut('cHzEst',cnt(rows,function(r){return r.est}),HZC);hbar('cHzTipo',pairs(cnt(rows,function(r){return r.tipo})),'#18181b');donut('cHzCrit',cnt(rows,function(r){return r.crit}),CRC);
   var cs=uniq(rows.map(function(r){return r.centro})).sort();
   stack('cHzCen',cs.map(function(c){return c.replace(/^(Walmart|Líder)\s+/,'')}),['Abierto','En proceso','Vencido','Cerrado'].map(function(e){return [e,cs.map(function(c){return rows.filter(function(r){return r.centro===c&&r.est===e}).length}),HZC[e]]}));
   tendencia('cHzTen',HZ,[['Cerrados',function(r){return r.est==='Cerrado'},HZC.Cerrado],['Abiertos / en proceso',function(r){return r.est==='Abierto'||r.est==='En proceso'},HZC.Abierto],['Vencidos',function(r){return r.est==='Vencido'},HZC.Vencido]]);
-  hbar('cHzArea',pairs(cnt(rows,function(r){return r.area||r.lugar})).slice(0,10),'#b45309')}
+  hbar('cHzArea',pairs(cnt(rows,function(r){return r.area||r.lugar})).slice(0,10),'#b45309');
+  clic('cHzTipo',function(l){filtrarPor('',porTipo(l))});clic('cHzCen',function(l){filtrarPor(porCentro(l),'')})}
 function chartsEv(rows){if(!rows.length)return;
   hbar('cEvFam',pairs(cnt(rows,function(r){return r.fam})),FAM);donut('cEvTipo',cnt(rows,function(r){return r.tipo}),{Accidente:'#b3261e',Incidente:'#b45309'});
   var cs=uniq(rows.map(function(r){return r.centro})).sort();
   stack('cEvCen',cs.map(function(c){return c.replace(/^(Walmart|Líder)\s+/,'')}),[['Accidentes',cs.map(function(c){return rows.filter(function(r){return r.centro===c&&r.tipo==='Accidente'}).length}),'#b3261e'],['Incidentes',cs.map(function(c){return rows.filter(function(r){return r.centro===c&&r.tipo!=='Accidente'}).length}),'#b45309']]);
   tendencia('cEvTen',EV,[['Accidentes',function(r){return r.tipo==='Accidente'},'#b3261e'],['Incidentes',function(r){return r.tipo!=='Accidente'},'#b45309']]);
   var dm={};rows.forEach(function(r){(r.danos.length?r.danos:['Sin dato']).forEach(function(d){dm[d]=(dm[d]||0)+1})});hbar('cEvDan',pairs(dm),'#7e22ce');
-  hbar('cEvEq',pairs(cnt(rows,function(r){return (r.equipo&&r.equipo!=='—')?r.equipo:'Sin equipo'})).slice(0,10),'#1d4ed8')}
+  hbar('cEvEq',pairs(cnt(rows,function(r){return (r.equipo&&r.equipo!=='—')?r.equipo:'Sin equipo'})).slice(0,10),'#1d4ed8');
+  clic('cEvFam',function(l){filtrarPor('',porTipo(l))});clic('cEvCen',function(l){filtrarPor(porCentro(l),'')})}
 
 // ---------- Eventos de la página ----------
 function bind(){

@@ -193,7 +193,7 @@ function cacheSet(c){try{localStorage.setItem(CACHE_K,JSON.stringify(c))}catch(e
 async function cargar(force){
   $('#app').innerHTML='<div class="empty"><span class="spin"></span>Leyendo las observaciones en SharePoint…</div>';
   try{
-    await loadScript(CFG.chart);
+    await loadScript(CFG.chart);await loadScript('gp-charts.js');
     if(!REP){var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('No encontré la biblioteca ReportesPYR')}
     await leerSeg();
     // Recorre la carpeta de observaciones (la búsqueda de SharePoint tarda en indexar los registros nuevos).
@@ -236,7 +236,7 @@ function estado(r){if(!r.conFalta)return 'Sin falta';if(r.estadoSeg)return r.est
 function toISOx(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return iso(v);if(typeof v==='number'){var d=new Date(Math.round((v-25569)*86400000));return iso(new Date(d.getTime()+d.getTimezoneOffset()*60000))}
   var s=String(v).trim(),m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);if(m){var y=m[3].length===2?'20'+m[3]:m[3];if(y.length!==4)return '';return y+'-'+pad(+m[2])+'-'+pad(+m[1])}return ''}
 async function importar(file){
-  try{await loadScript(CFG.xlsx);await loadScript(CFG.chart);var wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});var add=[];
+  try{await loadScript(CFG.xlsx);await loadScript(CFG.chart);await loadScript('gp-charts.js');var wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});var add=[];
     wb.SheetNames.forEach(function(n){var aoa=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});if(!aoa.length)return;
       var H=(aoa[0]||[]).map(norm);var ix=function(){var a=[].slice.call(arguments);for(var i=0;i<a.length;i++){var pre=a[i];var k=H.findIndex(function(h){return h.indexOf(pre)===0});if(k>=0)return k}return -1};
       var I={anio:ix('ano','año'),sem:ix('semana'),cd:ix('cd'),area:ix('area colaborador'),ger:ix('gerencia'),per:ix('persona trabajadora','colaborador'),emp:ix('empresa'),obs:ix('observacion'),tf:ix('tipo de falta'),esc:ix('escalamiento'),
@@ -457,14 +457,14 @@ function demo(){var seed=7;var rnd=function(){seed=(seed*16807)%2147483647;retur
   return out}
 
 // ---------- Gráficos ----------
-function base(extra){return Object.assign({responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false,labels:{font:{family:'Manrope',size:11},boxWidth:12}},tooltip:{titleFont:{family:'Manrope'},bodyFont:{family:'Manrope'}}},
+function base(extra){return Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false,labels:{font:{family:'Manrope',size:11},boxWidth:12}},tooltip:{titleFont:{family:'Manrope'},bodyFont:{family:'Manrope'}}},
   scales:{x:{grid:{display:false},ticks:{font:{family:'Manrope',size:10},color:'#52525b'}},y:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0,font:{family:'Manrope',size:10},color:'#52525b'}}}},extra||{})}
 var LEG={display:true,position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}};
 function mk(id,cfg){var el=document.getElementById(id);if(!el)return;if(CH[id])CH[id].destroy();CH[id]=new Chart(el,cfg)}
 function hbar(id,pairs,color){if(!document.getElementById(id))return;if(!pairs.length){vacio(id);return}mk(id,{type:'bar',data:{labels:pairs.map(function(p){return corto(p[0],48)}),datasets:[{data:pairs.map(function(p){return p[1]}),backgroundColor:color||NEG,borderRadius:4}]},
   options:base({indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eeeef0'},ticks:{precision:0,font:{family:'Manrope',size:10}}},y:{grid:{display:false},ticks:{font:{family:'Manrope',size:10.5},color:'#3f3f46'}}}})})}
 function donut(id,m,colors){var k=Object.keys(m).filter(function(x){return m[x]});if(!k.length){vacio(id);return}mk(id,{type:'doughnut',data:{labels:k,datasets:[{data:k.map(function(x){return m[x]}),backgroundColor:k.map(function(x,i){return (colors&&colors[x])||PAL[i%PAL.length]}),borderWidth:2,borderColor:'#fff'}]},
-  options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}}}}})}
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{family:'Manrope',size:11},boxWidth:12}}}}})}
 function vacio(id){var c=document.getElementById(id);if(c)c.parentNode.innerHTML='<div class="note" style="padding-top:40px;text-align:center">Sin datos para mostrar con los filtros actuales.</div>'}
 function stackW(id,rows,series,pctLine){var w=wksDe(rows);if(!document.getElementById(id))return;if(!w.length){vacio(id);return}
   var ds=series.map(function(s){return {type:'bar',label:s[0],data:w.map(function(k){return rows.filter(function(r){return wkKey(r)===k&&s[1](r)}).length}),backgroundColor:s[2],borderRadius:2,stack:'a',yAxisID:'y'}});
