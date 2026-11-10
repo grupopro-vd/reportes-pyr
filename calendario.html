@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"><script src="gp-auth.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Calendario · PRO EHS</title>
 <meta name="theme-color" content="#1d1d1b">
@@ -185,7 +185,7 @@ function cuentaMs(){try{for(var i=0;i<localStorage.length;i++){var v=localStorag
 var ME=cuentaMs();
 function pinsH(){return (DATA.pins&&Object.keys(DATA.pins).length?DATA.pins:(J('gpPanelData2',{})||{}).pinHash)||{}}
 function misCentros(){if(ADMINS.indexOf(ME)>=0)return null;var s={},ph=pinsH();(ACCESO[ME]||[]).forEach(function(c){s[c]=1});
-  var u=J('gpPanelPins',{});Object.keys(u).forEach(function(c){if(ph[c]&&u[c]===ph[c])s[c]=1});
+  gpApi.centros().forEach(function(c){s[c]=1});
   return CENTROS.filter(function(c){return s[c]}).concat(Object.keys(s).filter(function(c){return CENTROS.indexOf(c)<0}))}
 var MINE=null;
 function todos(){return MINE?DATA.items.filter(function(it){return MINE.indexOf(it.Centro)>=0}):DATA.items}
@@ -195,8 +195,7 @@ function centroSel(){var sel_=$('#fCentro'),cur=sel_.value,list=MINE||CENTROS,ke
 function gate(){var g=$('#gate'),ph=pinsH(),cs=CENTROS.filter(function(c){return ph[c]});document.body.classList.add('gated');
   g.innerHTML=DATA.items.length?'<div class="pinbox"><b>Ingresa el PIN de tu centro</b><small>Verás solo las actividades de tu centro. Pide el PIN a Valentín Díaz si no lo tienes.</small><div class="pinrow"><select id="pbC"><option value="">Elige el centro</option>'+cs.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')+'</select><input id="pbP" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><button class="btn pri" id="pbGo" type="button">Entrar</button></div><div id="pbMsg"></div></div>':'';
   var go=$('#pbGo');if(go)go.onclick=async function(){var c=$('#pbC').value,p=$('#pbP').value.trim(),m=$('#pbMsg');if(!c||!p){m.innerHTML='<p style="color:var(--bad)">Elige el centro y escribe el PIN.</p>';return}
-    var h=await sha('gp|'+c+'|'+p);if(h!==ph[c]){m.innerHTML='<p style="color:var(--bad)">PIN incorrecto para '+esc(c)+'.</p>';return}
-    var u=J('gpPanelPins',{});u[c]=h;LS.set('gpPanelPins',JSON.stringify(u));var raw=J('gpPanelPinRaw',{});raw[c]=p;LS.set('gpPanelPinRaw',JSON.stringify(raw));
+    try{await gpApi.login(c,p)}catch(e){m.innerHTML='<p style="color:var(--bad)">'+esc(e.message)+'</p>';return}
     var q=J('gpPerfil',{});q.panelCentro=c;LS.set('gpPerfil',JSON.stringify(q));render()}}
 function visibles(){var c=$('#fCentro').value;return todos().filter(function(it){return (!c||it.Centro===c)&&!off[cat(it).k]})}
 
@@ -254,17 +253,16 @@ function applyMv(){var mv=DATA.moves||{};DATA.items.forEach(function(x){var m=mv
 async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [].map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')}
 function moveBox(it){var box=$('#shMove');box.innerHTML='';if(!it.Fecha||!semanal(it)||st(it)==='Realizada')return;
   var base=(it._mv&&it._mv.original)||it.Fecha,l=new Date(lunes(base)+'T12:00:00'),days=[];for(var i=0;i<6;i++){var d=new Date(l);d.setDate(l.getDate()+i);days.push(iso(d))}
-  var u=J('gpPanelPins',{}),raw=J('gpPanelPinRaw',{}),ok=raw[it.Centro]&&u[it.Centro]&&u[it.Centro]===(DATA.pins||{})[it.Centro],pick=it.Fecha;
+  var ok=ADMINS.indexOf(ME)>=0||gpApi.centros().indexOf(it.Centro)>=0,pick=it.Fecha;
   box.innerHTML='<div class="mvbox"><b>↔ Cambiar el día (misma semana)</b><p>Actividad semanal: elige el día que más te acomode esta semana.</p><div class="days">'+days.map(function(d){var x=new Date(d+'T12:00:00');return '<button type="button" data-d="'+d+'"'+(d===it.Fecha?' class="on"':'')+(d<HOY?' disabled':'')+'>'+DIA[x.getDay()].slice(0,3)+'<small>'+x.getDate()+'</small></button>'}).join('')+'</div>'+
     '<div class="mvrow">'+(ok?'':'<input id="mvPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN del centro">')+'<button type="button" class="btn pri" id="mvGo" disabled>Guardar día</button></div><div class="mvmsg" id="mvMsg">'+(it._mv?'Día cambiado'+(it._mv.nombre?' por '+esc(it._mv.nombre):'')+'. Fecha original: '+fdl(it._mv.original)+'.':'')+'</div></div>';
   [].forEach.call(box.querySelectorAll('.days button'),function(b){b.onclick=function(){pick=b.dataset.d;[].forEach.call(box.querySelectorAll('.days button'),function(x){x.classList.toggle('on',x===b)});$('#mvGo').disabled=pick===it.Fecha}});
-  $('#mvGo').onclick=async function(){var btn=this,msg=$('#mvMsg'),pin=ok?raw[it.Centro]:String(($('#mvPin')||{}).value||'').trim();
-    if(!pin){msg.innerHTML='<span style="color:var(--bad)">Escribe el PIN de '+esc(it.Centro)+'.</span>';return}
-    var h=await sha('gp|'+it.Centro+'|'+pin);if((DATA.pins||{})[it.Centro]&&h!==DATA.pins[it.Centro]){msg.innerHTML='<span style="color:var(--bad)">PIN incorrecto para '+esc(it.Centro)+'.</span>';return}
+  $('#mvGo').onclick=async function(){var btn=this,msg=$('#mvMsg'),pin=ok?'':String(($('#mvPin')||{}).value||'').trim();
+    if(!ok&&!pin){msg.innerHTML='<span style="color:var(--bad)">Escribe el PIN de '+esc(it.Centro)+'.</span>';return}
     btn.disabled=true;msg.textContent='Guardando…';
-    try{var r=await fetch(ENDPOINT,{method:'POST',body:JSON.stringify({key:KEY,action:'panelMover',id:it.id,centro:it.Centro,pin:pin,fecha:pick,nombre:(J('gpPerfil',{}).name||'')})}).then(function(r){return r.json()});
+    try{if(!ok)await gpApi.login(it.Centro,pin);
+      var r=await gpApi.post({action:'panelMover',id:it.id,centro:it.Centro,fecha:pick,nombre:(J('gpPerfil',{}).name||'')});
       if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo guardar');
-      var uu=J('gpPanelPins',{});uu[it.Centro]=h;LS.set('gpPanelPins',JSON.stringify(uu));var rr=J('gpPanelPinRaw',{});rr[it.Centro]=pin;LS.set('gpPanelPinRaw',JSON.stringify(rr));
       DATA.moves=DATA.moves||{};DATA.moves[it.id]={fecha:pick,original:base,nombre:J('gpPerfil',{}).name||''};applyMv();view=pick.slice(0,7);sel=pick;render();abrir(it);$('#mvMsg').innerHTML='<span style="color:var(--ok)">✔ Movida al '+fdl(pick)+'.</span>'}
     catch(e){msg.innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>';btn.disabled=false}}}
 function abrir(it){if(!it)return;var s=st(it),k=cat(it),f=formFor(it);
@@ -288,7 +286,8 @@ function syncLine(err){var u=DATA.updatedAt?new Date(DATA.updatedAt):null;
   $('#syncBtn').onclick=load}
 async function load(){
   var c=J('gpPanelData2',null);if(c&&c.items&&!DATA.items.length){DATA={items:c.items,pending:c.pending||[],updatedAt:c.updatedAt};render();syncLine()}
-  try{var d=await fetch(ENDPOINT+'?panel=1&key='+encodeURIComponent(KEY)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()});
+  try{var d=await gpApi.read('panel',{motivo:'Para ver el calendario de actividades necesitas el PIN de tu centro. Se pide una sola vez en este teléfono. Si no lo tienes, pídelo a Valentín Díaz.'});
+    if(d&&d.error==='SIN_ACCESO')throw new Error('falta el PIN del centro');
     if(!d||!d.ok)throw new Error((d&&d.error)||'sin datos');
     if(!c||!c.updatedAt||!d.updatedAt||d.updatedAt>=c.updatedAt)DATA={items:(d.items||[]).map(function(x){x.id=String(x.id);return x}),pending:d.pending||[],updatedAt:d.updatedAt};
     DATA.pins=d.pins||{};DATA.moves=d.moves||{};applyMv();

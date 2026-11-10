@@ -129,7 +129,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
       <label><input type="radio" name="shEst" value="En proceso"><span>En proceso</span></label>
       <label><input type="radio" name="shEst" value="Cerrado"><span>Cerrado</span></label>
     </div>
-    <label class="f" for="shCom">Comentario</label>
+    <label class="f" for="shCom">Comentario <small style="font-weight:normal;color:#71717a">(obligatorio para cerrar)</small></label>
     <textarea id="shCom" rows="3" placeholder="Qué se corrigió o qué falta"></textarea>
     <label class="f">Foto de la corrección <span id="shEvReq" style="color:var(--bad)">(obligatoria para cerrar)</span></label>
     <div class="ev" id="shEv"><label class="add">📷 Foto o archivo<input id="shEvIn" type="file" accept="image/*,.pdf" multiple></label></div>
@@ -140,6 +140,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
   </div>
 </div>
 
+<script src="gp-auth.js"></script>
 <script>
 (function(){
 var CFG={endpoint:'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec',key:'GP-PYR-2026',
@@ -157,7 +158,8 @@ function st(h){if(h.estado==='Cerrado')return 'Cerrado';if(h.limite&&h.limite<to
 function load(){
   try{var c=JSON.parse(LS.get('gpHzData')||'null');if(c&&c.items){DATA=c;render()}}catch(e){}
   $('#sync').textContent='Actualizando…';
-  return fetch(CFG.endpoint+'?hz=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+  return gpApi.read('hz',{motivo:'Para ver y cerrar los hallazgos necesitas el PIN de tu centro. Se pide una sola vez en este teléfono. Si no lo tienes, pídelo a Valentín Díaz.'}).then(function(d){
+    if(d&&d.error==='SIN_ACCESO')throw new Error('falta el PIN del centro');
     if(!d||!d.ok)throw new Error((d&&d.error)||'sin datos');DATA={items:d.items||[],at:new Date().toISOString()};LS.set('gpHzData',JSON.stringify(DATA));render();
   }).catch(function(e){render();$('#sync').innerHTML='<div class="msg err">No se pudo actualizar ('+esc(e.message)+'). '+(DATA.items.length?'Se muestra la última copia.':'')+'</div>'});
 }
@@ -230,9 +232,13 @@ $('#shGo').onclick=async function(){
   if(!est){msg.innerHTML='<div class="msg err">Elige el estado.</div>';return}
   if(!nom){msg.innerHTML='<div class="msg err">Escribe tu nombre.</div>';return}
   if(est==='Cerrado'&&!evid.length){msg.innerHTML='<div class="msg err">Para cerrar el hallazgo adjunta una foto de la corrección.</div>';return}
+  if(est==='Cerrado'&&com.length<10){msg.innerHTML='<div class="msg err">Para cerrar el hallazgo describe en el comentario qué se corrigió (al menos 10 caracteres).</div>';$('#shCom').focus();return}
   btn.disabled=true;msg.innerHTML='<div class="msg info">Guardando…</div>';
   try{var ev='';if(evid.length){msg.innerHTML='<div class="msg info">Subiendo foto…</div>';ev=await sendEvidence(x,est,com,nom)}
-    var r=await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelHz',id:x.id,estado:est,nombre:nom,comentario:com,evidencia:ev})}).then(function(r){return r.json()});
+    var hzBody={action:'panelHz',id:x.id,estado:est,nombre:nom,comentario:com,evidencia:ev};
+    var r=await gpApi.post(hzBody);
+    if(r&&r.error==='SIN_ACCESO'&&await gpApi.pinPrompt(r.centros&&r.centros.length?r.centros:[x.centro],'Para guardar el cambio necesitas el PIN de '+x.centro+'.'))r=await gpApi.post(hzBody);
+    if(r&&r.error==='SIN_ACCESO')throw new Error('falta el PIN de '+x.centro);
     if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo guardar');
     DATA.items=DATA.items.map(function(h){return h.id===x.id?r.item:h});LS.set('gpHzData',JSON.stringify(DATA));
     var p=prof();p.name=nom;LS.set('gpPerfil',JSON.stringify(p));

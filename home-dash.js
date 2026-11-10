@@ -349,9 +349,11 @@
 
   DATA = cargarCache();
   render();
-  fetch(ENDPOINT + '?panel=1&key=' + encodeURIComponent(KEY) + '&t=' + Date.now(), { cache: 'no-store' })
-    .then(function (r) { return r.json(); })
-    .then(function (d) { if (!d || !d.ok || !d.items) throw new Error('sin datos'); DATA = slim(d); ERR = ''; LS.set('gpHomeData', DATA); render(); })
+  // Datos protegidos: sesión Microsoft o PIN del centro (si alguien dice «Ahora no», no se vuelve a pedir en 7 días)
+  var skip = +LS.get('gpPinSkip', 0) || 0;
+  (window.gpApi ? gpApi.read('panel', { prompt: Date.now() - skip > 7 * 864e5, motivo: 'Para ver el programa de tu centro en el inicio necesitas el PIN del centro. Se pide una sola vez en este teléfono. Si no lo tienes, pídelo a Valentín Díaz.' }) : Promise.reject(new Error('sin acceso')))
+    .then(function (d) { if (d && d.error === 'SIN_ACCESO') { LS.set('gpPinSkip', Date.now()); throw new Error('falta el PIN del centro'); }
+      if (!d || !d.ok || !d.items) throw new Error('sin datos'); DATA = slim(d); ERR = ''; LS.set('gpHomeData', DATA); render(); })
     .catch(function (e) { ERR = String(e && e.message || e); render(); });
   // Al volver a la app (otro día, otra pestaña) recalcula "hoy"
   document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });

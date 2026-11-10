@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"><script src="gp-auth.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Panel de control · PRO EHS</title>
 <meta name="theme-color" content="#1d1d1b">
@@ -187,7 +187,7 @@ var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com
   'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
 function misCentros(){if(isAdmin())return null;var s={};
   if(ACCOUNT)(ACCESO[String(ACCOUNT.username||'').toLowerCase()]||[]).forEach(function(c){s[c]=1});
-  var u=J('gpPanelPins',{});Object.keys(u).forEach(function(c){if(DATA.pinHash&&DATA.pinHash[c]&&u[c]===DATA.pinHash[c])s[c]=1});
+  gpApi.centros().forEach(function(c){s[c]=1});
   return CENTROS.filter(function(c){return s[c]}).concat(Object.keys(s).filter(function(c){return CENTROS.indexOf(c)<0}))}
 function centroSel(mine){var sel=$('#fCentro'),cur=sel.value,list=mine||CENTROS;
   var key=(mine?'m|':'a|')+list.join('|');if(sel.dataset.k!==key){sel.dataset.k=key;
@@ -198,8 +198,8 @@ function pinBox(first){var cs=CENTROS.filter(function(c){return DATA.pinHash&&DA
     '<div class="pinrow"><select id="pbC"><option value="">Elige el centro</option>'+cs.map(function(c){return '<option>'+esc(c)+'</option>'}).join('')+'</select><input id="pbP" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"><button class="btn pri" id="pbGo" type="button">Entrar</button></div><div id="pbMsg"></div></div>'}
 function pinBind(){var go=$('#pbGo');if(!go)return;go.onclick=async function(){var c=$('#pbC').value,p=$('#pbP').value.trim(),m=$('#pbMsg');
   if(!c||!p){m.innerHTML='<div class="msg err">Elige el centro y escribe el PIN.</div>';return}
-  var h=await sha(pinKey(c,p));if(h!==DATA.pinHash[c]){m.innerHTML='<div class="msg err">PIN incorrecto para '+esc(c)+'.</div>';return}
-  var u=J('gpPanelPins',{});u[c]=h;LS.set('gpPanelPins',JSON.stringify(u));var raw=J('gpPanelPinRaw',{});raw[c]=p;LS.set('gpPanelPinRaw',JSON.stringify(raw));
+  try{await gpApi.login(c,p)}catch(e){m.innerHTML='<div class="msg err">'+esc(e.message)+'</div>';return}
+  if(MODE!=='ms'){try{await loadPin()}catch(e){}}
   var q=prof();q.panelCentro=c;LS.set('gpPerfil',JSON.stringify(q));$('#fCentro').dataset.k='';render()}}
 
 // ---------------- Microsoft (SharePoint en vivo) ----------------
@@ -226,7 +226,7 @@ async function loadMs(){
   while(url){var d=await g(url);items=items.concat(d.value||[]);url=d['@odata.nextLink']||null}
   var pins={};(await g('/sites/'+CFG.site+'/lists/'+CFG.pinList+'/items?$expand=fields($select=Title,PIN)&$top=100')).value.forEach(function(p){if(p.fields.Title&&p.fields.PIN)pins[p.fields.Title]=String(p.fields.PIN).trim()});
   var ph={};for(var c in pins)ph[c]=await sha(pinKey(c,pins[c]));
-  var relay=await fetch(CFG.endpoint+'?panel=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now()).then(function(r){return r.json()}).catch(function(){return {}});
+  var relay=await gpApi.post({action:'read',what:'panel'}).catch(function(){return {}});
   DATA={items:items.map(fromSP),updatedAt:new Date().toISOString(),pending:(relay&&relay.pending)||[],pinHash:ph,pins:pins,live:true};
   await autoApply();
   await applyMoves((relay&&relay.moves)||{});
@@ -235,7 +235,7 @@ async function loadMs(){
 function pushSnapshot(){
   var items=DATA.items.map(function(it){return {id:it.id,Title:it.Title,Centro:it.Centro,Programa:it.Programa,Tipo:it.Tipo,DirigidoA:it.DirigidoA,Responsable:it.Responsable,Mes:it.Mes,Fecha:it.Fecha,
     Estado:it.Estado,Avance:String(it.Avance).slice(-200),Evidencia:it.Evidencia,EvidenciaRequerida:it.EvidenciaRequerida,Observacion:String(it.Observacion).slice(0,120)}});
-  fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelSnapshot',items:items,pins:DATA.pinHash,by:ACCOUNT?ACCOUNT.username:''})}).catch(function(){});
+  gpApi.post({action:'panelSnapshot',items:items,pins:DATA.pinHash,by:ACCOUNT?ACCOUNT.username:''}).catch(function(){});
 }
 var DRIVE=null;
 // Copia a Gestión SSO de las actividades sin formulario (check list de andenes/emergencia y estadística)
@@ -260,7 +260,8 @@ async function folderUrl(path){var dr=await drive();var d=await g('/drives/'+dr+
 
 // ---------------- Copia (sin cuenta, con PIN) ----------------
 async function loadPin(){
-  var d=await fetch(CFG.endpoint+'?panel=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()});
+  var d=await gpApi.post({action:'read',what:'panel'});
+  if(d&&d.error==='SIN_ACCESO'){var pc={};(d.centros||[]).forEach(function(c){pc[c]=1});DATA={items:[],updatedAt:null,pending:[],pinHash:pc,pins:{},live:false,locked:true};return}
   if(!d||!d.ok)throw new Error((d&&d.error)||'sin datos');
   var mv=d.moves||{};DATA={items:(d.items||[]).map(function(x){x.id=String(x.id);var m=mv[x.id];if(m){x.Fecha=m.fecha;x.Mes=m.fecha.slice(0,7)}return x}),updatedAt:d.updatedAt,pending:d.pending||[],pinHash:d.pins||{},pins:{},live:false};save();
 }
@@ -333,7 +334,7 @@ function tendChart(items){
 function render(){
   authBar();fillMeses();fillSemanas();syncLine();
   var mine=misCentros();centroSel(mine);$('.bar').hidden=!!(mine&&!mine.length);
-  if(mine&&!mine.length){$('#view').innerHTML=DATA.items.length?pinBox(true):'<div class="empty">Cargando el programa…</div>';pinBind();$('#admin').hidden=true;$('#note').innerHTML='';return}
+  if(mine&&!mine.length){$('#view').innerHTML=(DATA.items.length||DATA.locked)?pinBox(true):'<div class="empty">Cargando el programa…</div>';pinBind();$('#admin').hidden=true;$('#note').innerHTML='';return}
   var base=mine?DATA.items.filter(function(it){return mine.indexOf(it.Centro)>=0}):DATA.items;
   var c=$('#fCentro').value,m=$('#fMes').value;
   var sw=semSel(),fq=$('#fFrec').value;
@@ -388,7 +389,7 @@ function card(it){var s=st(it),lab=s.late?'Atrasada':s.e,f=formFor(it);
 
 // ---------------- Actualizar estado ----------------
 var cur=null,evid=[];
-function unlocked(c){if(isAdmin())return true;var u=J('gpPanelPins',{});return !!u[c]&&u[c]===DATA.pinHash[c]}
+function unlocked(c){if(isAdmin())return true;return gpApi.centros().indexOf(c)>=0}
 function openSheet(it){cur=it;evid=[];var s=st(it);$('#shSub').textContent=it.Title+' · '+it.Centro+(it.Fecha?' · '+fd(it.Fecha):it.Mes?' · '+mesTxt(it.Mes):'');
   $$('[name=shEst]').forEach(function(r){r.checked=r.value===s.e});$('#shCom').value='';$('#shMsg').innerHTML='';$('#shPin').value='';
   $('#shPinBox').hidden=unlocked(it.Centro);$('#shNomBox').hidden=MODE==='ms';$('#shNom').value=prof().name||'';drawEv();$('#sheet').classList.add('on');$('#shGo').disabled=false}
@@ -408,8 +409,7 @@ $('#shGo').onclick=async function(){
   var it=cur,est=(document.querySelector('[name=shEst]:checked')||{}).value,com=$('#shCom').value.trim(),msg=$('#shMsg'),btn=this;
   if(!est){msg.innerHTML='<div class="msg err">Elige el estado.</div>';return}
   if(!unlocked(it.Centro)){var pin=$('#shPin').value.trim();if(!pin){msg.innerHTML='<div class="msg err">Escribe el PIN de '+esc(it.Centro)+'.</div>';return}
-    var h=await sha(pinKey(it.Centro,pin));if(h!==DATA.pinHash[it.Centro]){msg.innerHTML='<div class="msg err">PIN incorrecto para '+esc(it.Centro)+'.</div>';return}
-    var u=J('gpPanelPins',{});u[it.Centro]=h;LS.set('gpPanelPins',JSON.stringify(u));var pp=prof();pp.panelPin=pp.panelPin||{};LS.set('gpPerfil',JSON.stringify(pp));window.__pin=pin}
+    try{await gpApi.login(it.Centro,pin)}catch(e){msg.innerHTML='<div class="msg err">'+esc(e.message)+'</div>';return}}
   var nom=MODE==='ms'?(ACCOUNT.name||ACCOUNT.username):$('#shNom').value.trim();if(!nom){msg.innerHTML='<div class="msg err">Escribe tu nombre.</div>';return}
   btn.disabled=true;msg.innerHTML='<div class="msg info">Guardando…</div>';
   var line=todayISO.split('-').reverse().join('-')+' · '+est+' · '+nom+(com?': '+com:'');
@@ -423,10 +423,8 @@ $('#shGo').onclick=async function(){
       msg.innerHTML='<div class="msg ok">✔ Guardado en SharePoint.</div>';
     }else{
       var evPath='';if(evid.length){evPath=evFolder(it);await sendEvidence(it,evPath,est,com,nom)}
-      var pinv=window.__pin||'';if(!pinv){var stored=J('gpPanelPinRaw',{});pinv=stored[it.Centro]||''}
-      var r=await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelPropose',id:it.id,centro:it.Centro,pin:pinv,title:it.Title,estado:est,comentario:com,nombre:nom,evidencia:evPath})}).then(function(r){return r.json()});
+      var r=await gpApi.post({action:'panelPropose',id:it.id,centro:it.Centro,title:it.Title,estado:est,comentario:com,nombre:nom,evidencia:evPath});
       if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo enviar');
-      var raw=J('gpPanelPinRaw',{});raw[it.Centro]=pinv;LS.set('gpPanelPinRaw',JSON.stringify(raw));
       DATA.pending.push({qid:r.qid,id:it.id,centro:it.Centro,title:it.Title,estado:est,comentario:com,nombre:nom,evidencia:evPath,at:new Date().toISOString()});save();
       var q=prof();q.name=nom;LS.set('gpPerfil',JSON.stringify(q));
       msg.innerHTML='<div class="msg ok">✔ Enviado. Queda «Por validar» hasta que el equipo PYR lo apruebe.</div>';
@@ -450,7 +448,7 @@ async function sendEvidence(it,folder,est,com,nom){
 // ---------------- Formularios con coincidencia clara: se marcan solos ----------------
 async function applyMoves(mv){var ids=[],fe={};for(var id in mv){var it=DATA.items.filter(function(x){return x.id===String(id)})[0],m=mv[id];if(!it){ids.push(id);fe[id]=m.fecha;continue}
     try{if(it.Fecha!==m.fecha){await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:{FechaProgramada:m.fecha+'T12:00:00Z',Mes:m.fecha.slice(0,7),Avance:((it.Avance?it.Avance+'\n':'')+todayISO.split('-').reverse().join('-')+' · Día cambiado a '+m.fecha.split('-').reverse().join('-')+(m.nombre?' por '+m.nombre:'')).slice(-4000)}});it.Fecha=m.fecha;it.Mes=m.fecha.slice(0,7)}ids.push(id);fe[id]=m.fecha}catch(e){}}
-  if(ids.length)await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelMoveAck',ids:ids,fechas:fe})}).catch(function(){})}
+  if(ids.length)await gpApi.post({action:'panelMoveAck',ids:ids,fechas:fe}).catch(function(){})}
 async function autoApply(){
   var ok=DATA.pending.filter(function(q){return q.auto&&q.conf==='alta'}),done=[];
   for(var i=0;i<ok.length;i++){var q=ok[i],it=DATA.items.filter(function(x){return x.id===q.id})[0];
@@ -459,7 +457,7 @@ async function autoApply(){
       if(q.evidencia){try{fields.Evidencia=(await folderUrl(q.evidencia)).slice(0,255)}catch(e){}}
       await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:fields});Object.assign(it,{Estado:'Realizada',Avance:fields.Avance,Evidencia:fields.Evidencia||it.Evidencia})}
       done.push(q.qid)}catch(e){}}
-  if(done.length){await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelAck',qids:done})}).catch(function(){});
+  if(done.length){await gpApi.post({action:'panelAck',qids:done}).catch(function(){});
     DATA.pending=DATA.pending.filter(function(x){return done.indexOf(x.qid)<0});DATA.autoDone=done.length}
 }
 // ---------------- Validar avances de quienes no tienen cuenta ----------------
@@ -470,7 +468,7 @@ async function validar(qid,ok,btn){
       var fields={Estado:q.estado,Avance:((it.Avance?it.Avance+'\n':'')+line).slice(-4000),ReportadoPor:q.nombre};if(q.estado==='Realizada')fields.FechaRealizada=q.at.slice(0,10)+'T12:00:00Z';
       if(q.evidencia){try{fields.Evidencia=(await folderUrl(q.evidencia)).slice(0,255)}catch(e){fields.Evidencia=q.evidencia.slice(0,255)}}
       await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:fields});Object.assign(it,{Estado:q.estado,Avance:fields.Avance,Evidencia:fields.Evidencia||it.Evidencia})}
-    await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,action:'panelAck',qids:[qid]})});
+    await gpApi.post({action:'panelAck',qids:[qid]});
     DATA.pending=DATA.pending.filter(function(x){return x.qid!==qid});save();pushSnapshot();render();
   }catch(e){alert('No se pudo validar: '+e.message);btn.disabled=false}
 }

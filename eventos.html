@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"><script src="gp-auth.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hallazgos y eventos · PRO EHS</title>
 <meta name="theme-color" content="#18181b">
@@ -209,7 +209,7 @@ async function cargar(force){
   $('#app').innerHTML='<div class="empty"><span class="spin"></span>Leyendo hallazgos y eventos…</div>';
   try{
     await loadScript(CFG.chart);await loadScript('gp-charts.js');
-    var hz=fetch(CFG.endpoint+'?hz=1&key='+encodeURIComponent(CFG.key)+'&t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).catch(function(){return {items:[]}});
+    var hz=(window.gpApi?gpApi.read('hz',{prompt:false}):Promise.resolve({items:[]})).then(function(d){return d&&d.ok?d:{items:[]}}).catch(function(){return {items:[]}});
     if(!REP){var ds=(await g('/sites/'+CFG.site+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('No encontré la biblioteca ReportesPYR')}
     var files=[];
     async function hijos(path){var r=[],u='/drives/'+REP+'/root:/'+encPath(path)+':/children?$select=id,name,eTag,folder&$top=999';while(u){var d=await g(u).catch(function(){return {value:[]}});r=r.concat(d.value||[]);u=d['@odata.nextLink']||null}return r}
