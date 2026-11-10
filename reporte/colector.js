@@ -130,7 +130,7 @@ export async function foto(id) {
     const doc = await pdfjsLib.getDocument({ data: buf }).promise; let best = null;
     for (let p = 1; p <= doc.numPages; p++) { const page = await doc.getPage(p); const ops = await page.getOperatorList();
       for (let i = 0; i < ops.fnArray.length; i++) if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) { const nm = ops.argsArray[i][0];
-        const o = await new Promise(res => { try { page.objs.get(nm, res); } catch (e) { try { page.commonObjs.get(nm, res); } catch (e2) { res(null); } } });
+        const o = page.objs.has(nm) ? page.objs.get(nm) : (page.commonObjs.has(nm) ? page.commonObjs.get(nm) : null);
         if (o && o.width * o.height > 40000 && (!best || o.width * o.height > best.width * best.height)) best = o; } }
     if (!best) return 'SIN_FOTO';
     canvas.width = best.width; canvas.height = best.height; const ctx = canvas.getContext('2d');
