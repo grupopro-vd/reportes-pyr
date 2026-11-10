@@ -1487,4 +1487,57 @@ document.addEventListener('DOMContentLoaded',function(){
   try{var t=(new URLSearchParams(location.search).get('t')||'').toLowerCase();if(/plan de emerg|seguridad vial en buses|normas de tr|pilar gdi/.test(t))setTimeout(function(){pick('plan',true)},700)}catch(e){}
 })();
 </script>
+<script id="gpAsistModo">
+/* Asistencia: firmas en la app o foto del registro en papel.
+   - Con foto del registro, la lista de la app se quita (no sale en el PDF).
+   - Con firmas en la app, al enviar se eliminan las filas en blanco. */
+(function(){
+  var MODO='app';
+  function tabla(){var t=document.getElementById('asistentes');return t&&t.closest('table')}
+  function filas(){var t=document.getElementById('asistentes');return t?[].slice.call(t.rows):[]}
+  function hayFotoRegistro(){return [].some.call(document.querySelectorAll('#photoGrid .photo-card input'),function(i){return /registro de asistencia/i.test(i.value)})}
+  function setModo(m){
+    MODO=m==='foto'?'foto':'app';var tb=tabla();if(!tb)return;
+    tb.hidden=MODO==='foto';
+    var nota=document.getElementById('asisNotaPapel');if(nota)nota.hidden=MODO!=='foto';
+    [].forEach.call(document.querySelectorAll('#asisModo [data-modo]'),function(b){var on=b.getAttribute('data-modo')===MODO;b.style.background=on?'#18181b':'#fff';b.style.color=on?'#fff':'#18181b'});
+    var h=document.getElementById('asisModoVal');if(h)h.value=MODO==='foto'?'Registro en papel (foto)':'Firmas en la app';
+    try{sessionStorage.setItem('gpAsisModo:'+location.pathname,MODO)}catch(e){}
+    document.dispatchEvent(new Event('input'));
+  }
+  function limpiarFilas(){
+    var t=document.getElementById('asistentes');if(!t)return;
+    filas().forEach(function(r){var n=r.querySelector('[name="asist_nombre"]'),u=r.querySelector('[name="asist_rut"]');if(!(n&&n.value.trim())&&!(u&&u.value.trim()))r.remove()});
+    filas().forEach(function(r,i){var c=r.querySelector('.dyn-n');if(c)c.textContent=i+1});
+    document.dispatchEvent(new CustomEvent('gp-rows',{detail:{id:'asistentes'}}));
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var tb=tabla();if(!tb)return;
+    var box=document.createElement('div');box.id='asisModo';box.className='hide-on-print hide-on-word';
+    box.style.cssText='margin:6px 0 10px;border:1.5px solid #18181b;border-radius:12px;background:#fff;padding:12px';
+    box.innerHTML='<div style="font-weight:800;font-size:15px;margin-bottom:2px">¿Cómo registras la asistencia?</div>'+
+      '<div style="font-size:12.5px;color:#52525b;margin-bottom:10px">Si firmaron en papel, sube la foto del registro: la lista de la app se quita del PDF. Si firman en la app, las filas que queden en blanco se eliminan al enviar.</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn" data-modo="app">✍️ Firmas en la app</button><button type="button" class="btn" data-modo="foto">📋 Foto del registro en papel</button></div>'+
+      '<input type="hidden" id="asisModoVal" name="modo_asistencia" value="Firmas en la app">';
+    tb.parentNode.insertBefore(box,tb);
+    var nota=document.createElement('div');nota.id='asisNotaPapel';nota.className='warning-box';nota.hidden=true;nota.style.fontWeight='700';
+    nota.textContent='Asistencia registrada en papel: ver la foto del registro en «Respaldo fotográfico».';
+    tb.parentNode.insertBefore(nota,tb);
+    box.addEventListener('click',function(e){var b=e.target.closest('[data-modo]');if(!b)return;setModo(b.getAttribute('data-modo'));
+      if(MODO==='foto'&&!hayFotoRegistro()){var inp=document.querySelector('.tcFoto[data-ph="Registro de asistencia en papel"]');if(inp)inp.click()}});
+    // Al subir la foto del registro, pasa solo a modo «papel»
+    document.addEventListener('change',function(e){var inp=e.target;if(inp&&inp.matches&&inp.matches('.tcFoto[data-ph="Registro de asistencia en papel"]')&&inp.files&&inp.files.length)setModo('foto')},true);
+    var m='app';try{m=sessionStorage.getItem('gpAsisModo:'+location.pathname)||'app'}catch(e){}
+    setTimeout(function(){setModo(m)},600);
+    // Antes de enviar: quita filas en blanco o, con registro en papel, toda la lista de la app
+    document.addEventListener('click',function(e){
+      if(!e.target.closest||!e.target.closest('#gpSendBtn'))return;
+      if(MODO==='foto'){
+        if(!hayFotoRegistro()&&!document.querySelector('#photoGrid .photo-card')){e.preventDefault();e.stopImmediatePropagation();alert('Sube la foto del registro de asistencia en papel antes de enviar.');return}
+        filas().forEach(function(r){r.remove()});document.dispatchEvent(new CustomEvent('gp-rows',{detail:{id:'asistentes'}}));
+      } else limpiarFilas();
+    },true);
+  });
+})();
+</script>
 </body></html>
