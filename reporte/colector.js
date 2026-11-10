@@ -36,6 +36,12 @@ async function g(path, raw) {
   if (raw) return r;
   const d = await r.json().catch(() => null); if (!r.ok) throw new Error((d && d.error && d.error.message) || ('Graph ' + r.status)); return d;
 }
+// Lectura protegida del Apps Script (envía el token Microsoft; el servidor lo valida)
+async function leer(what) {
+  const d = await fetch(CFG.endpoint, { method: 'POST', body: JSON.stringify({ key: CFG.key, action: 'read', what, ms: await token() }) }).then(r => r.json());
+  if (!d || !d.ok) throw new Error((d && d.error) || ('sin datos de ' + what));
+  return d;
+}
 const enc = p => p.split('/').map(encodeURIComponent).join('/');
 const ls = k => { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch (e) { return {}; } };
 
@@ -43,7 +49,7 @@ const ls = k => { try { return JSON.parse(localStorage.getItem(k) || '{}'); } ca
 async function programa(desde, hasta) {
   let items = [], url = '/sites/' + CFG.site + '/lists/' + CFG.list + '/items?$expand=fields&$top=999';
   while (url) { const d = await g(url); items = items.concat(d.value || []); url = d['@odata.nextLink'] || null; }
-  const relay = await fetch(CFG.endpoint + '?panel=1&key=' + encodeURIComponent(CFG.key) + '&t=' + Date.now()).then(r => r.json()).catch(() => ({}));
+  const relay = await leer('panel').catch(() => ({}));
   const pv = {}; ((relay && relay.pending) || []).forEach(p => { if (p.estado === 'Realizada') pv[String(p.id)] = 1; });
   const mv = (relay && relay.moves) || {};
   return items.map(it => { const f = it.fields || {}; const m = mv[it.id]; const fe = (m && m.fecha) || String(f.FechaProgramada || '').slice(0, 10);
@@ -66,7 +72,7 @@ async function observaciones(desde, hasta) {
 
 // ---------- Hallazgos (Apps Script) ----------
 async function hallazgos(hoy) {
-  const d = await fetch(CFG.endpoint + '?hz=1&key=' + encodeURIComponent(CFG.key) + '&t=' + Date.now(), { cache: 'no-store' }).then(r => r.json());
+  const d = await leer('hz');
   return (d.items || []).map(h => ({ id: String(h.id), f: String(h.fecha || '').slice(0, 10), c: corto(h.centro), crit: limpia(h.criticidad), tipo: limpia(h.tipo), area: limpia(h.area), lugar: limpia(h.lugar),
     txt: limpia(h.descripcion), acc: limpia(h.accion), lim: String(h.limite || '').slice(0, 10), est: limpia(h.estado || 'Abierto'), folder: h.folder ? 1 : 0 }));
 }
@@ -115,7 +121,7 @@ async function accidentes(hoy) {
 
 // ---------- Foto de un hallazgo (para capturarla con una captura de pantalla) ----------
 export async function foto(id) {
-  const d = await fetch(CFG.endpoint + '?hz=1&key=' + encodeURIComponent(CFG.key) + '&t=' + Date.now(), { cache: 'no-store' }).then(r => r.json());
+  const d = await leer('hz');
   const h = (d.items || []).find(x => String(x.id) === String(id)); if (!h || !h.folder) return 'SIN_CARPETA';
   const ls2 = await g('/drives/' + CFG.rep + '/root:/' + enc(String(h.folder).replace(/^\/+/, '')) + ':/children?$select=id,name,file&$top=200');
   const imgs = (ls2.value || []).filter(x => /\.(jpe?g|png|webp)$/i.test(x.name));
