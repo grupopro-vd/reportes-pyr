@@ -39,8 +39,7 @@
     { h: 'observaciones.html', l: 'Observaciones', i: 'obs', p: /^observaciones/, sub: 1 },
     { h: 'eventos.html', l: 'Hallazgos y eventos', i: 'warn', p: /^eventos/, sub: 1 },
     { h: 'sugerencias.html#bandeja', l: 'Sugerencias del equipo', i: 'charla', p: /^sugerencias/ },
-    { h: 'panel.html', l: 'Cargar programa', i: 'up', p: /^$^/ },
-    { h: './#formularios', l: 'Formularios', i: 'forms', p: /^$^/ }
+    { h: 'panel.html', l: 'Cargar programa', i: 'up', p: /^$^/ }
   ];
 
   var css = '' +
