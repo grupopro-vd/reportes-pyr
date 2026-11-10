@@ -71,10 +71,9 @@
     var aside = document.createElement('aside'); aside.className = 'gs'; aside.setAttribute('aria-label', 'Menú');
     aside.innerHTML = '<div class="sl"><span class="lgo"><img src="logo.png" alt="Grupo Pro"></span><b>PRO EHS</b>' +
       '<button type="button" class="smin" title="Minimizar o expandir el menú" aria-label="Minimizar o expandir el menú"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>' +
-      '<div class="sh">Centro</div>' + [''].concat(CENTROS).map(function (c) { return '<button type="button" class="ctr" data-gsc="' + esc(c) + '">' + (c ? esc(c) : 'Todo el programa') + '</button>'; }).join('') +
       '<div class="sh">Herramientas</div>' + TOOLS.map(function (t) {
         var on = t.p.test(pag);
-        return '<a href="' + t.h + '" title="' + t.l + '" class="' + (on ? 'on' : '') + '">' + svg(t.i) + '<span>' + t.l + '</span></a>' + (t.sub && on ? '<div class="sub" id="gsSub"></div>' : '');
+        return '<a href="' + t.h + '" title="' + t.l + '" class="' + (on ? 'on' : '') + '"' + (t.l === 'Inicio' ? ' data-gsc=""' : '') + '>' + svg(t.i) + '<span>' + t.l + '</span></a>' + (t.sub && on ? '<div class="sub" id="gsSub"></div>' : '');
       }).join('');
     document.body.insertBefore(aside, document.body.firstChild);
     document.body.classList.add('gs-on');
@@ -84,7 +83,7 @@
     if (sub && old) [].slice.call(old.querySelectorAll('a[data-v]')).forEach(function (a) { sub.appendChild(a); });
     aside.addEventListener('click', function (e) {
       if (e.target.closest('.smin')) { var mn = !document.body.classList.contains('gs-min'); document.body.classList.toggle('gs-min', mn); LS.set('gpSideMin', mn ? '1' : ''); return; }
-      var b = e.target.closest('[data-gsc]'); if (b) { LS.set('gpHomeCentro', b.getAttribute('data-gsc')); location.href = './'; }
+      var b = e.target.closest('[data-gsc]'); if (b) { e.preventDefault(); LS.set('gpHomeCentro', b.getAttribute('data-gsc')); location.href = './'; }
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
