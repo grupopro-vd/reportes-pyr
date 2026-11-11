@@ -231,6 +231,23 @@ async function loadMs(){
   await autoApply();
   await applyMoves((relay&&relay.moves)||{});
   save();pushSnapshot();
+  syncListas().catch(function(e){console.warn('Listas de formularios',e)});
+}
+// Nómina y listas de los formularios: SharePoint (NominaPYR, ListasPYR) → copia en el servidor, filtrada por centro.
+// Las personas escritas a mano en los formularios se agregan a la nómina para revisarlas.
+var NOMINA_LIST='74895081-218f-4c57-9555-64611223c36d',LISTAS_LIST='d235993e-6020-4c7e-891f-ef6159edd76d';
+async function syncListas(){
+  var all=async function(id){var out=[],url='/sites/'+CFG.site+'/lists/'+id+'/items?$expand=fields&$top=999';while(url){var d=await g(url);out=out.concat(d.value||[]);url=d['@odata.nextLink']||null}return out};
+  var nk=function(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim()},rk=function(s){return String(s||'').replace(/[^0-9kK]/g,'').toUpperCase()};
+  var nom=(await all(NOMINA_LIST)).map(function(it){var f=it.fields||{};return {n:f.Title||'',r:f.RUT||'',cg:f.Cargo||'',e:f.Empresa||'',c:f.Centro||'',a:f.Area||'',s:f.Supervisor||'',t:f.Tipo||'',m:f.Correo||'',act:f.Activo!==false}});
+  var srv=await gpApi.read('listas',{prompt:false}).catch(function(){return {}}),nuevos=(srv&&srv.nuevos)||[],ack=[];
+  for(var i=0;i<nuevos.length;i++){var p=nuevos[i];
+    var ya=nom.some(function(x){return (p.r&&rk(x.r)===rk(p.r))||(nk(x.n)===nk(p.n)&&(x.c===p.c||x.c==='Todos los centros'))});
+    if(!ya){try{await g('/sites/'+CFG.site+'/lists/'+NOMINA_LIST+'/items',{method:'POST',body:{fields:{Title:p.n,RUT:p.r,Cargo:p.cg,Empresa:p.e,Centro:p.c||'Todos los centros',Supervisor:p.s,Tipo:p.t||'Trabajador',Correo:p.m,Activo:true,Origen:('Formulario '+(p.rec||'')+' · '+(p.por||'')+' (revisar)').slice(0,255)}}});
+      nom.push({n:p.n,r:p.r,cg:p.cg,e:p.e,c:p.c,a:'',s:p.s,t:p.t,m:p.m,act:true})}catch(e){continue}}
+    ack.push(p.k)}
+  var lis=(await all(LISTAS_LIST)).map(function(it){var f=it.fields||{};return {v:f.Title||'',l:f.Lista||'',c:f.Centro||'Todos los centros',act:f.Activo!==false}}).filter(function(x){return x.act&&x.v});
+  await gpApi.post({action:'listasSnap',nomina:nom.filter(function(x){return x.act&&x.n}),listas:lis,ackNuevos:ack});
 }
 function pushSnapshot(){
   var items=DATA.items.map(function(it){return {id:it.id,Title:it.Title,Centro:it.Centro,Programa:it.Programa,Tipo:it.Tipo,DirigidoA:it.DirigidoA,Responsable:it.Responsable,Mes:it.Mes,Fecha:it.Fecha,

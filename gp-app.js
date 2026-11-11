@@ -97,6 +97,7 @@
     d.extra = { descripcion: v('descripcion').slice(0, 400), criticidad: r('criticidad'), accion_correctiva: v('accion_correctiva').slice(0, 300), tipo_hallazgo: r('tipo_hallazgo') || v('tipo_otro'),
       correo_responsable: v('correo_responsable'), tema: v('tema'), tipo_actividad: v('tipo_actividad'), area: v('area'), lugar: v('lugar'), categoria_evento: v('categoria_evento') };
     var act = getAct(); if (act && act.id) { d.programaId = String(act.id); d.programaTitle = act.title || ''; }
+    try { if (typeof window.gpNuevos === 'function') { var nv = window.gpNuevos(); if (nv.length) d.nuevos = nv; } } catch (e) {}
     return d;
   }
   var _fetch = window.fetch;
@@ -364,6 +365,7 @@
 
   function initForm() {
     addCentroField(); addAppBar(); setNet();
+    try { var gl = document.createElement('script'); gl.src = new URL('gp-listas.js', document.baseURI).href; document.head.appendChild(gl); } catch (e) {}
     try { applyAct(); } catch (e) {}
     idb.get('drafts', draftKey).then(function (saved) {
       if (saved && saved.values) { restore(saved); restored = true; showBanner(saved); }
