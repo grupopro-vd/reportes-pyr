@@ -485,7 +485,16 @@
           kept++;
         }
         var grid = tr.querySelector('.photo-grid');
-        if (grid) { photoHtml += photos(grid); if (!txt(tr).replace(grid.textContent, '').trim()) return; }
+        if (grid) {
+          var ph = photos(grid); photoHtml += ph;
+          if (!txt(tr).replace(grid.textContent, '').trim()) {
+            // Sin fotos: se quita el título «Evidencia fotográfica» que quedaría vacío. Con fotos: se indica dónde están.
+            if (ph) { var nf = (ph.match(/<img /g) || []).length, gc = (grid.closest('td,th') || {}).getAttribute ? grid.closest('td,th').getAttribute('colspan') || cols : cols;
+              out += '<tr><td colspan="' + gc + '" style="' + F + BD + 'padding:4px 6px;font-size:9.5pt;font-style:italic;color:#444444">' + nf + (nf === 1 ? ' fotografía' : ' fotografías') + ' en el respaldo fotográfico, al final del documento.</td></tr>'; }
+            else out = out.replace(/<!--S--><tr>(?:(?!<\/tr>)[\s\S])*<\/tr>$/, '');
+            return;
+          }
+        }
         if (tr.classList.contains('dyn-head')) { out += '<!--DYNHEAD-->'; }
         var sec = tr.classList.contains('section-row'), sub = tr.classList.contains('subsection-row');
         var cells = [].slice.call(tr.children); if (!cells.length) return;
@@ -565,11 +574,57 @@
   }
   window.gpMakePdf = async function (name) {
     if (typeof window.buildPrintDocumentHtml !== 'function') throw new Error('Este formulario no puede generar PDF.');
-    if (navigator.onLine !== false) { try { return await serverPdf(name); } catch (e) { console.warn('PDF servidor no disponible, se usa el de respaldo', e); } }
+    if (navigator.onLine !== false) {
+      for (var t = 0; t < 2; t++) { // un reintento si la falla fue rápida (corte breve de señal)
+        var t0 = Date.now();
+        try { return await serverPdf(name); } catch (e) { console.warn('PDF servidor no disponible' + (t ? ', se usa el de respaldo' : ''), e); if (Date.now() - t0 > 15000) break; await new Promise(function (ok) { setTimeout(ok, 1500); }); }
+      }
+    }
     return rasterPdf(name);
   };
+  /* PDF de respaldo (sin conexión o si el servidor falla): mismo diseño que el PDF del servidor,
+     dibujado en el teléfono y cortado en páginas A4 sin partir filas ni fotos. */
   var rasterPdf = async function (name) {
     if (typeof window.buildPrintDocumentHtml !== 'function') throw new Error('Este formulario no puede generar PDF.');
+    var clean = null; try { clean = await cleanPdfHtml(window.buildPrintDocumentHtml()); } catch (e) { console.warn('PDF de respaldo: diseño simple', e); }
+    if (!clean) return rasterPagePdf(name);
+    var M = 45, PW = 794, PH = 1123; // márgenes ≈12 mm, A4 a 96 dpi
+    clean = clean.replace('</head>', '<style>html,body{width:' + PW + 'px;background:#fff}body{padding:0 ' + M + 'px!important;box-sizing:border-box}</style></head>');
+    var ifr = document.createElement('iframe'); ifr.setAttribute('aria-hidden', 'true');
+    ifr.style.cssText = 'position:fixed;left:-12000px;top:0;width:' + PW + 'px;height:' + PH + 'px;border:0;background:#fff';
+    document.body.appendChild(ifr);
+    try {
+      await new Promise(function (ok) { ifr.onload = ok; ifr.srcdoc = clean; });
+      var w = ifr.contentWindow, d = w.document;
+      for (var i = 0; i < PDF_LIBS.length; i++) await loadIn(w, PDF_LIBS[i]);
+      await Promise.all([].slice.call(d.images).filter(function (im) { return !im.complete; }).map(function (im) { return new Promise(function (ok) { im.onload = im.onerror = ok; }); }));
+      var total = Math.ceil(d.body.scrollHeight), H = PH - 2 * M;
+      var cuts = [], forced = [];
+      [].slice.call(d.querySelectorAll('tr, body > div, body > div > div, body > table, img')).forEach(function (el) {
+        var r = el.getBoundingClientRect(); cuts.push(Math.ceil(r.bottom));
+        if (/page-break-before:\s*always/.test(el.getAttribute('style') || '')) forced.push(Math.floor(r.top));
+      });
+      var sl = [], y = 0;
+      while (y < total - 2) {
+        var lim = y + H, f = forced.filter(function (t) { return t > y + 5 && t <= lim; })[0], end;
+        if (f) end = f; else if (lim >= total) end = total;
+        else { var ok = cuts.filter(function (c) { return c > y + 60 && c <= lim; }); end = ok.length ? Math.max.apply(null, ok) : lim; }
+        sl.push([y, end]); y = end;
+      }
+      var cv = await w.html2canvas(d.body, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: PW, width: PW, height: total });
+      var pdf = new w.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+      sl.forEach(function (s, k) {
+        var pg = d.createElement('canvas'); pg.width = PW * 2; pg.height = PH * 2;
+        var x = pg.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, pg.width, pg.height);
+        x.drawImage(cv, 0, s[0] * 2, PW * 2, (s[1] - s[0]) * 2, 0, M * 2, PW * 2, (s[1] - s[0]) * 2);
+        if (k) pdf.addPage();
+        pdf.addImage(pg.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      });
+      return { blob: new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' }), name: name || 'Registro.pdf' };
+    } finally { setTimeout(function () { ifr.remove(); }, 300); }
+  };
+  // Diseño anterior (hoja del formulario reducida a una página): solo si falla el anterior
+  var rasterPagePdf = async function (name) {
     var html = window.buildPrintDocumentHtml();
     var ifr = document.createElement('iframe'); ifr.setAttribute('aria-hidden', 'true');
     ifr.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;height:1123px;border:0;background:#fff';
