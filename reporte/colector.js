@@ -152,6 +152,32 @@ export async function foto(id) {
 export function cerrarFoto() { const o = document.getElementById('gprdFoto'); if (o) o.remove(); return 'ok'; }
 
 // ---------- Todo junto ----------
+// Resumen ejecutivo de observaciones: se lee de la propia página de Observaciones (últimas 4 semanas, todos los
+// centros), así los números son exactamente los mismos que ve el equipo. Al final se dejan los filtros como estaban.
+async function obsResumen() {
+  const saved = { f: localStorage.getItem('gpObsFiltros'), v: localStorage.getItem('gpObsView') };
+  const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;border:0;opacity:0;pointer-events:none;z-index:-1';
+  fr.src = 'observaciones.html'; document.body.appendChild(fr);
+  try {
+    const w = await new Promise((ok, ko) => { fr.onload = () => ok(fr.contentWindow); setTimeout(() => ko(new Error('observaciones.html no cargó')), 30000); });
+    const d = w.document, sleep = t => new Promise(r => setTimeout(r, t));
+    for (let i = 0; i < 60 && !d.getElementById('fW'); i++) await sleep(500);
+    const set = (id, v) => { const el = d.getElementById(id); if (el && el.value !== v) { el.value = v; el.dispatchEvent(new w.Event('change', { bubbles: true })); } };
+    ['fC', 'fT', 'fR', 'fP', 'fO'].forEach(id => set(id, '')); set('fW', 'u4');
+    let blk = null;
+    for (let i = 0; i < 60; i++) { await sleep(500); blk = d.getElementById('v-resumen'); if (blk && blk.querySelectorAll('.kpi').length >= 8 && w.Chart && w.Chart.getChart('cSem')) break; }
+    if (!blk) throw new Error('la página de observaciones no mostró el resumen');
+    await sleep(500);
+    const k = [...blk.querySelectorAll('.kpi')].map(x => [(x.querySelector('b') || {}).innerText || '', (x.querySelector('span') || {}).innerText || '']);
+    const g = id => { const c = w.Chart.getChart(id); return c ? { l: c.data.labels.slice(), d: c.data.datasets.map(s => [s.label || '', s.data.slice()]) } : null; };
+    const tn = ((blk.querySelector('.note') || {}).innerText || '').trim();
+    return { periodo: 'Últimas 4 semanas', k, tn, sem: g('cSem'), tipo: g('cTipo') };
+  } finally {
+    fr.remove();
+    try { if (saved.f == null) localStorage.removeItem('gpObsFiltros'); else localStorage.setItem('gpObsFiltros', saved.f); if (saved.v != null) localStorage.setItem('gpObsView', saved.v); } catch (e) {}
+  }
+}
+
 export async function run(hoy) {
   hoy = hoy || new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   const dow = new Date(hoy + 'T12:00:00Z').getUTCDay() || 7;          // 1 = lunes
@@ -162,6 +188,7 @@ export async function run(hoy) {
   const safe = async (n, f) => { try { return await f(); } catch (e) { warn.push(n + ': ' + limpia(e.message)); return null; } };
   const [prog, obs, hz, acc] = await Promise.all([safe('programa', () => programa(ini, domingo)), safe('observaciones', () => observaciones(ini, hoy)), safe('hallazgos', () => hallazgos(hoy)), safe('accidentes', () => accidentes(hoy))]);
   const ev = eventos(ini, hoy);
+  const obsR = await safe('resumen de observaciones', () => obsResumen());
   // Resumen del programa por centro (para que el JSON sea corto)
   const P = {}; const dd = f => f.slice(8, 10) + '/' + f.slice(5, 7);
   (prog || []).slice().sort((a, b) => a.f.localeCompare(b.f)).forEach(x => { const c = P[x.c] = P[x.c] || { dia: [0, 0], ant: [0, 0], act: [0, 0], late: [], diaPend: [] };
@@ -170,6 +197,6 @@ export async function run(hoy) {
     if (x.f >= lunes && x.f <= domingo) { c.act[1]++; c.act[0] += x.ok; } });
   if (!Object.keys(ls('gpObsCache1')).length) warn.push('observaciones: caché vacía, abre observaciones.html antes');
   if (!Object.keys(ls('gpEvCache2')).length) warn.push('eventos: caché vacía, abre eventos.html antes');
-  const out = { hoy, desde, hasta, lunes, domingo, lunAnt, domAnt, generado: new Date().toISOString(), warn, prog: prog ? P : null, obs, hz, ev, acc };
+  const out = { hoy, desde, hasta, lunes, domingo, lunAnt, domAnt, generado: new Date().toISOString(), warn, prog: prog ? P : null, obs, hz, ev, acc, obsR };
   return JSON.stringify(out).replace(/[?=&]/g, '');
 }

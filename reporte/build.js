@@ -83,9 +83,9 @@ objs.push({ text: { text: 'Prevención de Riesgos · Reporte diario PYR', option
 pres.defineSlideMaster({ title: 'CONTENIDO', background: { color: C.background2 }, objects: objs, slideNumber: { x: 12.3, y: 7.08, w: 0.5, h: 0.28, fontSize: 10, color: C.text2 } });
 const card = (s, x, y, w, h, fill) => s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.12, fill: { color: fill || 'FFFFFF' }, line: { color: fill ? fill : H.grid, width: 0.75 } });
 const font = '+mn-lt';
-const donut = (s, x, y, w, h, labels, values, colors) => { const L = [], V = [], K = []; values.forEach((v, i) => { if (v > 0) { L.push(labels[i]); V.push(v); K.push(colors[i]); } });
+const donut = (s, x, y, w, h, labels, values, colors, o) => { o = o || {}; const L = [], V = [], K = []; values.forEach((v, i) => { if (v > 0) { L.push(labels[i]); V.push(v); K.push(colors[i]); } });
   if (!V.length) { T(s, 'Sin datos', { x, y: y + h / 2 - 0.2, w, h: 0.4, fontSize: 13, color: H.gray, align: 'center' }); return; }
-  s.addChart(pres.charts.DOUGHNUT, [{ name: '', labels: L, values: V }], { x, y, w, h, holeSize: 62, chartColors: K, showPercent: false, showValue: true, dataLabelColor: 'FFFFFF', dataLabelFontSize: 12, dataLabelFontBold: true, dataLabelFontFace: font, showLegend: true, legendPos: 'b', legendFontSize: 11, legendFontFace: font, legendColor: '3F3F46', showTitle: false, dataBorder: { pt: 2, color: 'FFFFFF' } }); };
+  s.addChart(pres.charts.DOUGHNUT, [{ name: '', labels: L, values: V }], { x, y, w, h, holeSize: 62, chartColors: K, showPercent: false, showValue: true, dataLabelColor: 'FFFFFF', dataLabelFontSize: 12, dataLabelFontBold: true, dataLabelFontFace: font, showLegend: true, legendPos: o.legendPos || 'b', legendFontSize: o.legendFontSize || 11, legendFontFace: font, legendColor: '3F3F46', showTitle: false, dataBorder: { pt: 2, color: 'FFFFFF' } }); };
 const bars = (s, x, y, w, h, labels, series, colors, o) => { if (!labels.length) { T(s, 'Sin datos por centro', { x, y: y + h / 2 - 0.2, w, h: 0.4, fontSize: 12, color: H.gray, align: 'center' }); return; }
   s.addChart(pres.charts.BAR, series.map(z => ({ name: z[0], labels, values: z[1] })), Object.assign({ x, y, w, h, barDir: 'col', barGrouping: o && o.stack ? 'stacked' : 'clustered', chartColors: colors, showValue: true, dataLabelPosition: o && o.stack ? 'ctr' : 'outEnd', dataLabelFontSize: 10, dataLabelFontFace: font, dataLabelColor: o && o.stack ? 'FFFFFF' : '18181B', dataLabelFormatCode: '0;;;', catAxisLabelFontSize: 11, catAxisLabelFontFace: font, catAxisLabelColor: '52525B', valAxisHidden: true, valGridLine: { style: 'none' }, catGridLine: { style: 'none' }, showLegend: true, legendPos: 't', legendFontSize: 10.5, legendFontFace: font, legendColor: '3F3F46', barGapWidthPct: 55, showTitle: false }, (o && o.opt) || {})); };
 const sello = 'Datos de la app al ' + ddmm(HOY) + ' ' + new Date(D.generado || Date.now()).toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }) + '.';
@@ -151,8 +151,32 @@ s.addNotes('Fuente: programa de actividades de la app (lista ProgramaActividades
 pres.addSection({ title: 'Observaciones' });
 s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Observaciones' });
 const oPos = obsA.filter(o => o.res !== 'Negativa'), oNeg = obsA.filter(o => o.res === 'Negativa');
-s.addText('OBSERVACIONES CONDUCTUALES · ' + KICK, { placeholder: 'kicker' });
-s.addText(TIT.obs || (obsA.length ? pct(oPos.length, obsA.length) + '% de las observaciones de la semana pasada fueron positivas' : 'Sin observaciones de conducta registradas la semana pasada'), { placeholder: 'title' }); navCentros(s);
+s.addText('OBSERVACIONES CONDUCTUALES · ' + (D.obsR && D.obsR.k ? 'ÚLTIMAS 4 SEMANAS' : KICK), { placeholder: 'kicker' });
+const OR_ = D.obsR && D.obsR.k && D.obsR.k.length >= 8 ? D.obsR : null;
+const orPP_ = OR_ && OR_.sem ? ((OR_.sem.d.filter(d => d[0] === '% positivas')[0] || [0, []])[1]) : [];
+s.addText(TIT.obs || (OR_ ? parseInt(OR_.k[1][1].split('·')[1], 10) + '% positivas en las últimas 4 semanas' + (orPP_.length >= 2 && orPP_[orPP_.length - 1] != null && orPP_[orPP_.length - 2] != null && orPP_[orPP_.length - 1] !== orPP_[orPP_.length - 2] ? '; esta semana ' + (orPP_[orPP_.length - 1] < orPP_[orPP_.length - 2] ? 'bajó' : 'subió') + ' a ' + orPP_[orPP_.length - 1] + '%' : '') : obsA.length ? pct(oPos.length, obsA.length) + '% de las observaciones de la semana pasada fueron positivas' : 'Sin observaciones de conducta registradas la semana pasada'), { placeholder: 'title' }); navCentros(s);
+if (OR_) { // Resumen ejecutivo tal como lo muestra la página de Observaciones (últimas 4 semanas, todos los centros)
+  const R = OR_, W = 2.95, G = 0.16, num = t => String(t || '').replace(/\s+%/, '%');
+  const COL = [null, H.green, H.crit, '1D4ED8', '0F766E', H.crit, H.amber, C.text1];
+  const kp = (i, row, b, l, col, dark) => { const x = 0.5 + i * (W + G), y = row ? 2.45 : 1.4; card(s, x, y, W, 0.92, dark ? '18181B' : null);
+    T(s, num(b), { x: x + 0.2, y: y + 0.08, w: W - 0.3, h: 0.5, fontSize: 26, bold: true, color: dark ? 'FFFFFF' : col });
+    T(s, l, { x: x + 0.2, y: y + 0.58, w: W - 0.3, h: 0.28, fontSize: 11.5, bold: true, color: dark ? 'D4D4D8' : '52525B' }); };
+  STEP = 1; R.k.slice(0, 8).forEach((x, i) => { let col = COL[i]; if (i === 6) { const v = parseInt(x[0], 10); col = isNaN(v) ? H.gray : v >= 90 ? H.green : H.amber; } kp(i % 4, i >= 4 ? 1 : 0, x[0], x[1], col, i === 0); });
+  if (R.k.length >= 12) { STEP = 2;
+    T(s, (R.tn || 'Tendencia').replace('últimas 1 semanas vs las 1 anteriores', 'última semana vs la anterior'), { x: 0.5, y: 3.47, w: 8, h: 0.28, fontSize: 12, bold: true, color: '3F3F46' });
+    R.k.slice(8, 12).forEach((x, i) => { const xx = 0.5 + i * (W + G), y = 3.8, a = x[0].trim().charAt(0); card(s, xx, y, W, 0.8);
+      T(s, num(x[0]), { x: xx + 0.2, y: y + 0.08, w: W - 0.3, h: 0.42, fontSize: 22, bold: true, color: a === '↑' ? H.green : a === '↓' ? H.crit : '52525B' });
+      T(s, num(x[1]).replace(/ %/g, '%'), { x: xx + 0.2, y: y + 0.5, w: W - 0.3, h: 0.26, fontSize: 10.5, color: '52525B' }); }); }
+  STEP = 3; card(s, 0.5, 4.75, 7.6, 2.2); live(s, 6.5, 4.85, APP + 'observaciones.html', 'Ver en la app');
+  T(s, 'Observaciones por semana · positivas vs negativas', { x: 0.7, y: 4.85, w: 6, h: 0.3, fontSize: 13, bold: true, color: C.text1 });
+  if (R.sem) { const ser = n => (R.sem.d.filter(d => d[0] === n)[0] || [n, []])[1], pp = ser('% positivas');
+    bars(s, 0.6, 5.15, 7.4, 1.75, R.sem.l.map((l, i) => 'SN ' + parseInt(String(l).slice(1), 10) + (pp[i] != null ? ' · ' + pp[i] + '% positivas' : '')), [['Positivas', ser('Positivas')], ['Negativas', ser('Negativas')]], [H.green, H.crit], { stack: true, opt: { catAxisLabelFontSize: 10, legendFontSize: 9 } }); }
+  card(s, 8.26, 4.75, 4.57, 2.2);
+  T(s, 'Por tipo de observación', { x: 8.46, y: 4.85, w: 4, h: 0.3, fontSize: 13, bold: true, color: C.text1 });
+  if (R.tipo && R.tipo.d[0]) { const v = R.tipo.d[0][1], ix = R.tipo.l.map((l, i) => i).sort((a, b) => v[b] - v[a]), TC = ['18181B', '0F766E', 'B3261E', 'B45309', '1D4ED8', '7E22CE', '71717A'];
+    donut(s, 8.3, 5.15, 4.5, 1.78, ix.map(i => R.tipo.l[i]), ix.map(i => v[i]), TC, { legendPos: 'r', legendFontSize: 10 }); }
+  STEP = 0;
+} else {
 STEP = 1; card(s, 0.5, 1.4, 5.4, 5.55);
 T(s, 'Semana anterior · SN ' + SNA, { x: 0.75, y: 1.55, w: 5, h: 0.32, fontSize: 14, bold: true, color: C.text1 });
 [[obsA.length, 'observaciones', C.text1], [oPos.length, 'positivas', H.green], [oNeg.length, 'negativas', oNeg.length ? H.crit : H.green]].forEach((v, i) => { const x = 0.75 + i * 1.7; T(s, String(v[0]), { x, y: 1.95, w: 1.6, h: 0.6, fontSize: 34, bold: true, color: v[2] }); T(s, v[1], { x, y: 2.55, w: 1.6, h: 0.28, fontSize: 12, bold: true, color: C.text1 }); });
@@ -181,41 +205,58 @@ obSel.forEach((o, i) => { STEP = 2 + i; const y = 2.05 + i * 2.4, neg = o.res ==
   if (o.obsv) ges.push('observó ' + o.obsv);
   T(s, ges.filter(Boolean).join(' · '), { x: 6.65, y: y + 1.72, w: 5.7, h: 0.3, fontSize: 11, italic: true, color: '52525B' }); });
 if (obsD.length > 2) { STEP = 3; T(s, '+ ' + (obsD.length - 2) + plural(obsD.length - 2, ' observación más', ' observaciones más') + ' en la app (' + obsD.slice(2).map(o => o.per).filter(Boolean).slice(0, 4).join(', ') + ')', { x: 6.35, y: 6.6, w: 6.2, h: 0.28, fontSize: 10.5, color: '52525B' }); }
-STEP = 0; s.addNotes('Observaciones de conducta registradas en la app. Semana anterior: ' + rango(LA, DA) + '. Día anterior: ' + DIA_LBL + (obsD.length > 2 ? ' (se muestran 2 de ' + obsD.length + ', primero las negativas)' : '') + '. ' + sello);
+STEP = 0;
+}
+if (OR_) s.addNotes('Resumen ejecutivo de observaciones de conducta de las últimas 4 semanas, todos los centros: los mismos números de la página de Observaciones de la app. ' + sello);
+else s.addNotes('Observaciones de conducta registradas en la app. Semana anterior: ' + rango(LA, DA) + '. Día anterior: ' + DIA_LBL + (obsD.length > 2 ? ' (se muestran 2 de ' + obsD.length + ', primero las negativas)' : '') + '. ' + sello);
 
 // ================= 4 · Hallazgos =================
 pres.addSection({ title: 'Hallazgos' });
 s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Hallazgos' });
-s.addText('HALLAZGOS · ' + KICK, { placeholder: 'kicker' });
-s.addText(TIT.hz || (!hzA.length ? 'Sin hallazgos registrados la semana pasada' : hAb.length ? hAb.length + ' de ' + hzA.length + ' hallazgos de la semana pasada ' + plural(hAb.length, 'sigue abierto', 'siguen abiertos') : (hzA.length === 1 ? 'El hallazgo' : 'Los ' + hzA.length + ' hallazgos') + ' de la semana pasada ' + plural(hzA.length, 'está cerrado', 'están cerrados')), { placeholder: 'title' }); navCentros(s);
-STEP = 1; card(s, 0.5, 1.4, 5.4, 5.55);
-T(s, 'Semana anterior · SN ' + SNA, { x: 0.75, y: 1.55, w: 5, h: 0.32, fontSize: 14, bold: true, color: C.text1 });
-[[hzA.length, 'hallazgos', '', C.text1], [hAb.length, plural(hAb.length, 'abierto', 'abiertos'), hVe.length ? hVe.length + plural(hVe.length, ' vencido', ' vencidos') : '', hAb.length ? H.amber : H.green], [hCe.length, plural(hCe.length, 'cerrado', 'cerrados'), '', H.green]].forEach((v, i) => { const x = 0.75 + i * 1.7; T(s, String(v[0]), { x, y: 1.95, w: 1.6, h: 0.6, fontSize: 34, bold: true, color: v[3] }); T(s, v[1], { x, y: 2.55, w: 1.6, h: 0.28, fontSize: 12, bold: true, color: C.text1 }); if (v[2]) T(s, v[2], { x, y: 2.82, w: 1.6, h: 0.25, fontSize: 10.5, color: H.crit }); });
-donut(s, 0.6, 3.15, 2.4, 3.7, ['Abiertos', 'Vencidos', 'Cerrados'], [hAb.length - hVe.length, hVe.length, hCe.length], [H.amber, H.crit, H.green]);
-const cZ = CEN.filter(c => hzA.some(h => h.c === c));
-bars(s, 3.0, 3.15, 2.8, 3.7, cZ.length > 2 ? cZ.map(c => ABR[c]) : cZ, [['Abiertos', cZ.map(c => hzA.filter(h => h.c === c && abierto(h) && !vencido(h)).length)], ['Vencidos', cZ.map(c => hzA.filter(h => h.c === c && vencido(h)).length)], ['Cerrados', cZ.map(c => hzA.filter(h => h.c === c && !abierto(h)).length)]], [H.amber, H.crit, H.green], { stack: true, opt: { catAxisLabelFontSize: 9.5, legendFontSize: 9 } });
-STEP = 2; card(s, 6.1, 1.4, 6.7, 5.55); live(s, 10.7, 1.55, APP + 'eventos.html#v-hz', 'Ver en la app');
+s.addText('HALLAZGOS · ' + KICK + ' · MES A LA FECHA', { placeholder: 'kicker' });
+const hzM0 = D.hz.filter(h => String(h.f || '').slice(0, 7) === String(D.desde).slice(0, 7) && h.f <= D.hasta), hzM0c = hzM0.filter(h => !abierto(h)).length, hzM0v = hzM0.filter(vencido).length;
+s.addText(TIT.hz || (!hzM0.length ? 'Sin hallazgos registrados este mes' : hzM0.length + ' hallazgos en el mes: ' + pct(hzM0c, hzM0.length) + '% cerrados' + (hzM0v ? ' y ' + hzM0v + plural(hzM0v, ' vencido', ' vencidos') : ', ninguno vencido')), { placeholder: 'title' }); navCentros(s);
+// Resumen del mes (igual que «Hallazgos y eventos» en la app, período Mes): indicadores, estado y tipo
+const hzM = D.hz.filter(h => String(h.f || '').slice(0, 7) === String(D.desde).slice(0, 7) && h.f <= D.hasta);
+const mAb = hzM.filter(h => abierto(h) && !vencido(h)), mVe = hzM.filter(vencido), mCe = hzM.filter(h => !abierto(h)), mAl = hzM.filter(h => h.crit === 'Alta');
+const MES_ = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][+String(D.desde).slice(5, 7) - 1];
+STEP = 1; const KW = (12.33 - 4 * 0.16) / 5;
+[[hzM.length, 'hallazgos en ' + MES_, '', null, true], [mAb.length, 'abiertos o en proceso', pct(mAb.length, hzM.length) + '%', H.amber], [mVe.length, 'vencidos (pasó el plazo)', pct(mVe.length, hzM.length) + '%', H.crit],
+ [mCe.length, 'cerrados', pct(mCe.length, hzM.length) + '%', H.green], [mAl.length, 'de criticidad alta', '', H.crit]].forEach((v, k) => { const x = 0.5 + k * (KW + 0.16), y = 1.4;
+  card(s, x, y, KW, 0.95, v[4] ? '18181B' : null);
+  T(s, String(v[0]), { x: x + 0.18, y: y + 0.07, w: KW - 0.3, h: 0.48, fontSize: 26, bold: true, color: v[4] ? 'FFFFFF' : v[3] });
+  T(s, [{ text: v[1], options: { bold: true, color: v[4] ? 'D4D4D8' : '52525B' } }].concat(v[2] && hzM.length ? [{ text: '  ' + v[2], options: { bold: true, color: v[3] } }] : []), { x: x + 0.18, y: y + 0.57, w: KW - 0.25, h: 0.32, fontSize: 11 }); });
+STEP = 2; card(s, 0.5, 2.5, 3.25, 4.45);
+T(s, 'Estado', { x: 0.7, y: 2.62, w: 2.8, h: 0.3, fontSize: 13, bold: true, color: C.text1 });
+const mEp = mAb.filter(h => /proceso/i.test(h.est)).length;
+donut(s, 0.6, 2.95, 3.05, 3.9, ['Cerrado', 'En proceso', 'Vencido', 'Abierto'], [mCe.length, mEp, mVe.length, mAb.length - mEp], [H.green, '1D4ED8', H.crit, H.amber], { legendFontSize: 10 });
+card(s, 3.9, 2.5, 3.2, 4.45);
+T(s, 'Tipo de hallazgo', { x: 4.1, y: 2.62, w: 2.8, h: 0.3, fontSize: 13, bold: true, color: C.text1 });
+const tpz = {}; hzM.forEach(h => { const t = h.tipo || 'Sin tipo'; tpz[t] = (tpz[t] || 0) + 1; });
+const tpl = Object.keys(tpz).sort((a, b) => tpz[b] - tpz[a]).slice(0, 6);
+bars(s, 4.0, 2.95, 3.0, 3.9, tpl.map(t => t.replace('Infraestructura / instalaciones', 'Infraestructura')).reverse(), [['Hallazgos', tpl.map(t => tpz[t]).reverse()]], ['18181B'], { opt: { barDir: 'bar', showLegend: false, catAxisLabelFontSize: 10, dataLabelPosition: 'outEnd' } });
+STEP = 3; card(s, 7.25, 2.5, 5.58, 4.45); live(s, 11.2, 2.62, APP + 'eventos.html#v-hz', 'Ver en la app');
 const cDz = [...new Set(hzD.map(h => h.c))];
-T(s, 'Día anterior · ' + DIA_HDR + ' · ' + hzD.length + plural(hzD.length, ' hallazgo', ' hallazgos') + (cDz.length === 1 ? ' (' + cDz[0] + ')' : ''), { x: 6.35, y: 1.55, w: 4.3, h: 0.32, fontSize: 14, bold: true, color: C.text1 });
-if (!hzD.length) T(s, 'No se registraron hallazgos el día anterior.', { x: 6.35, y: 2.1, w: 6.2, h: 0.4, fontSize: 13, color: '52525B' });
+T(s, 'Día anterior · ' + DIA_HDR + ' · ' + hzD.length + plural(hzD.length, ' hallazgo', ' hallazgos') + (cDz.length === 1 ? ' (' + cDz[0] + ')' : ''), { x: 7.45, y: 2.62, w: 4.0, h: 0.32, fontSize: 13, bold: true, color: C.text1 });
+if (!hzD.length) T(s, 'No se registraron hallazgos el día anterior.', { x: 7.45, y: 3.1, w: 5.2, h: 0.4, fontSize: 13, color: '52525B' });
 const CRC = { Alta: H.crit, Media: H.amber, Baja: H.green };
 // Prioridad: criticidad (Alta, Media, Baja) y, a igual criticidad, primero los abiertos
 const hzSel = hzD.slice().sort((a, b) => ['Alta', 'Media', 'Baja'].indexOf(a.crit) - ['Alta', 'Media', 'Baja'].indexOf(b.crit) || (abierto(b) ? 1 : 0) - (abierto(a) ? 1 : 0)).slice(0, 2);
-for (let i = 0; i < hzSel.length; i++) { const h = hzSel[i]; STEP = 2 + i; const y = 2.0 + i * 2.45, ph = 2.25;
+for (let i = 0; i < hzSel.length; i++) { const h = hzSel[i]; STEP = 3 + i; const y = 3.02 + i * 1.83, ph = 1.68;
   let img = null; if (FOTOS) for (const ext of ['.jpg', '.jpeg', '.png']) { const p = path.join(FOTOS, h.id + ext); if (fs.existsSync(p)) { img = p; break; } }
-  let pw = 1.6;
-  if (img) { const m = await sharp(img).metadata(); pw = Math.min(2.6, ph * m.width / m.height); s.addImage({ path: img, x: 6.35, y, w: pw, h: ph, altText: h.txt }); }
-  else { s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.35, y, w: pw, h: ph, rectRadius: 0.08, fill: { color: 'F4F4F5' }, line: { color: H.grid, width: 0.75 } }); T(s, 'Sin foto', { x: 6.35, y: y + ph / 2 - 0.15, w: pw, h: 0.3, fontSize: 11, color: H.gray, align: 'center' }); WARN.push('hallazgo ' + h.id + ' sin foto'); }
-  const tx = 6.35 + pw + 0.25, cc = CRC[h.crit] || H.muted;
+  let pw = 1.3;
+  if (img) { const m = await sharp(img).metadata(); pw = Math.min(1.9, ph * m.width / m.height); s.addImage({ path: img, x: 7.45, y, w: pw, h: ph, altText: h.txt }); }
+  else { s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.45, y, w: pw, h: ph, rectRadius: 0.08, fill: { color: 'F4F4F5' }, line: { color: H.grid, width: 0.75 } }); T(s, 'Sin foto', { x: 7.45, y: y + ph / 2 - 0.15, w: pw, h: 0.3, fontSize: 11, color: H.gray, align: 'center' }); WARN.push('hallazgo ' + h.id + ' sin foto'); }
+  const tx = 7.45 + pw + 0.2, cc = CRC[h.crit] || H.muted;
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: tx, y: y + 0.05, w: 0.95, h: 0.3, rectRadius: 0.08, fill: { color: cc }, line: { color: cc } });
   T(s, (h.crit || '—').toUpperCase(), { x: tx, y: y + 0.05, w: 0.95, h: 0.3, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' });
   const est = !abierto(h) ? ['Cerrado', H.green] : vencido(h) ? ['Vencido', H.crit] : ['Abierto', H.amber];
   T(s, est[0], { x: tx + 1.05, y: y + 0.05, w: 1.2, h: 0.3, fontSize: 11, bold: true, color: est[1], valign: 'middle' });
-  T(s, corta(frase(h.txt), 80), { x: tx, y: y + 0.48, w: 12.6 - tx, h: 0.55, fontSize: 15, bold: true, color: C.text1, valign: 'top' });
-  T(s, [h.tipo, [h.area, h.lugar].filter(Boolean).join(', ')].filter(Boolean).join(' · ') + (unDia ? '' : ' · ' + ddmm(h.f)), { x: tx, y: y + 1.08, w: 12.6 - tx, h: 0.35, fontSize: 11.5, color: '52525B' });
-  T(s, corta('Acción: ' + (h.acc || 'por definir') + (h.lim ? ' · plazo ' + ddmm(h.lim) : ''), 110), { x: tx, y: y + 1.42, w: 12.6 - tx, h: 0.5, fontSize: 11.5, color: C.text1, valign: 'top' }); }
-if (hzD.length > 2) { STEP = 4; T(s, '+ ' + (hzD.length - 2) + plural(hzD.length - 2, ' hallazgo más', ' hallazgos más') + ' en la app', { x: 6.35, y: 6.6, w: 6.2, h: 0.28, fontSize: 10.5, color: '52525B' }); }
-STEP = 0; s.addNotes('Hallazgos registrados en la app. Semana anterior: solo cifras, con el estado al ' + ddmm(HOY) + ' (vencido = pasó la fecha límite sin cerrar). Día anterior: ' + DIA_LBL + (hzD.length > 2 ? ' (se muestran 2 de ' + hzD.length + ', primero los de criticidad alta y los abiertos)' : '') + '. ' + sello);
+  T(s, corta(frase(h.txt), 70), { x: tx, y: y + 0.42, w: 12.65 - tx, h: 0.5, fontSize: 13, bold: true, color: C.text1, valign: 'top' });
+  T(s, [h.tipo, [h.area, h.lugar].filter(Boolean).join(', ')].filter(Boolean).join(' · ') + (unDia ? '' : ' · ' + ddmm(h.f)), { x: tx, y: y + 0.95, w: 12.65 - tx, h: 0.32, fontSize: 10.5, color: '52525B' });
+  T(s, corta('Acción: ' + (h.acc || 'por definir') + (h.lim ? ' · plazo ' + ddmm(h.lim) : ''), 110), { x: tx, y: y + 1.27, w: 12.65 - tx, h: 0.5, fontSize: 10.5, color: C.text1, valign: 'top' }); }
+if (hzD.length > 2) { STEP = 5; T(s, '+ ' + (hzD.length - 2) + plural(hzD.length - 2, ' hallazgo más', ' hallazgos más') + ' en la app', { x: 7.45, y: 6.62, w: 5.2, h: 0.28, fontSize: 10.5, color: '52525B' }); }
+STEP = 0; s.addNotes('Hallazgos registrados en la app. Indicadores y gráficos: mes en curso hasta el día anterior, con el estado al ' + ddmm(HOY) + ' (vencido = pasó la fecha límite sin cerrar). Día anterior: ' + DIA_LBL + (hzD.length > 2 ? ' (se muestran 2 de ' + hzD.length + ', primero los de criticidad alta y los abiertos)' : '') + '. ' + sello);
 
 // ================= Láminas ocultas · detalle por centro =================
 STEP = 0;
