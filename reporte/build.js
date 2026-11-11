@@ -59,6 +59,7 @@ const OBS = D.obs || [], HZ = D.hz || [], EV = D.ev || [];
 const obsA = OBS.filter(o => enR(o.f, LA, DA)), obsD = OBS.filter(o => enR(o.f, DES, HAS));
 const hzA = HZ.filter(h => enR(h.f, LA, DA)), hzD = HZ.filter(h => enR(h.f, DES, HAS));
 const abierto = h => !/cerrad/i.test(h.est), vencido = h => abierto(h) && h.lim && h.lim < HOY;
+const hAb = hzA.filter(abierto), hVe = hzA.filter(vencido), hCe = hzA.filter(h => !abierto(h));
 const accD = EV.filter(e => enR(e.f, DES, HAS) && /accidente/i.test(e.tipo)), reD = EV.filter(e => enR(e.f, DES, HAS) && /almacenamiento/i.test(e.fam || ''));
 
 (async () => {
@@ -68,7 +69,7 @@ const C = pres.SchemeColor;
 let STEP = 0, CNT = 0; const tag = () => (STEP ? 'A' + STEP + '_' : 'Z_') + (CNT++);
 const _add = pres.addSlide.bind(pres); pres.addSlide = function (o) { STEP = 0; const sl = _add(o); ['addText', 'addShape', 'addImage', 'addChart', 'addTable'].forEach(m => { const f = sl[m].bind(sl); sl[m] = function () { const a = [].slice.call(arguments); const i = m === 'addChart' ? 2 : (m === 'addImage' ? 0 : 1); a[i] = Object.assign({}, a[i] || {}, { objectName: tag() }); return f.apply(null, a); }; }); return sl; };
 const APP = 'https://grupopro-vd.github.io/reportes-pyr/';
-const SL = { cumpl: 1, obs: 2, hz: 3, acc: 4, c: {} }; CEN.forEach((c, i) => SL.c[c] = 5 + i);
+const SL = { acc: 1, cumpl: 2, obs: 3, hz: 4, c: {} }; CEN.forEach((c, i) => SL.c[c] = 5 + i);
 const T = (s, txt, o) => s.addText(txt, Object.assign({ isTextBox: true, margin: 0 }, o));
 const chip = (s, txt, x, y, w, link, dark) => { s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: 0.3, rectRadius: 0.15, fill: { color: dark ? H.ink : 'FFFFFF' }, line: { color: dark ? H.ink : 'D4D4D8', width: 0.75 } });
   T(s, [{ text: txt, options: { hyperlink: link, color: dark ? 'FFFFFF' : '18181B' } }], { x, y, w, h: 0.3, fontSize: 10, bold: true, align: 'center', valign: 'middle' }); };
@@ -89,9 +90,39 @@ const bars = (s, x, y, w, h, labels, series, colors, o) => { if (!labels.length)
   s.addChart(pres.charts.BAR, series.map(z => ({ name: z[0], labels, values: z[1] })), Object.assign({ x, y, w, h, barDir: 'col', barGrouping: o && o.stack ? 'stacked' : 'clustered', chartColors: colors, showValue: true, dataLabelPosition: o && o.stack ? 'ctr' : 'outEnd', dataLabelFontSize: 10, dataLabelFontFace: font, dataLabelColor: o && o.stack ? 'FFFFFF' : '18181B', dataLabelFormatCode: '0;;;', catAxisLabelFontSize: 11, catAxisLabelFontFace: font, catAxisLabelColor: '52525B', valAxisHidden: true, valGridLine: { style: 'none' }, catGridLine: { style: 'none' }, showLegend: true, legendPos: 't', legendFontSize: 10.5, legendFontFace: font, legendColor: '3F3F46', barGapWidthPct: 55, showTitle: false }, (o && o.opt) || {})); };
 const sello = 'Datos de la app al ' + ddmm(HOY) + ' ' + new Date(D.generado || Date.now()).toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }) + '.';
 
-// ================= 1 · Cumplimiento =================
+// ================= 1 · Días sin accidentes (primera lámina) =================
+pres.addSection({ title: 'Días sin accidentes' });
+let s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Días sin accidentes' });
+const A = D.acc || { tabla: {} }, COLS = ['Peñón', 'Lo Aguirre', 'Local 95', 'ECMM PS', 'ECMM SB·Pñ', 'Ruta'];
+const emp = Object.keys(A.tabla || {}).map(rs => [rs, COLS.map(k => { const x = A.tabla[rs][k]; return x && x.ult ? (!x.ny && x.ult < HOY.slice(0, 4) + '-01-01' ? 'sin' : dias(x.ult, HOY)) : null; }), COLS.map(k => (A.tabla[rs][k] || {}).ny || 0), COLS.map(k => Math.round((A.tabla[rs][k] || {}).dy || 0)), COLS.map(k => (A.tabla[rs][k] || {}).suc || '')]);
+let min = null, ruta = null;
+emp.forEach(e => e[1].forEach((n, i) => { if (typeof n !== 'number') return; const lab = COLS[i] + (emp.filter(z => z[1][i] != null).length > 1 ? ' (' + e[0].replace(/ (EST )?SpA$/, '').replace(/^Pro /, 'Pro ') + ')' : '');
+  if (COLS[i] === 'Ruta') { if (!ruta || n < ruta.n) ruta = { n, suc: e[4][i] }; } else if (!min || n < min.n) min = { n, c: COLS[i], lab }; }));
+s.addText('DÍAS SIN ACCIDENTES · TRABAJO CTP CON COBERTURA · ' + HOY.slice(0, 4), { placeholder: 'kicker' });
+const cAcc = [...new Set(accD.map(e => e.c))];
+s.addText(TIT.acc || (accD.length ? accD.length + plural(accD.length, ' accidente ', ' accidentes ') + DIA_CORTO + ' (' + cAcc.join(', ') + ')' : 'Sin accidentes ' + DIA_CORTO) + (min ? '; ' + min.c + ' sigue con menos días sin accidentes' : ''), { placeholder: 'title' }); navCentros(s);
+STEP = 1;
+const ka = [[String(accD.length), plural(accD.length, 'accidente', 'accidentes'), accD.length ? cAcc.join(', ') : DIA_LBL.toLowerCase(), accD.length ? H.crit : H.green],
+  [String(reD.length), 'report events', 'volcamiento / caída de pallet', reD.length ? H.crit : H.green],
+  [min ? String(min.n) : '—', 'días sin accidentes', min ? 'menor: ' + min.c + (ruta ? ' · Ruta ' + ruta.n + (ruta.suc ? ' (' + ruta.suc + ')' : '') : '') : 'sin datos del macro', min && min.n >= 30 ? H.green : min && min.n >= 7 ? H.amber : H.crit],
+  [String(hzA.length), 'Hallazgos SN ' + SNA, (hzA.length ? Math.round(hCe.length / hzA.length * 100) + '% cerrado · ' : '') + hAb.length + plural(hAb.length, ' pendiente', ' pendientes') + ' →', hAb.length ? H.crit : H.green]];
+ka.forEach((v, i) => { const x = 0.5 + i * 3.12; const L = i === 3 ? { hyperlink: { slide: SL.hz, tooltip: 'Ir a Hallazgos' } } : {}; const R = (t, c) => [{ text: t, options: Object.assign({ color: c }, L) }]; card(s, x, 1.4, 2.92, 1.7); T(s, R(v[0], v[3]), { x: x + 0.25, y: 1.5, w: 2.5, h: 0.75, fontSize: 40, bold: true }); T(s, R(v[1], '18181B'), { x: x + 0.25, y: 2.25, w: 2.6, h: 0.35, fontSize: 14, bold: true }); T(s, R(corta(v[2], 44), '52525B'), { x: x + 0.25, y: 2.6, w: 2.6, h: 0.35, fontSize: 11 }); });
+STEP = 2;
+if (emp.length) {
+  const dcol = n => n === null ? H.muted : n === 'sin' ? H.green : n >= 30 ? H.green : n >= 7 ? H.amber : H.crit;
+  const tb = [['Razón social'].concat(COLS).map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: '18181B' } } }))];
+  emp.forEach(e => { tb.push([{ text: e[0], options: { bold: true, rowspan: 3, valign: 'middle', align: 'left' } }].concat(e[1].map(n => ({ text: n === null ? '—' : n === 'sin' ? '0' : String(n), options: { bold: true, fontSize: 20, color: dcol(n) } }))));
+    tb.push(e[2].map(n => ({ text: n + ' acc.', options: { color: '18181B' } }))); tb.push(e[3].map(n => ({ text: n + ' días perd.', options: { color: '52525B' } }))); });
+  const rh = [0.42]; emp.forEach(() => rh.push(0.52, 0.33, 0.33));
+  s.addTable(tb, { x: 0.5, y: 3.3, w: 12.3, colW: [2.55, 1.625, 1.625, 1.625, 1.625, 1.625, 1.625], fontSize: 12.5, fontFace: 'Calibri', border: { type: 'solid', pt: 0.5, color: 'E4E4E7' }, fill: { color: 'FFFFFF' }, rowH: rh, align: 'center', valign: 'middle' });
+} else { T(s, 'No se pudo leer el macro de accidentes.', { x: 0.5, y: 3.4, w: 12.3, h: 0.4, fontSize: 14, color: H.crit }); WARN.push('sin tabla de accidentes'); }
+STEP = 0;
+const NOTA_ACC = 'Fila grande: días sin accidentes al ' + ddmm(HOY) + ' · luego accidentes y días perdidos ' + HOY.slice(0, 4) + '. Ruta = sucursales que no son Walmart ni Líder. Fuente: macro de accidentes' + (A.mod ? ' (actualizado ' + ddmmaa(A.mod) + (A.corte ? ', datos hasta ' + ddmmaa(A.corte) : '') + ')' : '') + '. Accidentes y report events del día: reportes flash de la app.';
+s.addNotes(NOTA_ACC + ' Accidentes del trabajo con tiempo perdido y estado «Con cobertura». Días contados al ' + largo(HOY) + '.' + (min ? ' Menor: ' + min.lab + ' (' + min.n + ' días).' : '') + (ruta ? ' Ruta: ' + ruta.n + ' días (' + ruta.suc + ').' : '') + (accD.length ? ' Accidentes del día anterior: ' + accD.map(e => e.c + ' · ' + corta(e.txt, 80)).join(' | ') : ''));
+
+// ================= 2 · Cumplimiento =================
 pres.addSection({ title: 'Cumplimiento' });
-let s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Cumplimiento' });
+s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Cumplimiento' });
 const pD = pct(dia.ok, dia.n), pA = pct(ant.ok, ant.n), pH = pct(act.ok, act.n);
 s.addText(KICK + ' · CUMPLIMIENTO DEL PROGRAMA', { placeholder: 'kicker' });
 s.addText(TIT.cumpl || ((dia.n ? cap(DIA_CORTO) + ' se cumplió el ' + pD + '%' : 'Sin actividades programadas ' + DIA_CORTO) + (ant.n ? '; la semana pasada cerró en ' + pA + '%' : '')), { placeholder: 'title' }); navCentros(s);
@@ -116,7 +147,7 @@ const cH = CEN.filter(c => pg(c).act[1]);
 bars(s, 8.6, 4.0, 4.1, 2.85, cH, [['Programadas', cH.map(c => pg(c).act[1])], ['Realizadas', cH.map(c => pg(c).act[0])]], ['A1A1AA', H.green], { opt: { catAxisLabelFontSize: 10 } });
 s.addNotes('Fuente: programa de actividades de la app (lista ProgramaActividades). ' + sello + ' Fuera de plazo = actividades de la SN ' + SNA + ' que quedaron sin realizar.' + (CEN.filter(c => !pg(c).dia[1]).length ? ' Sin actividades el día anterior: ' + CEN.filter(c => !pg(c).dia[1]).join(', ') + '.' : ''));
 
-// ================= 2 · Observaciones =================
+// ================= 3 · Observaciones =================
 pres.addSection({ title: 'Observaciones' });
 s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Observaciones' });
 const oPos = obsA.filter(o => o.res !== 'Negativa'), oNeg = obsA.filter(o => o.res === 'Negativa');
@@ -152,10 +183,9 @@ obSel.forEach((o, i) => { STEP = 2 + i; const y = 2.05 + i * 2.4, neg = o.res ==
 if (obsD.length > 2) { STEP = 3; T(s, '+ ' + (obsD.length - 2) + plural(obsD.length - 2, ' observación más', ' observaciones más') + ' en la app (' + obsD.slice(2).map(o => o.per).filter(Boolean).slice(0, 4).join(', ') + ')', { x: 6.35, y: 6.6, w: 6.2, h: 0.28, fontSize: 10.5, color: '52525B' }); }
 STEP = 0; s.addNotes('Observaciones de conducta registradas en la app. Semana anterior: ' + rango(LA, DA) + '. Día anterior: ' + DIA_LBL + (obsD.length > 2 ? ' (se muestran 2 de ' + obsD.length + ', primero las negativas)' : '') + '. ' + sello);
 
-// ================= 3 · Hallazgos =================
+// ================= 4 · Hallazgos =================
 pres.addSection({ title: 'Hallazgos' });
 s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Hallazgos' });
-const hAb = hzA.filter(abierto), hVe = hzA.filter(vencido), hCe = hzA.filter(h => !abierto(h));
 s.addText('HALLAZGOS · ' + KICK, { placeholder: 'kicker' });
 s.addText(TIT.hz || (!hzA.length ? 'Sin hallazgos registrados la semana pasada' : hAb.length ? hAb.length + ' de ' + hzA.length + ' hallazgos de la semana pasada ' + plural(hAb.length, 'sigue abierto', 'siguen abiertos') : (hzA.length === 1 ? 'El hallazgo' : 'Los ' + hzA.length + ' hallazgos') + ' de la semana pasada ' + plural(hzA.length, 'está cerrado', 'están cerrados')), { placeholder: 'title' }); navCentros(s);
 STEP = 1; card(s, 0.5, 1.4, 5.4, 5.55);
@@ -169,7 +199,8 @@ const cDz = [...new Set(hzD.map(h => h.c))];
 T(s, 'Día anterior · ' + DIA_HDR + ' · ' + hzD.length + plural(hzD.length, ' hallazgo', ' hallazgos') + (cDz.length === 1 ? ' (' + cDz[0] + ')' : ''), { x: 6.35, y: 1.55, w: 4.3, h: 0.32, fontSize: 14, bold: true, color: C.text1 });
 if (!hzD.length) T(s, 'No se registraron hallazgos el día anterior.', { x: 6.35, y: 2.1, w: 6.2, h: 0.4, fontSize: 13, color: '52525B' });
 const CRC = { Alta: H.crit, Media: H.amber, Baja: H.green };
-const hzSel = hzD.slice().sort((a, b) => ['Alta', 'Media', 'Baja'].indexOf(a.crit) - ['Alta', 'Media', 'Baja'].indexOf(b.crit)).slice(0, 2);
+// Prioridad: criticidad (Alta, Media, Baja) y, a igual criticidad, primero los abiertos
+const hzSel = hzD.slice().sort((a, b) => ['Alta', 'Media', 'Baja'].indexOf(a.crit) - ['Alta', 'Media', 'Baja'].indexOf(b.crit) || (abierto(b) ? 1 : 0) - (abierto(a) ? 1 : 0)).slice(0, 2);
 for (let i = 0; i < hzSel.length; i++) { const h = hzSel[i]; STEP = 2 + i; const y = 2.0 + i * 2.45, ph = 2.25;
   let img = null; if (FOTOS) for (const ext of ['.jpg', '.jpeg', '.png']) { const p = path.join(FOTOS, h.id + ext); if (fs.existsSync(p)) { img = p; break; } }
   let pw = 1.6;
@@ -184,37 +215,7 @@ for (let i = 0; i < hzSel.length; i++) { const h = hzSel[i]; STEP = 2 + i; const
   T(s, [h.tipo, [h.area, h.lugar].filter(Boolean).join(', ')].filter(Boolean).join(' · ') + (unDia ? '' : ' · ' + ddmm(h.f)), { x: tx, y: y + 1.08, w: 12.6 - tx, h: 0.35, fontSize: 11.5, color: '52525B' });
   T(s, corta('Acción: ' + (h.acc || 'por definir') + (h.lim ? ' · plazo ' + ddmm(h.lim) : ''), 110), { x: tx, y: y + 1.42, w: 12.6 - tx, h: 0.5, fontSize: 11.5, color: C.text1, valign: 'top' }); }
 if (hzD.length > 2) { STEP = 4; T(s, '+ ' + (hzD.length - 2) + plural(hzD.length - 2, ' hallazgo más', ' hallazgos más') + ' en la app', { x: 6.35, y: 6.6, w: 6.2, h: 0.28, fontSize: 10.5, color: '52525B' }); }
-STEP = 0; s.addNotes('Hallazgos registrados en la app. Semana anterior: solo cifras, con el estado al ' + ddmm(HOY) + ' (vencido = pasó la fecha límite sin cerrar). Día anterior: ' + DIA_LBL + (hzD.length > 2 ? ' (se muestran 2 de ' + hzD.length + ', primero los de criticidad alta)' : '') + '. ' + sello);
-
-// ================= 4 · Días sin accidentes =================
-pres.addSection({ title: 'Días sin accidentes' });
-s = pres.addSlide({ masterName: 'CONTENIDO', sectionTitle: 'Días sin accidentes' });
-const A = D.acc || { tabla: {} }, COLS = ['Peñón', 'Lo Aguirre', 'Local 95', 'ECMM PS', 'ECMM SB·Pñ', 'Ruta'];
-const emp = Object.keys(A.tabla || {}).map(rs => [rs, COLS.map(k => { const x = A.tabla[rs][k]; return x && x.ult ? dias(x.ult, HOY) : null; }), COLS.map(k => (A.tabla[rs][k] || {}).ny || 0), COLS.map(k => Math.round((A.tabla[rs][k] || {}).dy || 0)), COLS.map(k => (A.tabla[rs][k] || {}).suc || '')]);
-let min = null, ruta = null;
-emp.forEach(e => e[1].forEach((n, i) => { if (n == null) return; const lab = COLS[i] + (emp.filter(z => z[1][i] != null).length > 1 ? ' (' + e[0].replace(/ (EST )?SpA$/, '').replace(/^Pro /, 'Pro ') + ')' : '');
-  if (COLS[i] === 'Ruta') { if (!ruta || n < ruta.n) ruta = { n, suc: e[4][i] }; } else if (!min || n < min.n) min = { n, c: COLS[i], lab }; }));
-s.addText('DÍAS SIN ACCIDENTES · TRABAJO CTP CON COBERTURA · ' + HOY.slice(0, 4), { placeholder: 'kicker' });
-const cAcc = [...new Set(accD.map(e => e.c))];
-s.addText(TIT.acc || (accD.length ? accD.length + plural(accD.length, ' accidente ', ' accidentes ') + DIA_CORTO + ' (' + cAcc.join(', ') + ')' : 'Sin accidentes ' + DIA_CORTO) + (min ? '; ' + min.c + ' sigue con menos días sin accidentes' : ''), { placeholder: 'title' }); navCentros(s);
-STEP = 1;
-const ka = [[String(accD.length), plural(accD.length, 'accidente', 'accidentes'), accD.length ? cAcc.join(', ') : DIA_LBL.toLowerCase(), accD.length ? H.crit : H.green],
-  [String(reD.length), 'report events', 'volcamiento / caída de pallet', reD.length ? H.crit : H.green],
-  [min ? String(min.n) : '—', 'días sin accidentes', min ? 'menor: ' + min.c + (ruta ? ' · Ruta ' + ruta.n + (ruta.suc ? ' (' + ruta.suc + ')' : '') : '') : 'sin datos del macro', min && min.n >= 30 ? H.green : min && min.n >= 7 ? H.amber : H.crit],
-  [String(hzA.length), 'Hallazgos SN ' + SNA, hAb.length + plural(hAb.length, ' pendiente por cerrar', ' pendientes por cerrar') + ' · ver detalle →', hAb.length ? H.crit : H.green]];
-ka.forEach((v, i) => { const x = 0.5 + i * 3.12; const L = i === 3 ? { hyperlink: { slide: SL.hz, tooltip: 'Ir a Hallazgos' } } : {}; const R = (t, c) => [{ text: t, options: Object.assign({ color: c }, L) }]; card(s, x, 1.4, 2.92, 1.7); T(s, R(v[0], v[3]), { x: x + 0.25, y: 1.5, w: 2.5, h: 0.75, fontSize: 40, bold: true }); T(s, R(v[1], '18181B'), { x: x + 0.25, y: 2.25, w: 2.6, h: 0.35, fontSize: 14, bold: true }); T(s, R(corta(v[2], 44), '52525B'), { x: x + 0.25, y: 2.6, w: 2.6, h: 0.35, fontSize: 11 }); });
-STEP = 2;
-if (emp.length) {
-  const dcol = n => n === null ? H.muted : n >= 30 ? H.green : n >= 7 ? H.amber : H.crit;
-  const tb = [['Razón social'].concat(COLS).map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: '18181B' } } }))];
-  emp.forEach(e => { tb.push([{ text: e[0], options: { bold: true, rowspan: 3, valign: 'middle', align: 'left' } }].concat(e[1].map(n => ({ text: n === null ? '—' : String(n), options: { bold: true, fontSize: 20, color: dcol(n) } }))));
-    tb.push(e[2].map(n => ({ text: n + ' acc.', options: { color: '18181B' } }))); tb.push(e[3].map(n => ({ text: n + ' días perd.', options: { color: '52525B' } }))); });
-  const rh = [0.42]; emp.forEach(() => rh.push(0.52, 0.33, 0.33));
-  s.addTable(tb, { x: 0.5, y: 3.3, w: 12.3, colW: [2.55, 1.625, 1.625, 1.625, 1.625, 1.625, 1.625], fontSize: 12.5, fontFace: 'Calibri', border: { type: 'solid', pt: 0.5, color: 'E4E4E7' }, fill: { color: 'FFFFFF' }, rowH: rh, align: 'center', valign: 'middle' });
-} else { T(s, 'No se pudo leer el macro de accidentes.', { x: 0.5, y: 3.4, w: 12.3, h: 0.4, fontSize: 14, color: H.crit }); WARN.push('sin tabla de accidentes'); }
-STEP = 0;
-T(s, 'Fila grande: días sin accidentes al ' + ddmm(HOY) + ' · luego accidentes y días perdidos ' + HOY.slice(0, 4) + '. Ruta = sucursales que no son Walmart ni Líder. Fuente: macro de accidentes' + (A.mod ? ' (actualizado ' + ddmmaa(A.mod) + (A.corte ? ', datos hasta ' + ddmmaa(A.corte) : '') + ')' : '') + '. Accidentes y report events del día: reportes flash de la app.', { x: 0.5, y: 6.25, w: 12.3, h: 0.6, fontSize: 10.5, color: C.text2 });
-s.addNotes('Accidentes del trabajo con tiempo perdido y estado «Con cobertura». Días contados al ' + largo(HOY) + '.' + (min ? ' Menor: ' + min.lab + ' (' + min.n + ' días).' : '') + (ruta ? ' Ruta: ' + ruta.n + ' días (' + ruta.suc + ').' : '') + (accD.length ? ' Accidentes del día anterior: ' + accD.map(e => e.c + ' · ' + corta(e.txt, 80)).join(' | ') : ''));
+STEP = 0; s.addNotes('Hallazgos registrados en la app. Semana anterior: solo cifras, con el estado al ' + ddmm(HOY) + ' (vencido = pasó la fecha límite sin cerrar). Día anterior: ' + DIA_LBL + (hzD.length > 2 ? ' (se muestran 2 de ' + hzD.length + ', primero los de criticidad alta y los abiertos)' : '') + '. ' + sello);
 
 // ================= Láminas ocultas · detalle por centro =================
 STEP = 0;
