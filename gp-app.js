@@ -363,9 +363,45 @@
     document.body.prepend(bar);
   }
 
+  /* «Enviar» nunca queda mudo: si el envío se corta sin mensaje (campos obligatorios con el aviso del
+     navegador bloqueado, un error, etc.) se explica qué falta y se ofrece enviar igual. */
+  function guardSend() {
+    var orig = window.gpSendReport; if (typeof orig !== 'function' || orig.gpGuard) return;
+    var st = function () { return document.getElementById('gpSendStatus'); };
+    var show = function (msg, kind, extra) { var el = st(); if (!el) { alert(msg); return; } el.className = 'gp-send-status' + (kind ? ' ' + kind : ''); el.innerHTML = msg + (extra || ''); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    var esc2 = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    function faltan() {
+      var seen = {}, out = [];
+      [].slice.call(document.querySelectorAll('.document-sheet input[required],.document-sheet textarea[required],.document-sheet select[required]')).forEach(function (el) {
+        if (el.type === 'hidden' || el.closest('[hidden]') || el.offsetParent === null) return;
+        var ok = el.type === 'radio' ? !!document.querySelector('.document-sheet [name="' + el.name + '"]:checked') : el.type === 'checkbox' ? el.checked : !!String(el.value || '').trim();
+        if (ok || seen[el.name || Math.random()]) return; seen[el.name] = 1;
+        var row = el.closest('tr'), lab = row && row.querySelector('.label, th');
+        out.push({ el: el, t: String((lab && lab.textContent) || el.getAttribute('aria-label') || el.placeholder || el.name || 'campo').replace(/\s+/g, ' ').replace(/\*/g, '').trim().slice(0, 50) });
+      });
+      return out;
+    }
+    var wrapped = async function () {
+      var el = st(), before = el ? el.innerHTML : '', args = arguments, auto = args[0] && args[0].auto;
+      try { await orig.apply(this, args); }
+      catch (e) { show('No se pudo enviar: ' + esc2(e && e.message || e) + '. Vuelve a presionar «Enviar»; si se repite, cierra y abre la app.', 'error'); return; }
+      el = st(); if (auto || !el || el.innerHTML !== before) return; // el formulario ya mostró su mensaje
+      var f = faltan();
+      if (f.length) {
+        f.forEach(function (x) { x.el.classList.add('gp-invalid'); x.el.addEventListener('input', function () { x.el.classList.remove('gp-invalid'); }, { once: true }); });
+        show('No se envió: faltan ' + f.length + ' campo(s) obligatorio(s): <b>' + f.map(function (x) { return esc2(x.t); }).join(', ') + '</b>. Complétalos y vuelve a presionar «Enviar».', 'warn',
+          '<div style="margin-top:8px"><button type="button" class="btn btn-small" id="gpSendAnyway">Enviar igual</button></div>');
+        var b = document.getElementById('gpSendAnyway');
+        if (b) b.onclick = async function () { var oc = window.confirm; window.confirm = function () { return true; }; try { await orig.call(window); } finally { window.confirm = oc; } };
+        try { f[0].el.focus({ preventScroll: true }); } catch (e) {}
+      } else show('No se envió. Vuelve a presionar «Enviar reporte por correo»; si se repite, cierra la app por completo y ábrela otra vez.', 'warn');
+    };
+    wrapped.gpGuard = true; window.gpSendReport = wrapped;
+  }
   function initForm() {
     addCentroField(); addAppBar(); setNet();
     try { var gl = document.createElement('script'); gl.src = new URL('gp-listas.js', document.baseURI).href; document.head.appendChild(gl); } catch (e) {}
+    guardSend();
     try { applyAct(); } catch (e) {}
     idb.get('drafts', draftKey).then(function (saved) {
       if (saved && saved.values) { restore(saved); restored = true; showBanner(saved); }
