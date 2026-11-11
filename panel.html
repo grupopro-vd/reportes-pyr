@@ -327,26 +327,30 @@ function fillMeses(){var sel=$('#fMes'),cur=sel.value||LS.get('gpPanelMes')||'';
 // ---------- Tendencia por centro (gráfico de líneas) ----------
 var TC={'Walmart Peñón':'#B91C1C','Walmart Pudahuel':'#18181B','Walmart Lo Aguirre':'#0F766E','Walmart La Farfana':'#B45309','Líder La Reina':'#1D4ED8'},TPAL=['#7E22CE','#0E7490','#BE185D','#4D7C0F'];
 function tendChart(items){
-  var modo=LS.get('gpPanelTend')||'sem',hoyL=lunes(todayISO);
-  var fechas=items.filter(function(it){return it.Fecha}).map(function(it){return lunes(it.Fecha)}).filter(function(l){return l<=hoyL});
+  var modo=LS.get('gpPanelTend')||'sem',hoyL=lunes(todayISO),dia=modo==='dia';
+  // Diario: cada día con actividades programadas (últimos 20 días con programa hasta hoy). Semanal/Acumulado: por semana.
+  var key=dia?function(f){return f}:lunes,lim=dia?todayISO:hoyL;
+  var fechas=items.filter(function(it){return it.Fecha}).map(function(it){return key(it.Fecha)}).filter(function(l){return l<=lim});
   if(!fechas.length)return '';
-  var w0=fechas.reduce(function(a,b){return a<b?a:b}),wks=[];for(var d=new Date(w0+'T12:00:00Z');d.toISOString().slice(0,10)<=hoyL;d.setUTCDate(d.getUTCDate()+7))wks.push(d.toISOString().slice(0,10));
-  if(wks.length>26)wks=wks.slice(-26);
+  var wks=[];
+  if(dia){var u={};fechas.forEach(function(f){u[f]=1});wks=Object.keys(u).sort().slice(-20)}
+  else{var w0=fechas.reduce(function(a,b){return a<b?a:b});for(var d=new Date(w0+'T12:00:00Z');d.toISOString().slice(0,10)<=hoyL;d.setUTCDate(d.getUTCDate()+7))wks.push(d.toISOString().slice(0,10));if(wks.length>26)wks=wks.slice(-26)}
+  var DS=['dom','lun','mar','mié','jue','vie','sáb'],lab=function(w){if(!dia)return 'SN '+snDe(w).w;var d=new Date(w+'T12:00:00Z');return DS[d.getUTCDay()]+' '+w.slice(8,10)+'/'+w.slice(5,7)};
   var cs={};items.forEach(function(it){if(it.Fecha)(cs[it.Centro]=cs[it.Centro]||[]).push(it)});var names=Object.keys(cs).sort();
-  var series=names.map(function(n,i){var acc=[0,0];return {n:n,c:TC[n]||TPAL[i%TPAL.length],v:wks.map(function(w){var x=cs[n].filter(function(it){return lunes(it.Fecha)===w});var ok=x.filter(function(it){return st(it).e==='Realizada'}).length;
+  var series=names.map(function(n,i){var acc=[0,0];return {n:n,c:TC[n]||TPAL[i%TPAL.length],v:wks.map(function(w){var x=cs[n].filter(function(it){return key(it.Fecha)===w});var ok=x.filter(function(it){return st(it).e==='Realizada'}).length;
     acc[0]+=ok;acc[1]+=x.length;var a=modo==='acu'?acc:[ok,x.length];return a[1]?Math.round(a[0]/a[1]*1000)/10:null})}});
   var W=760,H=300,L=46,R=16,T=16,B=40,iw=W-L-R,ih=H-T-B,X=function(i){return L+(wks.length<2?iw/2:i*iw/(wks.length-1))},Y=function(v){return T+ih-v/100*ih};
   var g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Avance por centro y semana" style="width:100%;height:auto;display:block">';
   [0,25,50,75,100].forEach(function(v){g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#ececef"/><text x="'+(L-8)+'" y="'+(Y(v)+4)+'" font-size="11" text-anchor="end" fill="#71717a">'+v+'%</text>'});
   g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(90)+'" y2="'+Y(90)+'" stroke="#15803d" stroke-dasharray="5 4"/><text x="'+(W-R)+'" y="'+(Y(90)-5)+'" font-size="10.5" text-anchor="end" fill="#15803d">Aprobado 90%</text>';
   g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(70)+'" y2="'+Y(70)+'" stroke="#b45309" stroke-dasharray="5 4"/><text x="'+(W-R)+'" y="'+(Y(70)-5)+'" font-size="10.5" text-anchor="end" fill="#b45309">En proceso 70%</text>';
-  var step=Math.ceil(wks.length/10);wks.forEach(function(w,i){if(i%step&&i!==wks.length-1)return;g+='<text x="'+X(i)+'" y="'+(H-14)+'" font-size="11" text-anchor="middle" fill="#52525b">SN '+snDe(w).w+'</text>'});
+  var step=Math.ceil(wks.length/10);wks.forEach(function(w,i){if(i%step&&i!==wks.length-1)return;g+='<text x="'+X(i)+'" y="'+(H-14)+'" font-size="11" text-anchor="middle" fill="#52525b">'+lab(w)+'</text>'});
   series.forEach(function(s){var pts=[];s.v.forEach(function(v,i){if(v!=null)pts.push([X(i),Y(v),v,i])});
     if(pts.length>1)g+='<polyline fill="none" stroke="'+s.c+'" stroke-width="2.5" stroke-linejoin="round" points="'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ')+'"/>';
-    pts.forEach(function(p){g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4" fill="'+s.c+'" stroke="#fff" stroke-width="1.5"><title>'+esc(s.n)+' · SN '+snDe(wks[p[3]]).w+': '+p[2]+'%</title></circle>'})});
+    pts.forEach(function(p){g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4" fill="'+s.c+'" stroke="#fff" stroke-width="1.5"><title>'+esc(s.n)+' · '+lab(wks[p[3]])+': '+fmtP(p[2])+'</title></circle>'})});
   g+='</svg>';
-  var last=series.map(function(s){var v=null;for(var i=s.v.length-1;i>=0;i--)if(s.v[i]!=null){v=s.v[i];break}return '<span class="lg"><i style="background:'+s.c+'"></i>'+esc(s.n.replace(/^(Walmart|Líder) /,''))+' <b>'+(v==null?'—':v+'%')+'</b></span>'}).join('');
-  return '<div class="tend"><div class="th"><span>'+(modo==='acu'?'Cumplimiento acumulado':'Cumplimiento de cada semana')+' · por centro</span><span class="seg2"><button type="button" data-tm="sem" class="'+(modo==='sem'?'on':'')+'">Semanal</button><button type="button" data-tm="acu" class="'+(modo==='acu'?'on':'')+'">Acumulado</button></span></div>'+g+'<div class="lgs">'+last+'</div></div>';
+  var last=series.map(function(s){var v=null;for(var i=s.v.length-1;i>=0;i--)if(s.v[i]!=null){v=s.v[i];break}return '<span class="lg"><i style="background:'+s.c+'"></i>'+esc(s.n.replace(/^(Walmart|Líder) /,''))+' <b>'+fmtP(v)+'</b></span>'}).join('');
+  return '<div class="tend"><div class="th"><span>'+(modo==='acu'?'Cumplimiento acumulado':dia?'Cumplimiento de cada día':'Cumplimiento de cada semana')+' · por centro</span><span class="seg2"><button type="button" data-tm="dia" class="'+(dia?'on':'')+'">Diario</button><button type="button" data-tm="sem" class="'+(modo==='sem'?'on':'')+'">Semanal</button><button type="button" data-tm="acu" class="'+(modo==='acu'?'on':'')+'">Acumulado</button></span></div>'+g+'<div class="lgs">'+last+'</div></div>';
 }
 function render(){
   authBar();fillMeses();fillSemanas();syncLine();
