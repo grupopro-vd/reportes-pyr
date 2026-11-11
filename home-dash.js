@@ -107,7 +107,9 @@
     return (it.Fecha ? it.Fecha.slice(0, 7) : it.Mes) === MESHOY;
   }
   function progIdx(it) { var p = norm(it.Programa); for (var i = 0; i < PROG.length; i++) if (PROG[i].m.test(p)) return i; return -1; }
-  function resumen(list) { var r = { t: list.length, ok: 0, todo: 0, late: 0, val: 0 }; list.forEach(function (it) { r[estado(it)]++; }); r.p = r.t ? Math.round(r.ok / r.t * 100) : null; return r; }
+  function resumen(list) { var r = { t: list.length, ok: 0, todo: 0, late: 0, val: 0 }; list.forEach(function (it) { r[estado(it)]++; }); r.p = r.t ? Math.round(r.ok / r.t * 1000) / 10 : null; return r; }
+  // Porcentajes con 1 decimal (coma decimal); las cantidades quedan enteras
+  function pct(p) { return p == null ? '—' : p.toFixed(1).replace('.', ',') + '%'; }
 
   // ---- Render
   var root = document.getElementById('dash'), side = document.getElementById('dside');
@@ -120,12 +122,12 @@
     return '<div class="ring" style="width:' + size + 'px;height:' + size + 'px"><svg width="' + size + '" height="' + size + '" viewBox="0 0 104 104" role="img" aria-label="Avance ' + v + ' por ciento">' +
       '<circle cx="52" cy="52" r="44" fill="none" stroke="#3f3f46" stroke-width="11"/>' +
       '<circle cx="52" cy="52" r="44" fill="none" stroke="#bd0926" stroke-width="11" stroke-linecap="round" stroke-dasharray="' + (C * v / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 52 52)"/></svg>' +
-      '<div class="rv"><div><b>' + (p == null ? '—' : p + '%') + '</b><small>' + esc(label) + '</small></div></div></div>';
+      '<div class="rv"><div><b>' + pct(p) + '</b><small>' + esc(label) + '</small></div></div></div>';
   }
   function bar(name, r, sub, href) {
     var p = r.p, c = p == null ? '#a1a1aa' : col(p);
     return '<' + (href ? 'a href="' + href + '"' : 'div') + ' class="bar"><span class="bn">' + esc(name) + '</span><span class="bt"><span style="width:' + (p || 0) + '%;background:' + c + '"></span></span>' +
-      '<span class="bp"><b style="color:' + c + '">' + (p == null ? '—' : p + '%') + '</b><small>' + (r.t ? r.ok + ' de ' + r.t : 'no programado') + '</small></span></' + (href ? 'a' : 'div') + '>';
+      '<span class="bp"><b style="color:' + c + '">' + pct(p) + '</b><small>' + (r.t ? r.ok + ' de ' + r.t : 'no programado') + '</small></span></' + (href ? 'a' : 'div') + '>';
   }
   function formHref(it) {
     var obs = it.Tipo === 'Observación de conducta' || /^Observaci[oó]n de (conducta|almacenamiento|seguridad en anden|carga)/i.test(it.Title || '');
@@ -190,10 +192,10 @@
     var h = '';
 
     // Cabecera + panel negro
-    var pc = function (n) { return R.t ? Math.round(n / R.t * 100) + '%' : '—'; }, porHacer = R.todo + R.val;
+    var pc = function (n) { return R.t ? pct(Math.round(n / R.t * 1000) / 10) : '—'; }, porHacer = R.todo + R.val;
     var kp = function (l, v, sub, c, extra) { return '<div class="kp' + (extra || '') + '"><small>' + l + '</small><b>' + v + '</b><i style="color:' + c + '">' + sub + '</i>' + (extra ? '<div class="kbar"><span style="width:' + (R.p || 0) + '%"></span></div>' : '') + '</div>'; };
-    var stats = kp('Avance ' + esc(PERS[per][1]), R.p == null ? '—' : R.p + '%', R.ok + ' de ' + R.t + ' realizadas', '#4ade80', ' kpa') +
-      kp('Programadas', R.t, '100% actividades', '#7dd3fc') + kp('Realizadas', R.ok, pc(R.ok) + ' cerradas', '#4ade80') +
+    var stats = kp('Avance ' + esc(PERS[per][1]), pct(R.p), R.ok + ' de ' + R.t + ' realizadas', '#4ade80', ' kpa') +
+      kp('Programadas', R.t, '100,0% actividades', '#7dd3fc') + kp('Realizadas', R.ok, pc(R.ok) + ' cerradas', '#4ade80') +
       kp('Por hacer', porHacer, pc(porHacer) + ' pendientes', '#fbbf24') + kp('Atrasadas', R.late, pc(R.late) + ' fuera de plazo', '#f87171');
     var seg = '<div class="seg seg4" role="tablist" aria-label="Periodo">' + ['dia', 'semana', 'mes', 'anio'].map(function (k) { return '<button type="button" role="tab" data-per="' + k + '" title="' + PERS[k][3] + '" aria-label="' + PERS[k][3] + '" aria-selected="' + (per === k) + '">' + PERS[k][0] + '</button>'; }).join('') + '</div>';
     var sync = '<div class="sync">' + (ERR ? '<span class="off">● Sin conexión</span> · datos guardados' : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
@@ -225,7 +227,7 @@
       var centCard = '';
       if (admin && !centro) {
         var rs = centros.map(function (c) { return { c: c, r: resumen(perItems.filter(function (it) { return it.Centro === c; })) }; });
-        centCard = '<section class="dcent">' + rs.map(function (x) { var p = x.r.p; return '<button type="button" data-c="' + esc(x.c) + '"><b style="color:' + (p == null ? '#a1a1aa' : col(p)) + '">' + (p == null ? '—' : p + '%') + '</b><span>' + esc(short(x.c)) + '</span></button>'; }).join('') + '</section>' +
+        centCard = '<section class="dcent">' + rs.map(function (x) { var p = x.r.p; return '<button type="button" data-c="' + esc(x.c) + '"><b style="color:' + (p == null ? '#a1a1aa' : col(p)) + '">' + pct(p) + '</b><span>' + esc(short(x.c)) + '</span></button>'; }).join('') + '</section>' +
           '<section class="dcard dcentw"><div class="dh"><h2>Avance por centro</h2><a class="lnk0" href="panel.html">Ver panel</a></div>' + rs.map(function (x) { return bar(x.c, x.r, null, '#'); }).join('') + '</section>';
       }
 
@@ -290,7 +292,7 @@
       var hoy = items.filter(function (it) { return it.Fecha === HOY && estado(it) !== 'ok'; });
       var late = items.filter(function (it) { return estado(it) === 'late' && it.Fecha; }).sort(function (a, b) { return a.Fecha < b.Fecha ? 1 : -1; });
       hoyN = hoy.filter(function (it) { return estado(it) !== 'val'; }).length; lateN = late.length;
-      var pc = R.p == null ? '' : R.p + '%';
+      var pc = R.p == null ? '' : pct(R.p);
       h += dGroup('Mi centro', [
         dRow({ href: 'panel.html', label: 'Panel de control', i: 'panel' }, '#18181b', pc, R.p == null ? '' : col(R.p), 'Avance ' + PERS[per][2] + ': ' + R.ok + ' de ' + R.t),
         dRow({ href: 'calendario.html', label: 'Calendario', i: 'cal' }, '#18181b', hoyN ? String(hoyN) : '', '#b45309', hoyN ? hoyN + ' para hoy' : 'Nada pendiente hoy'),
