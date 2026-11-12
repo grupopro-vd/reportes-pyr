@@ -72,7 +72,7 @@
   function vista() { return ES_ADMIN && LS.get('gpHomeVista', '') !== 'equipo' ? 'admin' : 'equipo'; }
 
   // ---- Datos
-  var DATA = null, ERR = '';
+  var DATA = null, ERR = '', ERR_MS = false, CARGANDO = false, ULT = 0;
   function slim(d) {
     var mv = d.moves || {};
     return { updatedAt: d.updatedAt || '', at: Date.now(), pending: (d.pending || []).map(function (p) { return { id: String(p.id), centro: p.centro, title: p.title, nombre: p.nombre, estado: p.estado, at: p.at }; }),
@@ -198,7 +198,7 @@
       kp('Programadas', R.t, '100,0% actividades', '#7dd3fc') + kp('Realizadas', R.ok, pc(R.ok) + ' cerradas', '#4ade80') +
       kp('Por hacer', porHacer, pc(porHacer) + ' pendientes', '#fbbf24') + kp('Atrasadas', R.late, pc(R.late) + ' fuera de plazo', '#f87171');
     var seg = '<div class="seg seg4" role="tablist" aria-label="Periodo">' + ['dia', 'semana', 'mes', 'anio'].map(function (k) { return '<button type="button" role="tab" data-per="' + k + '" title="' + PERS[k][3] + '" aria-label="' + PERS[k][3] + '" aria-selected="' + (per === k) + '">' + PERS[k][0] + '</button>'; }).join('') + '</div>';
-    var sync = '<div class="sync">' + (ERR ? '<span class="off">● Sin conexión</span> · datos guardados' : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
+    var sync = '<div class="sync">' + (ERR ? (ERR_MS ? '<a class="off" href="panel.html" onclick="try{sessionStorage.setItem(\'gpVolver\',\'index.html\')}catch(e){}" style="color:inherit">● Sesión de Microsoft vencida: toca aquí para entrar de nuevo</a>' : '<span class="off">● ' + (navigator.onLine ? 'No se pudo actualizar' : 'Sin conexión') + '</span>') + (DATA && DATA.at ? ' · datos de ' + hace(DATA.at) : ' · datos guardados') : DATA && DATA.at ? 'Actualizado ' + hace(DATA.at) : 'Cargando programa…') + '</div>';
     if (admin) {
       var tabs = [''].concat(centros).map(function (c) { return '<button type="button" role="tab" data-c="' + esc(c) + '" aria-selected="' + (c === centro) + '">' + (c ? esc(short(c)) : 'Todo el programa') + '</button>'; }).join('');
       h += '<section class="hero">' +
@@ -352,11 +352,23 @@
   DATA = cargarCache();
   render();
   // Datos protegidos: sesión Microsoft o PIN del centro (si alguien dice «Ahora no», no se vuelve a pedir en 7 días)
-  var skip = +LS.get('gpPinSkip', 0) || 0;
-  (window.gpApi ? gpApi.read('panel', { prompt: Date.now() - skip > 7 * 864e5, motivo: 'Para ver el programa de tu centro en el inicio necesitas el PIN del centro. Se pide una sola vez en este teléfono. Si no lo tienes, pídelo a Valentín Díaz.' }) : Promise.reject(new Error('sin acceso')))
-    .then(function (d) { if (d && d.error === 'SIN_ACCESO') { LS.set('gpPinSkip', Date.now()); throw new Error('falta el PIN del centro'); }
-      if (!d || !d.ok || !d.items) throw new Error('sin datos'); DATA = slim(d); ERR = ''; LS.set('gpHomeData', DATA); render(); })
-    .catch(function (e) { ERR = String(e && e.message || e); render(); });
-  // Al volver a la app (otro día, otra pestaña) recalcula "hoy"
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+  async function cargar() {
+    if (CARGANDO) return; CARGANDO = true; ULT = Date.now();
+    try {
+      if (!window.gpApi) throw new Error('sin acceso');
+      // Si el teléfono tiene cuenta Microsoft (admin) pero el token ya no se renueva, avisarlo en vez de «sin conexión»
+      var msOk = ACC ? !!(await gpApi.msToken()) : true;
+      var skip = +LS.get('gpPinSkip', 0) || 0;
+      var d = await gpApi.read('panel', { prompt: !ACC && Date.now() - skip > 7 * 864e5, motivo: 'Para ver el programa de tu centro en el inicio necesitas el PIN del centro. Se pide una sola vez en este teléfono. Si no lo tienes, pídelo a Valentín Díaz.' });
+      if (d && d.error === 'SIN_ACCESO') { ERR_MS = !!ACC && !msOk; if (!ACC) LS.set('gpPinSkip', Date.now()); throw new Error(ERR_MS ? 'sesión Microsoft vencida' : 'falta el PIN del centro'); }
+      if (!d || !d.ok || !d.items) throw new Error((d && d.error) || 'sin datos');
+      DATA = slim(d); ERR = ''; ERR_MS = false; LS.set('gpHomeData', DATA);
+    } catch (e) { ERR = String(e && e.message || e); }
+    CARGANDO = false; render();
+  }
+  cargar();
+  // Al volver a la app (otro día, otra pestaña) recalcula "hoy" y trae datos nuevos si pasó más de 1 minuto
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); if (Date.now() - ULT > 60e3) cargar(); } });
+  window.addEventListener('pageshow', function (e) { if (e.persisted && Date.now() - ULT > 60e3) cargar(); });
+  window.addEventListener('online', function () { cargar(); });
 })();
