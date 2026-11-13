@@ -89,6 +89,8 @@
   /* ---- Datos extra para el panel (actividad del programa) y el seguimiento de hallazgos ---- */
   var actKey = function () { return 'gpAct:' + ((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')); };
   function getAct() { try { return JSON.parse(sessionStorage.getItem(actKey()) || 'null'); } catch (e) { return null; } }
+  var normC = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^(walmart|lider)\s+/, '').replace(/\s+/g, ' ').trim(); };
+  function actMismoCentro(act, centro) { return !act || !act.centro || !centro || normC(act.centro) === normC(centro); }
   function augment(d) {
     if (!d || typeof d !== 'object' || d.action || d.extra || !d.form) return d;
     var rid = document.querySelector('.document-sheet [name="registro_id"]'); if (!rid || !rid.value || rid.value !== d.recordId) return d;
@@ -96,7 +98,8 @@
     var r = function (n) { var el = document.querySelector('.document-sheet [name="' + n + '"]:checked'); return el ? el.value : ''; };
     d.extra = { descripcion: v('descripcion').slice(0, 400), criticidad: r('criticidad'), accion_correctiva: v('accion_correctiva').slice(0, 300), tipo_hallazgo: r('tipo_hallazgo') || v('tipo_otro'),
       correo_responsable: v('correo_responsable'), tema: v('tema'), tipo_actividad: v('tipo_actividad'), area: v('area'), lugar: v('lugar'), categoria_evento: v('categoria_evento') };
-    var act = getAct(); if (act && act.id) { d.programaId = String(act.id); d.programaTitle = act.title || ''; }
+    // Solo se marca la actividad del programa si es del mismo centro elegido en el registro; si no, el servidor busca la del centro elegido
+    var act = getAct(); if (act && act.id && actMismoCentro(act, v('centro'))) { d.programaId = String(act.id); d.programaTitle = act.title || ''; }
     try { if (typeof window.gpNuevos === 'function') { var nv = window.gpNuevos(); if (nv.length) d.nuevos = nv; } } catch (e) {}
     return d;
   }
@@ -261,6 +264,14 @@
     var b = document.createElement('div'); b.className = 'gp-draft-banner hide-on-print hide-on-word';
     b.innerHTML = '<span>📋 <b>Actividad del programa:</b> ' + String(act.title || '').replace(/</g, '&lt;') + (act.centro ? ' · ' + String(act.centro).replace(/</g, '&lt;') : '') + '. Al enviar, queda marcada en el panel.</span>';
     var bar = $('.gp-appbar'); if (bar && bar.nextSibling) bar.parentNode.insertBefore(b, bar.nextSibling); else document.body.prepend(b);
+    var esc = function (x) { return String(x || '').replace(/</g, '&lt;'); }, okHtml = b.innerHTML;
+    var revisa = function () { var el = document.querySelector('.document-sheet [name="centro"]'), c = el ? String(el.value || '').trim() : '';
+      if (actMismoCentro(act, c)) { b.innerHTML = okHtml; b.style.background = ''; b.style.borderColor = ''; return; }
+      b.style.background = '#fdecec'; b.style.borderColor = '#f0b4b4';
+      b.innerHTML = '<span>⚠️ <b>Elegiste ' + esc(c) + ', pero esta actividad es de ' + esc(act.centro) + '.</b> El registro quedará en ' + esc(c) + ' y se asignará a la actividad pendiente de ese centro, no a «' + esc(act.title) + '». Si te equivocaste de centro, vuelve a elegir ' + esc(act.centro) + '.</span>'; };
+    document.addEventListener('change', function (e) { if (e.target && e.target.name === 'centro') revisa(); }, true);
+    document.addEventListener('input', function (e) { if (e.target && e.target.name === 'centro') revisa(); }, true);
+    revisa();
   }
   /* ---- Centro de trabajo: se agrega a los formularios que aún no lo tienen ---- */
   var CENTROS = ['Walmart Pudahuel', 'Walmart Peñón', 'Walmart Lo Aguirre', 'Líder La Reina', 'Oficina Grupo Pro', 'ICB', 'Transporte TransPRO', 'Lippi', '4 Ruedas'];
