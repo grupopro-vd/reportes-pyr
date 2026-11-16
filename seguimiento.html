@@ -219,13 +219,16 @@ $('#sheet').onclick=function(e){if(e.target.id==='sheet')$('#sheet').classList.r
 function b64(blob){return new Promise(function(ok,ko){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]||'')};r.onerror=ko;r.readAsDataURL(blob)})}
 async function sendEvidence(x,est,com,nom){
   var id='CHZ-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-GPRO',base=today+'_'+id,folder=(x.folder||('PRO_EHS/Terreno/Hallazgos/'+slug(x.centro)+'/'+x.id))+'/Cierre_'+base;
-  var data={grupo:'Terreno',hallazgo:x.id,estado:est,comentario:com,cerradoPor:nom,fecha:today,archivos:evid.map(function(f){return f.name})};
+  // Mismo formato de _datos.json que los demás formularios: el flujo de respaldo usa folderPath, recordId, sentAt y fields para guardar y registrar
+  var sentAt=new Date().toISOString(),txt='Hallazgo '+x.id+' · '+est+' · '+x.centro+(com?' · '+com:'')+' · '+nom;
+  var fields={tipo:'Cierre de hallazgo: '+est,participacion:'',persona:nom,fecha:today,hora:sentAt.slice(11,16),lugar:x.lugar||'',empresa:'',area:x.area||'',centro:x.centro,responsable:x.responsable||'',fecha_limite:''};
+  var data={grupo:'Terreno',archivos:evid.map(function(f){return f.name}),folderPath:folder,fileBase:base,important:false,subject:'[Cierre de hallazgo] '+x.id+' · '+x.centro,form:'Cierre de hallazgo',formCode:'HALLAZGO-CIERRE',recordId:id,sentAt:sentAt,
+    reporter:{name:nom,email:'',cc:''},fields:fields,summary:txt,hallazgo:x.id,estado:est,comentario:com,cerradoPor:nom,fecha:today};
   var backup=[{name:base+'_datos.json',mimeType:'application/json',base64:await b64(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}))}];
   for(var i=0;i<evid.length;i++)backup.push({name:base+'_'+evid[i].name,mimeType:evid[i].blob.type||'application/octet-stream',base64:await b64(evid[i].blob)});
-  var txt='Hallazgo '+x.id+' · '+est+' · '+x.centro+(com?' · '+com:'')+' · '+nom;
   var r=await fetch(CFG.endpoint,{method:'POST',body:JSON.stringify({key:CFG.key,form:'Cierre de hallazgo',formCode:'HALLAZGO-CIERRE',recordId:id,subject:'[Cierre de hallazgo] '+x.id+' · '+x.centro,
-    reporterName:nom,reporterEmail:'',cc:'',textBody:txt,htmlBody:esc(txt),attachments:[],sentAt:new Date().toISOString(),notify:false,emailOptional:true,folderPath:folder,fileBase:base,
-    fields:{tipo:'Cierre de hallazgo: '+est,persona:nom,fecha:today,lugar:x.lugar||'',area:x.area||'',centro:x.centro,responsable:x.responsable||'',fecha_limite:''},grupo:'Terreno',backupFiles:backup})}).then(function(r){return r.json()});
+    reporterName:nom,reporterEmail:'',cc:'',textBody:txt,htmlBody:esc(txt),attachments:[],sentAt:sentAt,notify:false,emailOptional:true,folderPath:folder,fileBase:base,
+    fields:fields,grupo:'Terreno',backupFiles:backup})}).then(function(r){return r.json()});
   if(!r||!r.ok)throw new Error((r&&r.error)||'no se pudo enviar la foto');return folder}
 $('#shGo').onclick=async function(){
   var x=cur,est=(document.querySelector('[name=shEst]:checked')||{}).value,com=$('#shCom').value.trim(),nom=$('#shNom').value.trim(),msg=$('#shMsg'),btn=this;
