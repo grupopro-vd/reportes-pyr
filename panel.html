@@ -357,7 +357,6 @@ function tendChart(items){
   var last=series.map(function(s){var v=null;for(var i=s.v.length-1;i>=0;i--)if(s.v[i]!=null){v=s.v[i];break}return '<span class="lg"><i style="background:'+s.c+'"></i>'+esc(s.n.replace(/^(Walmart|Líder) /,''))+' <b>'+fmtP(v)+'</b></span>'}).join('');
   return '<div class="tend"><div class="th"><span>'+(modo==='acu'?'Cumplimiento acumulado':dia?'Cumplimiento de cada día':'Cumplimiento de cada semana')+' · por centro</span><span class="seg2"><button type="button" data-tm="dia" class="'+(dia?'on':'')+'">Diario</button><button type="button" data-tm="sem" class="'+(modo==='sem'?'on':'')+'">Semanal</button><button type="button" data-tm="acu" class="'+(modo==='acu'?'on':'')+'">Acumulado</button></span></div>'+g+'<div class="lgs">'+last+'</div></div>';
 }
-var RSW=null;
 var RCAT=[['cl','✅ Check list'],['obs','👁 Observaciones'],['ch','🗣 Charlas y capacitaciones'],['hz','🔎 Hallazgos'],['ot','📌 Otras actividades']];
 function catDe(it){var t=String(it.Title||''),ti=String(it.Tipo||''),x=t+' '+ti;
   if(/observaci/i.test(t)&&/condici/i.test(t))return 'hz';
@@ -366,14 +365,14 @@ function catDe(it){var t=String(it.Title||''),ti=String(it.Tipo||''),x=t+' '+ti;
   if(/hallazgo|inspecci/i.test(x))return 'hz';
   if(/charla|capacitaci|inducci|reforzamiento|difusi/i.test(x))return 'ch';
   return 'ot'}
-function resumenSem(base,c,sw){var w=RSW||sw||lunes(todayISO);var its=base.filter(function(it){return !!it.Fecha&&lunes(it.Fecha)===w&&(!c||it.Centro===c)});
+function resumenSem(its,lbl){
   var r={};RCAT.forEach(function(k){r[k[0]]={n:0,ok:0,late:0}});
   its.forEach(function(it){var s=st(it),o=r[catDe(it)];o.n++;if(s.e==='Realizada')o.ok++;else if(s.late)o.late++});
   var tn=its.length,tok=its.filter(function(it){return st(it).e==='Realizada'}).length;
-  return '<div class="rsem"><div class="th"><span>Resumen semanal por tipo de actividad'+(c?' · '+esc(c):'')+'</span><span class="nav"><button type="button" data-rw="-1" aria-label="Semana anterior">‹</button><b>'+esc(snTxt(w))+'</b><button type="button" data-rw="1" aria-label="Semana siguiente">›</button></span></div><div class="g">'+
+  return '<div class="rsem"><div class="th"><span>Resumen por tipo de actividad · '+esc(lbl)+'</span></div><div class="g">'+
     RCAT.map(function(k){var o=r[k[0]],pp=o.n?o.ok/o.n*100:null,kk=cls(pp);
       return '<div class="t"><div class="k">'+k[1]+'</div><b class="c-'+kk+'">'+o.ok+'</b><small>realizadas de '+o.n+' programadas</small><div class="meter"><i class="bg-'+(kk||'ok')+'" style="width:'+(pp||0)+'%"></i></div>'+(o.late?'<small class="c-bad" style="font-weight:bold">'+o.late+' atrasada'+(o.late>1?'s':'')+'</small>':'')+'</div>'}).join('')+
-    '</div><div class="tot">Total semana: <b>'+tok+'</b> de '+tn+' realizadas ('+fmtP(tn?tok/tn*100:null)+'). Observaciones agrupa PARE, conducta, general y almacenamiento; Hallazgos incluye inspecciones y observaciones de condiciones.</div></div>'}
+    '</div><div class="tot">Total: <b>'+tok+'</b> de '+tn+' realizadas ('+fmtP(tn?tok/tn*100:null)+'). Observaciones agrupa PARE, conducta, general y almacenamiento; Hallazgos incluye inspecciones y observaciones de condiciones.</div></div>'}
 function render(){
   authBar();fillMeses();fillSemanas();syncLine();
   var mine=misCentros();centroSel(mine);$('.bar').hidden=!!(mine&&!mine.length);
@@ -391,7 +390,7 @@ function render(){
   [['Atrasada','c-bad','Atrasadas'],['En proceso','c-mid','En proceso'],['Pendiente','','Pendientes'],['Por validar','c-blue','Por validar']].forEach(function(x){
     h+='<button type="button" class="kpi'+(filtro===x[0]?' on':'')+'" data-f="'+x[0]+'"><b class="'+x[1]+'">'+cnt[x[0]]+'</b><span>'+x[2]+'</span></button>'});
   h+='</div>';
-  h+=resumenSem(base,c,sw);
+  h+=resumenSem(mine,sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'todo el programa'));
   if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return (!c||q.centro===c)&&(isAdmin()||base.some(function(x){return x.Centro===q.centro}))});
     if(pend.length){h+='<h2>Por validar ('+pend.length+')</h2><div class="list">'+pend.map(function(q){var it=DATA.items.filter(function(x){return x.id===q.id})[0];
       return '<div class="val"><div class="t">'+(q.auto?'📋 ':'')+esc(q.title||(it&&it.Title)||'Actividad')+'</div>'+(q.auto?'<div class="lock">Desde un formulario enviado · revisa que corresponda a esta actividad</div>':'')+'<div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
@@ -409,7 +408,6 @@ function render(){
   else h+='<div class="list">'+list.map(card).join('')+'</div>';
   if(!isAdmin())h+=pinBox(false);
   $('#view').innerHTML=h;pinBind();
-  $$('[data-rw]').forEach(function(b){b.onclick=function(){var w=RSW||semSel()||lunes(todayISO),d=new Date(w+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+7*(+b.dataset.rw));RSW=d.toISOString().slice(0,10);render()}});
   $$('.kpi[data-f]').forEach(function(b){b.onclick=function(){filtro=filtro===b.dataset.f?'':b.dataset.f;render()}});
   $$('[data-tm]').forEach(function(b){b.onclick=function(){LS.set('gpPanelTend',b.dataset.tm);render()}});
   $$('.crow').forEach(function(r){r.onclick=function(){$('#fCentro').value=r.dataset.c;$('#fCentro').onchange()}});
