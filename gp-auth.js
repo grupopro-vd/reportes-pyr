@@ -7,7 +7,7 @@
   if (window.gpApi) return;
   var EP = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', KEY = 'GP-PYR-2026';
   var MS = { clientId: '9e6fd77e-8355-4bfa-9a7f-d38b9ee6932f', tenant: '470d4a25-3e3e-49c6-a6f6-ed59ef49a1c3', scopes: ['Sites.ReadWrite.All'],
-    lib: 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js' };
+    lib: 'https://unpkg.com/@azure/msal-browser@2.39.0/lib/msal-browser.min.js' };
   var CENTROS = ['Walmart Peñón', 'Walmart Pudahuel', 'Walmart Lo Aguirre', 'Walmart La Farfana', 'Líder La Reina'];
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
