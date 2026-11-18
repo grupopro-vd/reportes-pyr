@@ -96,6 +96,7 @@ tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
   <a class="nv" href="#v-semana" data-v="semana">Por semana</a>
   <a class="nv" href="#v-conductas" data-v="conductas">Conductas</a>
   <a class="nv" href="#v-gestion" data-v="gestion">Feedback y procesos</a>
+  <a class="nv" href="#v-seguimiento" data-v="seguimiento">Seguimiento</a>
   <a class="nv" href="#v-cierre" data-v="cierre">Cumplimiento y cierre</a>
   <a class="nv" href="#v-centros" data-v="centros">Centros</a>
   <a class="nv" href="#v-observadores" data-v="observadores">Observadores</a>
@@ -230,9 +231,10 @@ function desdeApp(o){if(!o||!o.fecha)return null;var wk=isoWeek(o.fecha),s=SEG[o
     tipo:o.tipo_obs||'',resultado:o.resultado||(f?'Negativa':'Positiva'),conFalta:f,area:o.area||'',gerencia:o.gerencia||'',persona:o.persona||'',cargo:o.cargo||'',empresa:o.empresa||'',lugar:o.lugar||'',
     observacion:(s.observacion_edit!=null&&s.observacion_edit!=='')?s.observacion_edit:[o.descripcion,detalle].filter(Boolean).join(' — '),obsOriginal:[o.descripcion,detalle].filter(Boolean).join(' — '),obsEditada:!!(s.observacion_edit),tipoFalta:s.tipo_falta||o.tipo_falta||'',escalamiento:s.escalamiento||o.escalamiento||'',
     observador:o.observador||o.reporter||'',supervisor:s.supervisor||o.supervisor||'',prevencionista:o.prevencionista||'',tope:s.fecha_tope||o.fecha_tope||'',cierre:s.fecha_cierre||'',
-    medida:o.medida||'',feedback:o.feedback||'',fb:o.feedback==='Sí',fbNo:o.feedback==='No',seguras:o.seguras||[],mejoraL:o.mejora||[],gravesL:o.graves||[],noCumple:o.no_cumple||[],cargoObs:o.cargo_observador||'',nota:s.nota||'',estadoSeg:s.estado||'',segBy:s.by||'',segAt:s.at||'',graves:(o.graves||[]).length};
+    responsable:o.responsable||'',medida:o.medida||'',feedback:o.feedback||'',fb:o.feedback==='Sí',fbNo:o.feedback==='No',seguras:o.seguras||[],mejoraL:o.mejora||[],gravesL:o.graves||[],noCumple:o.no_cumple||[],cargoObs:o.cargo_observador||'',nota:s.nota||'',estadoSeg:s.estado||'',segBy:s.by||'',segAt:s.at||'',graves:(o.graves||[]).length};
   r.estado=estado(r);return r}
-function estado(r){if(!r.conFalta)return 'Sin falta';if(r.estadoSeg)return r.estadoSeg;if(r.cierre)return 'Cerrado';if(r.tope&&r.tope<HOY)return 'Caducado';return 'Pendiente'}
+function reqSeg(r){return /mejora|amonest|bloqueo|desvincul/i.test(String(r.escalamiento||''))}
+function estado(r){if(!r.conFalta)return 'Sin falta';if(r.estadoSeg)return r.estadoSeg;if(r.cierre)return 'Cerrado';if(r.src==='app'&&!reqSeg(r)){r.cierre=r.fecha;r.cierreAuto=true;return 'Cerrado'}if(r.tope&&r.tope<HOY)return 'Caducado';return 'Pendiente'}
 function toISOx(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return iso(v);if(typeof v==='number'){var d=new Date(Math.round((v-25569)*86400000));return iso(new Date(d.getTime()+d.getTimezoneOffset()*60000))}
   var s=String(v).trim(),m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);if(m){var y=m[3].length===2?'20'+m[3]:m[3];if(y.length!==4)return '';return y+'-'+pad(+m[2])+'-'+pad(+m[1])}return ''}
 async function importar(file){
@@ -317,7 +319,7 @@ function top(m,n){return Object.keys(m).map(function(k){return [k,m[k]]}).sort(f
 function corto(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s}
 
 // ---------- Vistas ----------
-var VIEWS=[['resumen','Resumen'],['semana','Por semana'],['conductas','Conductas'],['gestion','Feedback y procesos'],['cierre','Cumplimiento y cierre'],['centros','Centros'],['observadores','Observadores'],['detalle','Detalle']];
+var VIEWS=[['resumen','Resumen'],['semana','Por semana'],['conductas','Conductas'],['gestion','Feedback y procesos'],['seguimiento','Seguimiento'],['cierre','Cumplimiento y cierre'],['centros','Centros'],['observadores','Observadores'],['detalle','Detalle']];
 var VIEW='resumen';try{VIEW=localStorage.getItem('gpObsView')||'resumen'}catch(e){}
 if(!VIEWS.some(function(v){return v[0]===VIEW}))VIEW='resumen';
 var PROCS=['Feedback','Proceso de mejora','Carta de amonestación','Comentario / escalamiento GDI','Bloqueo / desvinculación','Felicitación','Sin gestión registrada'];
@@ -400,6 +402,14 @@ function vista(v,rows,faltas){
       '<div class="grid">'+card('w8','Gestión aplicada por semana',cv('cProcW'))+card('w4','Gestión aplicada',cv('cProc2'))+card('w4','¿Se hizo feedback?',cv('cFb'))+card('w8','Gestión en observaciones negativas',cv('cProcNeg'))+'</div>'+
       '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Centro</th>'+ps.map(function(p){return '<th>'+esc(p)+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>'+
       cs.map(function(c){var x=rows.filter(function(r){return r.centro===c});return '<tr><td><b>'+esc(c)+'</b></td>'+ps.map(function(p){return '<td>'+x.filter(function(r){return proceso(r)===p}).length+'</td>'}).join('')+'<td><b>'+x.length+'</b></td></tr>'}).join('')+'</tbody></table></div></section>';}
+  if(v==='seguimiento'){
+    var sg=faltas.filter(reqSeg),ab=sg.filter(function(r){return r.estado!=='Cerrado'}).sort(function(a,b){return (a.tope||'9').localeCompare(b.tope||'9')}),ce=sg.filter(function(r){return r.estado==='Cerrado'}).sort(function(a,b){return (b.cierre||'').localeCompare(a.cierre||'')});
+    var fila=function(r){var d=r.tope&&r.estado!=='Cerrado'?days(HOY,r.tope):null;return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+fdl(r.fecha)+'</td><td>'+esc(r.cd||r.centro)+'</td><td><b>'+esc(r.persona)+'</b><div class="note" style="margin:0">'+esc(String(r.observacion||'').slice(0,90))+'</div></td><td>'+esc(r.escalamiento)+'</td><td>'+esc(r.responsable||r.supervisor||'—')+'</td><td>'+(r.estado==='Cerrado'?fdl(r.cierre):fdl(r.tope)+(d!=null?'<div class="note" style="margin:0;color:'+(d<0?NEG:d<=2?'#b45309':'inherit')+'">'+(d<0?'vencida hace '+(-d)+' d':d===0?'vence hoy':'quedan '+d+' d')+'</div>':''))+'</td><td>'+pill(r.estado)+'</td></tr>'};
+    var tb=function(x,c){return '<div class="tw"><table><thead><tr><th>Fecha</th><th>Centro</th><th>Persona</th><th>Gestión</th><th>Responsable</th><th>'+c+'</th><th>Estado</th></tr></thead><tbody>'+x.map(fila).join('')+'</tbody></table></div>'};
+    return tit('Seguimiento de observaciones','negativas con proceso de mejora o carta de amonestación')+'<div class="kpis">'+kp(sg.length,'en seguimiento',null,1)+kp(ab.filter(function(r){return r.estado==='Pendiente'}).length,'abiertas','#b45309')+kp(ab.filter(function(r){return r.estado==='Caducado'}).length,'vencidas',NEG)+kp(ce.length,'cerradas',POS)+'</div>'+
+      '<div class="note">Las positivas y las negativas que solo requieren feedback se cierran solas al registrarse. Las que tienen proceso de mejora, carta de amonestación, bloqueo o desvinculación quedan aquí abiertas hasta que se registre su cierre.</div>'+
+      '<h3 style="margin:14px 0 6px">Abiertas ('+ab.length+')</h3>'+(ab.length?tb(ab,'Fecha tope'):'<div class="note">No hay observaciones abiertas en seguimiento con los filtros actuales.</div>')+
+      (ce.length?'<h3 style="margin:14px 0 6px">Cerradas ('+ce.length+')</h3>'+tb(ce.slice(0,100),'Cierre'):'')+'<div class="note">Toca una fila para ver el detalle y registrar el cierre.</div></section>';}
   if(v==='cierre'){
     var tc=cerr.filter(function(r){return r.cierre&&r.fecha&&r.cierre>=r.fecha}).map(function(r){return Math.max(0,days(r.fecha,r.cierre))});var prom=tc.length?(tc.reduce(function(a,b){return a+b},0)/tc.length):null;
     var pl=pend.concat(cad).sort(function(a,b){return (a.tope||'9').localeCompare(b.tope||'9')}).slice(0,15);
@@ -507,7 +517,7 @@ function graficos(rows,faltas){
 function puedeEditar(r){return r&&r.src==='app'&&ACC&&(ADMIN||(MINE&&MINE.indexOf(r.centro)>=0))}
 function abrir(r){if(!r)return;var b=$('#shBox');var pe=puedeEditar(r),ed=pe&&r.conFalta;
   b.innerHTML='<h3 id="shT">'+esc(r.persona||'Observación')+'</h3><div class="sub">'+esc(r.id)+' · '+esc(r.centro)+' · '+fdl(r.fecha)+(r.hora?' '+esc(r.hora):'')+' · semana '+r.semana+'</div>'+
-    '<dl>'+[['Tipo',r.tipo],['Resultado',r.conFalta?'Con falta':'Positiva'],['Área',r.area],['Gerencia',r.gerencia],['Empresa',r.empresa],['Cargo',r.cargo],['Lugar',r.lugar],['Observación',r.observacion],['Tipo de falta',r.tipoFalta],['Escalamiento',r.escalamiento],['Medida',r.medida],['Feedback',r.feedback],['Observador',r.observador],['Prevencionista',r.prevencionista],['Fecha tope',fdl(r.tope)],['Estado',r.estado],['Cierre',fdl(r.cierre)],['Jefatura cierre',r.supervisor],['Nota',r.nota],['Última edición',r.segBy?r.segBy+' · '+new Date(r.segAt).toLocaleString('es-CL'):'']]
+    '<dl>'+[['Tipo',r.tipo],['Resultado',r.conFalta?'Con falta':'Positiva'],['Área',r.area],['Gerencia',r.gerencia],['Empresa',r.empresa],['Cargo',r.cargo],['Lugar',r.lugar],['Observación',r.observacion],['Tipo de falta',r.tipoFalta],['Escalamiento',r.escalamiento],['Medida',r.medida],['Responsable del seguimiento',r.responsable],['Seguimiento',!r.conFalta?'':reqSeg(r)?'Requiere seguimiento hasta su cierre':'Cierre inmediato (solo feedback)'],['Feedback',r.feedback],['Observador',r.observador],['Prevencionista',r.prevencionista],['Fecha tope',fdl(r.tope)],['Estado',r.estado],['Cierre',fdl(r.cierre)],['Jefatura cierre',r.supervisor],['Nota',r.nota],['Última edición',r.segBy?r.segBy+' · '+new Date(r.segAt).toLocaleString('es-CL'):'']]
       .filter(function(x){return x[1]}).map(function(x){return '<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>'}).join('')+'</dl>'+
     (pe?'<div class="frm"><label class="full">Corregir texto de la observación<textarea id="eObs" style="height:84px">'+esc(r.observacion)+'</textarea></label>'+(r.obsEditada?'<div class="note full">Texto corregido. Original: '+esc(r.obsOriginal||'(vacío)')+'</div>':'')+'</div>':'')+
     (ed?'<div class="frm"><label>Estado de cumplimiento<select id="eEst">'+ESTADOS.map(function(e){return '<option'+(e===r.estado?' selected':'')+'>'+e+'</option>'}).join('')+'</select></label>'+
