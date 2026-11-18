@@ -14,7 +14,7 @@ const CFG = {
   endpoint: 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', key: 'GP-PYR-2026',
   xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   pdfjs: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-  msal: 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js'
+  msal: 'https://unpkg.com/@azure/msal-browser@2.39.0/lib/msal-browser.min.js'
 };
 const CENTROS = [['Walmart Peñón', 'Peñón'], ['Walmart Pudahuel', 'Pudahuel'], ['Walmart Lo Aguirre', 'Lo Aguirre'], ['Walmart La Farfana', 'La Farfana'], ['Líder La Reina', 'La Reina']];
 const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
