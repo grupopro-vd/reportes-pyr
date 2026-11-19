@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check list · PRO EHS</title>
+<meta name="theme-color" content="#1d1d1b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PRO EHS">
+<style>
+:root{--red:#bd0926;--red-dark:#8e0719;--black:#1d1d1b;--bg:#f2f2f2;--muted:#5c5c5c;--line:#e4e4e8;
+  --ok:#16623f;--ok-bg:#e3f4ea;--mid:#9a6700;--mid-bg:#fdf0d5;--bad:#b3261e;--bad-bg:#fde4e2;--blue:#1d4ed8;--blue-bg:#e6edfd}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--black);font-family:Arial,Helvetica,sans-serif;-webkit-tap-highlight-color:transparent}
+.top{background:linear-gradient(120deg,var(--black) 0%,var(--black) 52%,var(--red-dark) 82%,var(--red) 100%);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 18px}
+.top .in{max-width:1100px;margin:0 auto}
+.back{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-size:14px;font-weight:bold;background:rgba(255,255,255,.12);padding:7px 12px;border-radius:9px}
+.top h1{margin:12px 0 2px;font-size:22px}.top p{margin:0;color:#e3e3e3;font-size:13px}
+.wrap{max-width:1100px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom))}
+select,input,button,textarea{font:inherit}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:1.5px solid #d4d4d8;background:#fff;border-radius:999px;height:38px;padding:0 14px;font-weight:bold;font-size:13.5px;cursor:pointer;color:var(--black)}
+.tabs button.on{background:var(--black);border-color:var(--black);color:#fff}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bar select,.bar input{height:42px;border:1px solid #d4d4d8;border-radius:10px;padding:0 10px;background:#fff;font-size:14.5px;min-width:0;flex:1 1 160px}
+.bar input[type=search]{flex:2 1 220px}
+.bar .lnk{border:0;background:none;color:var(--red);font-weight:bold;cursor:pointer;font-size:13.5px;padding:0 4px}
+.sync{font-size:12px;color:var(--muted);margin:0 2px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sync button{border:1.5px solid #d4d4d8;background:#fff;border-radius:9px;height:32px;padding:0 12px;font-weight:bold;font-size:12.5px;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(5,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font-size:26px;line-height:1.1}.kpi span{font-size:12px;color:var(--muted);font-weight:bold}
+.kpi small{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+.c-ok{color:var(--ok)}.c-mid{color:var(--mid)}.c-bad{color:var(--bad)}
+h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px 0;overflow:hidden}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fafafa}
+td{padding:9px 12px;border-bottom:1px solid #f0f0f2;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.r{cursor:pointer}tr.r:hover td{background:#fafafa}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:bold;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)}.p-bad{background:var(--bad-bg);color:var(--bad)}.p-mid{background:var(--mid-bg);color:var(--mid)}.p-blue{background:var(--blue-bg);color:var(--blue)}.p-gray{background:#efeff1;color:#52525b}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.empty{background:#fff;border:1px dashed #ccc;border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
+.msg{font-size:13.5px;border-radius:10px;padding:10px 12px;line-height:1.45}.msg.err{background:var(--bad-bg);color:var(--bad)}.msg.ok{background:var(--ok-bg);color:var(--ok)}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--red);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px;margin-right:8px}@keyframes sp{to{transform:rotate(360deg)}}
+.grid2{display:grid;gap:12px}@media(min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
+.bars{padding:10px 14px}.bars .b{display:grid;grid-template-columns:130px 1fr 44px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.bars .t{height:12px;background:#f0f0f2;border-radius:9px;overflow:hidden;display:flex}.bars .t i{display:block;height:100%}
+.sh{position:fixed;inset:0;background:rgba(24,24,27,.5);display:flex;align-items:flex-end;justify-content:center;z-index:1000}
+@media(min-width:700px){.sh{align-items:center}}
+.sh .bx{background:#fff;width:100%;max-width:720px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px}
+@media(min-width:700px){.sh .bx{border-radius:16px}}
+.sh h3{margin:0 0 4px;font-size:18px}.sh .x{float:right;border:0;background:#f0f0f2;border-radius:9px;width:34px;height:34px;font-size:18px;cursor:pointer}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 10px;font-size:13.5px;margin:12px 0}.kv b{color:var(--muted);font-weight:bold}
+pre.sum{white-space:pre-wrap;font:12.5px/1.5 Consolas,Menlo,monospace;background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:300px;overflow:auto}
+.cl{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px;background:#fcfcfc}
+.cl label{display:block;font-size:12.5px;font-weight:bold;margin:8px 0 4px}
+.cl input,.cl textarea{width:100%;border:1px solid #d4d4d8;border-radius:9px;padding:8px 10px;font-size:14px}
+.btn{border:0;background:var(--red);color:#fff;font-weight:bold;border-radius:10px;height:40px;padding:0 16px;cursor:pointer;margin-top:10px}
+.btn2{border:1.5px solid #d4d4d8;background:#fff;color:var(--black);font-weight:bold;border-radius:10px;height:40px;padding:0 14px;cursor:pointer;margin-top:10px;text-decoration:none;display:inline-flex;align-items:center}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="back" href="./">← Inicio</a>
+  <h1>Check list</h1>
+  <p>Equipos operativos por centro, check list abiertos y su seguimiento</p>
+</div></header>
+<main class="wrap">
+  <div class="tabs" id="tabs">
+    <button type="button" data-t="resumen" class="on">Resumen</button>
+    <button type="button" data-t="equipos">Equipos por centro</button>
+    <button type="button" data-t="abiertos">Abiertos</button>
+    <button type="button" data-t="todos">Todos los check list</button>
+  </div>
+  <div class="bar">
+    <select id="fC" aria-label="Centro"><option value="">Todos los centros</option></select>
+    <select id="fCat" aria-label="Categoría"><option value="">Máquinas y otros check list</option><option>Máquinas y equipos</option><option>EPP y arnés</option><option>Instalaciones y procesos</option></select>
+    <select id="fF" aria-label="Tipo de check list"><option value="">Todos los tipos</option></select>
+    <select id="fE" aria-label="Estado"><option value="">Todo estado</option><option value="ok">Operativo / conforme</option><option value="bad">No operativo / con observaciones</option><option value="open">Abiertos (sin cerrar)</option><option value="closed">Cerrados</option></select>
+    <select id="fP" aria-label="Periodo"><option value="30">Últimos 30 días</option><option value="mes">Este mes</option><option value="90">Últimos 90 días</option><option value="">Todo</option></select>
+    <input id="fQ" type="search" placeholder="Buscar equipo, persona, lugar…" aria-label="Buscar">
+    <button type="button" class="lnk" id="fX">✕ Limpiar</button>
+  </div>
+  <div class="sync" id="sync"></div>
+  <div id="view"><div class="empty"><span class="spin"></span>Leyendo los check list en SharePoint…</div></div>
+  <p class="note">Se leen los check list enviados desde la app y respaldados en SharePoint (ReportesPYR). Un check list queda <b>abierto</b> cuando el equipo resultó no operativo o el check list tiene observaciones, hasta que se registre su cierre. Los equipos se agrupan por centro, tipo y número; se muestra el último check list de cada uno.</p>
+</main>
+
+<script src="gp-auth.js"></script>
+<script>
+(function(){
+var SITE='grupoprocl.sharepoint.com,32881a9e-1d10-427d-8d81-a8e638a346f4,8c2de84d-d5d6-4c85-8258-7ffb421c081f';
+var ROOTS=['Check_List_Equipos','PRO_EHS/Terreno/Check_List'],SEGF='PRO_EHS/Config/cl_seguimiento.json',SPW='https://grupoprocl.sharepoint.com/sites/PYR/ReportesPYR/';
+var ADMINS=['vdiaz@grupopro.cl'];
+var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
+  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
+var $=function(s){return document.querySelector(s)},$$=function(s){return [].slice.call(document.querySelectorAll(s))};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+var d0=new Date(),HOY=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
+var TOKEN='',REP='',ME='',MINE=null,ROWS=[],SEG={},TAB=LS.get('gpClTab','resumen');
+function fd(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
+function encPath(p){return p.split('/').map(encodeURIComponent).join('/')}
+async function g(path,o){o=o||{};var r=await fetch('https://graph.microsoft.com/v1.0'+path,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+TOKEN},o.ct?{'Content-Type':o.ct}:{}),body:o.body});
+  if(o.raw)return r;if(!r.ok)throw new Error('SharePoint respondió '+r.status);return r.json()}
+function quien(){try{var p=JSON.parse(atob(TOKEN.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return String(p.upn||p.unique_name||p.preferred_username||'').toLowerCase()}catch(e){return ''}}
+// ---- clasificación ----
+function categoria(form){var f=String(form||'').toLowerCase();if(/equipo|veh[ií]culo|m[aá]quina/.test(f))return 'Máquinas y equipos';if(/epp|arn[eé]s/.test(f))return 'EPP y arnés';return 'Instalaciones y procesos'}
+function esOk(t){t=String(t||'').toLowerCase();return !!t&&!/^no |no operativ|no conforme|observaci|no apto|falla/.test(t)&&/operativ|conforme|apto|cumple/.test(t)}
+function linea(sum,re){var m=String(sum||'').match(re);return m?m[1].trim():''}
+function compact(j){
+  var f=j.fields||{},s=String(j.summary||''),form=j.form||'';
+  var maq='';var lm=s.match(/Tipo de m[aá]quina:([^\n]*)/i);if(lm){var x=lm[1].match(/\[X\]\s*([^\[—\n]+)/i);maq=x?x[1].trim():''}
+  if(!maq)maq=linea(s,/Tipo de veh[ií]culo:\s*([^\n|]+)/i);
+  var num=linea(s,/N[uú]mero de equipo:\s*([^\n|]+)/i)||linea(s,/Patente:\s*([^\n|]+)/i)||(/equipo|veh[ií]culo/i.test(form)?String(f.lugar||''):'');
+  var malos=[];s.split('\n').forEach(function(l){var m=l.match(/\[X\]\s*(No operativo|Revisar|No cumple|Malo|Deficiente|Mal estado|No conforme)\b/i);if(m&&l.indexOf(':')<0||m&&l.indexOf('[')<l.indexOf(':')){var it=l.split(' [')[0].trim();var ob=(l.split('—')[1]||'').trim();if(it)malos.push(it+(ob?' ('+ob+')':''))}});
+  var est=String(f.tipo||'');if(!est){var sm=String(j.subject||'').match(/\]\s*([^·]+)·/);est=sm?sm[1].trim():''}
+  est=est.charAt(0).toUpperCase()+est.slice(1).toLowerCase();
+  var centro=f.centro||linea(s,/Centro de trabajo:\s*([^\n|]+)/i)||linea(s,/Centro(?: \(CD\))?:\s*([^\n|]+)/i);
+  return {id:j.recordId||'',form:form,centro:centro,fecha:String(f.fecha||'').slice(0,10)||String(j.sentAt||'').slice(0,10),hora:f.hora||'',rep:(j.reporter&&j.reporter.name)||'',
+    persona:f.persona||'',area:f.area||'',lugar:f.lugar||'',maq:maq,num:String(num||'').replace(/^N[°º]?\s*/i,'').trim(),est:est,ok:esOk(est),malos:malos.slice(0,15),folder:j.folderPath||'',
+    resp:f.responsable||'',lim:f.fecha_limite||'',sum:s.slice(0,4000)}}
+function seg(r){return SEG[r.id]||null}
+function abierto(r){return !r.ok&&!seg(r)}
+function pill(r){if(r.ok)return '<span class="pill p-ok">'+esc(r.est||'Conforme')+'</span>';return '<span class="pill p-bad">'+esc(r.est||'Con observaciones')+'</span>'}
+function pillSeg(r){if(r.ok)return '<span class="pill p-gray">No requiere</span>';var s=seg(r);if(s)return '<span class="pill p-ok">Cerrado '+esc(fd(s.cierre))+'</span>';
+  var venc=r.lim&&r.lim<HOY;return '<span class="pill '+(venc?'p-bad':'p-mid')+'">'+(venc?'Abierto · vencido':'Abierto')+'</span>'}
+// ---- carga ----
+async function cargar(force){
+  try{
+    TOKEN=await gpApi.msToken();
+    if(!TOKEN){$('#view').innerHTML='<div class="msg err">Para ver los check list inicia sesión con tu cuenta Microsoft en el <a href="panel.html">Panel de control</a> y vuelve a esta página.</div>';return}
+    ME=quien();MINE=ADMINS.indexOf(ME)>=0?null:(ACCESO[ME]||[]);
+    if(MINE&&!MINE.length){$('#view').innerHTML='<div class="msg err">Tu cuenta ('+esc(ME)+') no tiene centros asignados para ver check list. Pide acceso a Valentín Díaz.</div>';return}
+    if(!REP){var ds=(await g('/sites/'+SITE+'/drives?$select=id,name,webUrl')).value;REP=(ds.filter(function(d){return /\/ReportesPYR$/i.test(decodeURIComponent(d.webUrl))})[0]||{}).id;if(!REP)throw new Error('no encontré la biblioteca ReportesPYR')}
+    $('#sync').innerHTML='<span><span class="spin"></span>Buscando check list…</span>';
+    var files=[];
+    async function hijos(path){var r=[],u='/drives/'+REP+'/root:/'+encPath(path)+':/children?$select=id,name,eTag,folder&$top=999';while(u){var d=await g(u).catch(function(){return {value:[]}});r=r.concat(d.value||[]);u=d['@odata.nextLink']?d['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null}return r}
+    async function walk(path,depth){var ls=await hijos(path),subs=[];ls.forEach(function(x){if(x.folder){if(depth<5)subs.push(path+'/'+x.name)}else if(/_datos\.json$/i.test(x.name))files.push(x)});
+      for(var k=0;k<subs.length;k+=8)await Promise.all(subs.slice(k,k+8).map(function(p){return walk(p,depth+1)}))}
+    for(var ri=0;ri<ROOTS.length;ri++)await walk(ROOTS[ri],0);
+    var cache=force?{}:LS.get('gpClCache1',{}),out={},need=files.filter(function(f){var c=cache[f.id];if(c&&c.e===f.eTag){out[f.id]=c;return false}return true});
+    for(var i=0;i<need.length;i+=20){
+      $('#sync').innerHTML='<span><span class="spin"></span>Leyendo check list '+Math.min(i+20,need.length)+' de '+need.length+'…</span>';
+      var b=await g('/$batch',{method:'POST',ct:'application/json',body:JSON.stringify({requests:need.slice(i,i+20).map(function(f,j){return {id:String(j),method:'GET',url:'/drives/'+REP+'/items/'+f.id}})})});
+      var resp=b.responses||[];
+      var js=await Promise.all(resp.map(function(x){var u=x.body&&x.body['@microsoft.graph.downloadUrl'];return u?fetch(u).then(function(r){return r.json()}).catch(function(){return null}):null}));
+      js.forEach(function(j,k){var f=need[i+(+resp[k].id)];if(f&&j&&j.form)out[f.id]={e:f.eTag,d:compact(j)}});
+    }
+    LS.set('gpClCache1',out);
+    try{var r=await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{raw:true});SEG=r.ok?(await r.json()||{}):{}}catch(e){SEG={}}
+    var seen={};ROWS=Object.keys(out).map(function(k){return out[k].d}).filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=1;return !MINE||MINE.indexOf(r.centro)>=0})
+      .sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
+    llenar();render();
+    $('#sync').innerHTML='<span>Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+' · '+ROWS.length+' check list</span><button type="button" id="rf">Actualizar</button>';
+    $('#rf').onclick=function(){cargar(false)};
+  }catch(e){$('#view').innerHTML='<div class="msg err">No se pudieron leer los check list: '+esc(e.message)+'</div>'}
+}
+function llenar(){
+  var cs={},fs={};ROWS.forEach(function(r){if(r.centro)cs[r.centro]=1;if(r.form)fs[r.form]=1});
+  [['#fC',cs,'Todos los centros'],['#fF',fs,'Todos los tipos']].forEach(function(a){var s=$(a[0]),v=s.value;s.innerHTML='<option value="">'+a[2]+'</option>'+Object.keys(a[1]).sort().map(function(k){return '<option>'+esc(k)+'</option>'}).join('');s.value=v});
+}
+function filtrados(){
+  var c=$('#fC').value,cat=$('#fCat').value,f=$('#fF').value,e=$('#fE').value,p=$('#fP').value,q=$('#fQ').value.trim().toLowerCase();
+  var desde='';if(p==='mes')desde=HOY.slice(0,8)+'01';else if(p){var d=new Date(HOY+'T12:00:00');d.setDate(d.getDate()-(+p));desde=d.toISOString().slice(0,10)}
+  return ROWS.filter(function(r){
+    if(c&&r.centro!==c)return false;if(cat&&categoria(r.form)!==cat)return false;if(f&&r.form!==f)return false;
+    if(e==='ok'&&!r.ok)return false;if(e==='bad'&&r.ok)return false;if(e==='open'&&!abierto(r))return false;if(e==='closed'&&!(seg(r)&&!r.ok))return false;
+    if(desde&&r.fecha<desde)return false;
+    if(q&&[r.form,r.centro,r.persona,r.rep,r.lugar,r.area,r.maq,r.num,r.id,r.est].join(' ').toLowerCase().indexOf(q)<0)return false;return true})}
+function kpis(L){
+  var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(function(r){return r.ok}).length,ab=L.filter(abierto),venc=ab.filter(function(r){return r.lim&&r.lim<HOY}).length;
+  var ok=L.filter(function(r){return r.ok}).length;
+  return '<div class="kpis"><div class="kpi"><span>Check list</span><b>'+L.length+'</b><small>en el periodo y filtros elegidos</small></div>'+
+    '<div class="kpi"><span>Conformes / operativos</span><b class="c-ok">'+(L.length?Math.round(ok/L.length*100):0)+'%</b><small>'+ok+' de '+L.length+'</small></div>'+
+    '<div class="kpi"><span>Check list de máquinas</span><b>'+eq.length+'</b><small>'+eqOk+' operativos · '+(eq.length-eqOk)+' no operativos</small></div>'+
+    '<div class="kpi"><span>Abiertos</span><b class="'+(ab.length?'c-mid':'c-ok')+'">'+ab.length+'</b><small>no operativos o con observaciones sin cerrar</small></div>'+
+    '<div class="kpi"><span>Abiertos vencidos</span><b class="'+(venc?'c-bad':'c-ok')+'">'+venc+'</b><small>pasaron su fecha límite</small></div></div>'}
+function tabla(L,cols){
+  if(!L.length)return '<div class="empty">No hay check list con estos filtros.</div>';
+  return '<div class="card tw"><table><thead><tr><th>Fecha</th><th>Centro</th><th>Check list</th><th>Equipo / lugar</th><th>Resultado</th><th>Seguimiento</th></tr></thead><tbody>'+
+    L.map(function(r){var eq=r.maq||r.num?esc([r.maq,r.num?'N° '+r.num:''].filter(Boolean).join(' · ')):esc(r.lugar||r.area||'—');
+      return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+fd(r.fecha)+'<div class="sub">'+esc(r.hora)+'</div></td><td>'+esc(r.centro||'—')+'</td><td><b>'+esc(r.form)+'</b><div class="sub">'+esc(r.rep||r.persona)+'</div></td><td>'+eq+(r.malos.length?'<div class="sub c-bad">'+r.malos.length+' ítem'+(r.malos.length>1?'s':'')+' a revisar</div>':'')+'</td><td>'+pill(r)+'</td><td>'+pillSeg(r)+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function equipos(L){
+  var by={};L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}).forEach(function(r){var k=r.centro+'|'+(r.maq||r.form)+'|'+(r.num||r.persona||r.id);if(!by[k]||(r.fecha+r.hora)>(by[k].fecha+by[k].hora))by[k]=Object.assign({n:0},r);by[k].n=(by[k].n||0)+1});
+  var eqs=Object.keys(by).map(function(k){return by[k]}),cs={};eqs.forEach(function(r){(cs[r.centro]=cs[r.centro]||[]).push(r)});
+  if(!eqs.length)return '<div class="empty">No hay check list de máquinas o vehículos con estos filtros.</div>';
+  var resumen='<div class="card bars"><b style="font-size:13px">Equipos operativos por centro (último check list de cada equipo)</b>'+Object.keys(cs).sort().map(function(c){var a=cs[c],o=a.filter(function(r){return r.ok}).length,n=a.length;
+    return '<div class="b"><span>'+esc(c.replace(/^(Walmart|Líder) /,''))+'</span><span class="t"><i style="width:'+(o/n*100)+'%;background:var(--ok)"></i><i style="width:'+((n-o)/n*100)+'%;background:var(--bad)"></i></span><span class="n" style="font-size:12px"><b>'+o+'</b>/'+n+'</span></div>'}).join('')+'</div>';
+  return resumen+Object.keys(cs).sort().map(function(c){var a=cs[c].sort(function(x,y){return (x.ok-y.ok)||(x.maq+x.num).localeCompare(y.maq+y.num)});var o=a.filter(function(r){return r.ok}).length;
+    return '<h2>'+esc(c)+' · '+o+' de '+a.length+' operativos</h2><div class="card tw"><table><thead><tr><th>Equipo</th><th>Tipo</th><th>Último check list</th><th>Operador / reporta</th><th>Estado</th><th>Seguimiento</th></tr></thead><tbody>'+
+      a.map(function(r){return '<tr class="r" data-id="'+esc(r.id)+'"><td><b>'+esc(r.num?'N° '+r.num:'—')+'</b></td><td>'+esc(r.maq||r.form)+'</td><td>'+fd(r.fecha)+' '+esc(r.hora)+'<div class="sub">'+r.n+' check list en el periodo</div></td><td>'+esc(r.persona||'—')+'<div class="sub">'+esc(r.rep)+'</div></td><td>'+pill(r)+'</td><td>'+pillSeg(r)+'</td></tr>'}).join('')+'</tbody></table></div>'}).join('')}
+function porCentro(L){
+  var cs={};L.forEach(function(r){var c=cs[r.centro||'—']=cs[r.centro||'—']||{n:0,ok:0,ab:0,eq:0,eqok:0};c.n++;if(r.ok)c.ok++;if(abierto(r))c.ab++;if(categoria(r.form)==='Máquinas y equipos'){c.eq++;if(r.ok)c.eqok++}});
+  var tipos={};L.forEach(function(r){var t=tipos[r.form]=tipos[r.form]||{n:0,ok:0};t.n++;if(r.ok)t.ok++});
+  return '<div class="grid2"><div><h2>Por centro</h2><div class="card tw"><table><thead><tr><th>Centro</th><th class="n">Check list</th><th class="n">Conformes</th><th class="n">Máquinas operativas</th><th class="n">Abiertos</th></tr></thead><tbody>'+
+    Object.keys(cs).sort().map(function(k){var c=cs[k];return '<tr class="r" data-c="'+esc(k)+'"><td><b>'+esc(k)+'</b></td><td class="n">'+c.n+'</td><td class="n">'+(c.n?Math.round(c.ok/c.n*100):0)+'%</td><td class="n">'+(c.eq?c.eqok+' de '+c.eq:'—')+'</td><td class="n '+(c.ab?'c-mid':'')+'"><b>'+c.ab+'</b></td></tr>'}).join('')+'</tbody></table></div></div>'+
+    '<div><h2>Por tipo de check list</h2><div class="card bars">'+Object.keys(tipos).sort(function(a,b){return tipos[b].n-tipos[a].n}).map(function(k){var t=tipos[k];
+      return '<div class="b"><span style="font-size:12.5px">'+esc(k)+'</span><span class="t"><i style="width:'+(t.ok/t.n*100)+'%;background:var(--ok)"></i><i style="width:'+((t.n-t.ok)/t.n*100)+'%;background:var(--bad)"></i></span><span style="font-size:12px"><b>'+t.n+'</b></span></div>'}).join('')+
+    '<div class="sub" style="margin-top:8px">Verde: conforme u operativo · Rojo: con observaciones o no operativo</div></div></div></div>'}
+function render(){
+  $$('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===TAB)});
+  var L=filtrados(),h=kpis(L);
+  if(TAB==='resumen'){var ab=L.filter(abierto);h+=porCentro(L)+'<h2>Abiertos más recientes</h2>'+(ab.length?tabla(ab.slice(0,8)):'<div class="empty">No hay check list abiertos con estos filtros. 👍</div>')}
+  else if(TAB==='equipos')h+=equipos(L);
+  else if(TAB==='abiertos'){var a2=L.filter(abierto);h+=a2.length?tabla(a2):'<div class="empty">No hay check list abiertos con estos filtros. 👍</div>';var ce=L.filter(function(r){return !r.ok&&seg(r)});if(ce.length)h+='<h2>Cerrados ('+ce.length+')</h2>'+tabla(ce)}
+  else h+=tabla(L.slice(0,400))+(L.length>400?'<p class="note">Se muestran los 400 más recientes; usa los filtros para acotar.</p>':'');
+  $('#view').innerHTML=h;
+  $$('#view tr.r[data-id]').forEach(function(tr){tr.onclick=function(){abrir(tr.dataset.id)}});
+  $$('#view tr.r[data-c]').forEach(function(tr){tr.onclick=function(){$('#fC').value=tr.dataset.c;render()}});
+}
+function abrir(id){
+  var r=ROWS.filter(function(x){return x.id===id})[0];if(!r)return;var s=seg(r);
+  var w=document.createElement('div');w.className='sh';w.setAttribute('role','dialog');w.setAttribute('aria-modal','true');
+  w.innerHTML='<div class="bx"><button class="x" type="button" aria-label="Cerrar">×</button><h3>'+esc(r.form)+'</h3><div>'+pill(r)+' '+pillSeg(r)+'</div>'+
+    '<div class="kv"><b>Centro</b><span>'+esc(r.centro||'—')+'</span><b>Fecha</b><span>'+fd(r.fecha)+' '+esc(r.hora)+'</span>'+(r.maq||r.num?'<b>Equipo</b><span>'+esc([r.maq,r.num?'N° '+r.num:''].filter(Boolean).join(' · '))+'</span>':'')+
+    (r.persona?'<b>Operador / persona</b><span>'+esc(r.persona)+'</span>':'')+'<b>Área / lugar</b><span>'+esc([r.area,r.lugar].filter(Boolean).join(' · ')||'—')+'</span><b>Reporta</b><span>'+esc(r.rep||'—')+'</span>'+
+    (r.resp?'<b>Responsable</b><span>'+esc(r.resp)+'</span>':'')+(r.lim?'<b>Fecha límite</b><span>'+fd(r.lim)+'</span>':'')+'<b>ID</b><span>'+esc(r.id)+'</span></div>'+
+    (r.malos.length?'<div class="msg err"><b>Ítems a revisar:</b><br>'+r.malos.map(esc).join('<br>')+'</div>':'')+
+    (s?'<div class="msg ok" style="margin-top:10px"><b>Cerrado el '+esc(fd(s.cierre))+'</b>'+(s.nota?': '+esc(s.nota):'')+'<br><small>Registrado por '+esc(s.by||'')+'</small></div>':'')+
+    (!r.ok&&!s?'<div class="cl"><b>Registrar cierre</b><label for="cF">Fecha de cierre</label><input id="cF" type="date" value="'+HOY+'"><label for="cN">Qué se hizo (reparación, reemplazo, corrección)</label><textarea id="cN" rows="3" placeholder="Ej.: se cambió la rueda de carga y el equipo quedó operativo"></textarea><button class="btn" type="button" id="cG">Cerrar check list</button><div id="cM"></div></div>':'')+
+    (s?'<button class="btn2" type="button" id="cR">Reabrir</button> ':'')+(r.folder?'<a class="btn2" target="_blank" rel="noopener" href="'+SPW+encPath(r.folder)+'">Abrir carpeta en SharePoint ↗</a>':'')+
+    '<h2>Detalle del check list</h2><pre class="sum">'+esc(r.sum)+'</pre></div>';
+  document.body.appendChild(w);
+  var fin=function(){w.remove()};w.querySelector('.x').onclick=fin;w.onclick=function(e){if(e.target===w)fin()};
+  var bG=w.querySelector('#cG');if(bG)bG.onclick=async function(){var n=w.querySelector('#cN').value.trim(),fc=w.querySelector('#cF').value;
+    if(!n){w.querySelector('#cM').innerHTML='<div class="msg err">Escribe qué se hizo para cerrarlo.</div>';return}
+    bG.disabled=true;try{await guardar(r.id,{cierre:fc,nota:n.slice(0,500)});fin();render()}catch(e){bG.disabled=false;w.querySelector('#cM').innerHTML='<div class="msg err">No se pudo guardar: '+esc(e.message)+'</div>'}};
+  var bR=w.querySelector('#cR');if(bR)bR.onclick=async function(){bR.disabled=true;try{await guardar(r.id,null);fin();render()}catch(e){bR.disabled=false}};
+}
+async function guardar(id,val){
+  TOKEN=await gpApi.msToken();var cur={};try{var r=await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{raw:true});if(r.ok)cur=await r.json()||{}}catch(e){}
+  if(val)cur[id]=Object.assign({},val,{by:ME,at:new Date().toISOString()});else delete cur[id];
+  await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});SEG=cur}
+$$('#tabs button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;LS.set('gpClTab',TAB);render()}});
+['#fC','#fCat','#fF','#fE','#fP'].forEach(function(s){$(s).onchange=render});$('#fQ').oninput=render;
+$('#fX').onclick=function(){['#fC','#fCat','#fF','#fE','#fQ'].forEach(function(s){$(s).value=''});$('#fP').value='30';render()};
+var hs=(location.hash||'').slice(1);if(/^(resumen|equipos|abiertos|todos)$/.test(hs))TAB=hs;
+cargar(false);
+})();
+</script>
+<script src="gp-side.js"></script>
+</body>
+</html>

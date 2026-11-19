@@ -28,6 +28,7 @@
     est: 'M3 3v18h18M7 16v-4M12 16V8M17 16v-7',
     cal: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
     warn: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    check: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
     up: 'M12 19V5M5 12l7-7 7 7',
     forms: 'M4 6h16M4 12h16M4 18h10'
   };
@@ -257,7 +258,7 @@
     if (side) {
       side.innerHTML = admin ? '<div class="sl"><span class="lg"><img src="logo.png" alt="Grupo Pro"></span><b>PRO EHS</b><button type="button" class="smin" data-smin title="Minimizar o expandir el menú" aria-label="Minimizar o expandir el menú"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>' +
         '<div class="sh">Centro</div>' + [''].concat(centros).map(function (c) { return '<button type="button" data-c="' + esc(c) + '" class="' + (c === centro ? 'on' : '') + '">' + (c ? esc(c) : 'Todo el programa') + '</button>'; }).join('') +
-        '<div class="sh">Herramientas</div><a href="calendario.html" title="Calendario">' + svg('cal', 18) + '<span>Calendario</span></a><a href="panel.html" title="Panel de control">' + svg('panel', 18) + '<span>Panel de control</span></a><a href="estadisticas.html" title="Estadísticas">' + svg('est', 18) + '<span>Estadísticas</span></a><a href="observaciones.html" title="Observaciones">' + svg('obs', 18) + '<span>Observaciones</span></a><a href="eventos.html" title="Hallazgos y eventos">' + svg('warn', 18) + '<span>Hallazgos y eventos</span></a><a href="registros.html" title="Registros recibidos">' + svg('forms', 18) + '<span>Registros recibidos</span></a><a href="sugerencias.html#bandeja" title="Sugerencias del equipo">' + svg('charla', 18) + '<span>Sugerencias del equipo</span></a><a href="panel.html" title="Cargar programa">' + svg('up', 18) + '<span>Cargar programa</span></a>' : '';
+        '<div class="sh">Herramientas</div><a href="calendario.html" title="Calendario">' + svg('cal', 18) + '<span>Calendario</span></a><a href="panel.html" title="Panel de control">' + svg('panel', 18) + '<span>Panel de control</span></a><a href="estadisticas.html" title="Estadísticas">' + svg('est', 18) + '<span>Estadísticas</span></a><a href="observaciones.html" title="Observaciones">' + svg('obs', 18) + '<span>Observaciones</span></a><a href="eventos.html" title="Hallazgos y eventos">' + svg('warn', 18) + '<span>Hallazgos y eventos</span></a><a href="checklists.html" title="Check list">' + svg('check', 18) + '<span>Check list</span></a><a href="registros.html" title="Registros recibidos">' + svg('forms', 18) + '<span>Registros recibidos</span></a><a href="sugerencias.html#bandeja" title="Sugerencias del equipo">' + svg('charla', 18) + '<span>Sugerencias del equipo</span></a><a href="panel.html" title="Cargar programa">' + svg('up', 18) + '<span>Cargar programa</span></a>' : '';
     }
   }
 
