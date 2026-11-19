@@ -271,7 +271,7 @@ function abrir(it){if(!it)return;var s=st(it),k=cat(it),f=formFor(it);
     ['Dirigido a',it.DirigidoA],['Responsable',it.Responsable],['Evidencia',it.EvidenciaRequerida],['Observación',it.Observacion]].filter(function(r){return r[1]});
   $('#shDl').innerHTML=dl.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+(r[0]==='Estado'?r[1]:esc(r[1]))+'</dd>'}).join('');
   $('#shBtns').innerHTML='<button type="button" class="btn" id="shX">Cerrar</button><a class="btn" href="panel.html?id='+encodeURIComponent(it.id)+'">Actualizar estado</a>'+
-    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(esObs(it)?(/pare/i.test(it.Title)?'&modo=pare':/apilador|almacenamiento/i.test(it.Title)?'&modo=almac':/anden/i.test(it.Title)?'&modo=anden':/carga/i.test(it.Title)?'&modo=carga':'&modo=conducta'):'')+'">'+(FLAB[f]||'Registrar con formulario')+'</a>':'');
+    (f&&s!=='Realizada'?'<a class="btn pri" href="'+f+'?act='+encodeURIComponent(it.id)+'&c='+encodeURIComponent(it.Centro)+'&t='+encodeURIComponent(it.Title)+'&tipo='+encodeURIComponent(it.Tipo)+(esObs(it)?(/mfc/i.test(it.Title)?'&modo=operario':/peat/i.test(it.Title)?'&modo=peat':/pare/i.test(it.Title)?'&modo=pare':/apilador|almacenamiento/i.test(it.Title)?'&modo=almac':/anden/i.test(it.Title)?'&modo=anden':/carga/i.test(it.Title)?'&modo=carga':'&modo=conducta'):'')+'">'+(FLAB[f]||'Registrar con formulario')+'</a>':'');
   moveBox(it);$('#sheet').classList.add('on');$('#shX').onclick=cerrar}
 function cerrar(){$('#sheet').classList.remove('on')}
 $('#sheet').onclick=function(e){if(e.target===this)cerrar()};

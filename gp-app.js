@@ -252,7 +252,7 @@
     // Una observación de conducta del programa no se registra como hallazgo: se abre su formulario
     if (/^hallazgos$/i.test((location.pathname.split('/').pop() || '').replace(/\.html?$/, '')) && /^Observaci[oó]n de (conducta|almacenamiento|seguridad en anden|carga)/i.test(act.title || '')) {
       try { sessionStorage.removeItem(actKey()); } catch (e) {}
-      var modo = /pare/i.test(act.title) ? 'pare' : /almacenamiento|rack/i.test(act.title) ? 'almac' : /anden/i.test(act.title) ? 'anden' : /carga/i.test(act.title) ? 'carga' : 'conducta';
+      var modo = /mfc/i.test(act.title) ? 'operario' : /peat/i.test(act.title) ? 'peat' : /pare/i.test(act.title) ? 'pare' : /almacenamiento|rack/i.test(act.title) ? 'almac' : /anden/i.test(act.title) ? 'anden' : /carga/i.test(act.title) ? 'carga' : 'conducta';
       location.replace('observacion_conducta.html?act=' + encodeURIComponent(act.id) + '&t=' + encodeURIComponent(act.title || '') + '&c=' + encodeURIComponent(act.centro || '') + '&tipo=' + encodeURIComponent(act.tipo || '') + '&modo=' + modo);
       return;
     }

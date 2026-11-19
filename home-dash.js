@@ -135,7 +135,7 @@
     var f = obs ? 'observacion_conducta.html' : FORM[it.Tipo]; if (/condici[oó]n (de )?carga/i.test(it.Title || '')) f = 'check_list_carga.html'; else if (/\bpbyl\b/i.test(it.Title || '') && /check ?list|chl/i.test(it.Title || '')) f = 'check_list_pbyl.html'; else if (/armado/i.test(it.Title || '') && /check ?list|chl/i.test(it.Title || '')) f = 'check_list_armado.html'; else if (it.Tipo === 'Check list de equipos' && /anden/i.test(it.Title || '')) f = 'check_list_andenes.html'; else if (/emergencia/i.test(it.Title || '') && /check ?list|chl/i.test((it.Title || '') + ' ' + (it.Tipo || ''))) f = 'check_list_emergencias.html';
     if (!f) return null;
     return f + '?act=' + encodeURIComponent(it.id) + '&c=' + encodeURIComponent(it.Centro) + '&t=' + encodeURIComponent(it.Title) + '&tipo=' + encodeURIComponent(it.Tipo) +
-      (obs ? (/pare/i.test(it.Title) ? '&modo=pare' : /apilador|almacenamiento/i.test(it.Title) ? '&modo=almac' : /anden/i.test(it.Title) ? '&modo=anden' : /carga/i.test(it.Title) ? '&modo=carga' : '&modo=conducta') : '');
+      (obs ? (/mfc/i.test(it.Title) ? '&modo=operario' : /peat/i.test(it.Title) ? '&modo=peat' : /pare/i.test(it.Title) ? '&modo=pare' : /apilador|almacenamiento/i.test(it.Title) ? '&modo=almac' : /anden/i.test(it.Title) ? '&modo=anden' : /carga/i.test(it.Title) ? '&modo=carga' : '&modo=conducta') : '');
   }
   function dotColor(it) { var i = progIdx(it); return i >= 0 ? PROG[i].c : '#71717a'; }
 
