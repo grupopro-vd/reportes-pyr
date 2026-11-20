@@ -39,6 +39,7 @@ select,input,textarea,button{font:inherit}
 .rsem .nav{display:flex;align-items:center;gap:6px;font-size:13px}.rsem .nav button{border:1px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer}
 .rsem .g{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}@media(min-width:640px){.rsem .g{grid-template-columns:repeat(5,1fr)}}
 .rsem .t{border:1px solid var(--line);border-radius:10px;padding:10px}.rsem .t .k{font-size:12px;color:var(--muted);font-weight:bold}.rsem .t b{display:block;font-size:26px;line-height:1.1;margin-top:4px}
+.rsem .t .ad{display:block;font-size:12px;font-weight:700;color:#1f5fbf;margin-top:4px}.adic{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}.adic .th{font-weight:700;font-size:14px;margin-bottom:4px}.adic .sub{font-size:12px;color:var(--muted);margin-bottom:8px}.adic table{width:100%;border-collapse:collapse;font-size:13px}.adic th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);padding:6px 6px;border-bottom:1px solid var(--line)}.adic td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}.adic .tw{overflow-x:auto}.adic a{color:#1f5fbf}
 .rsem .t small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.rsem .tot{font-size:12px;color:var(--muted);margin-top:8px}
 .meter{height:8px;background:#eee;border-radius:9px;overflow:hidden;margin-top:8px}.meter i{display:block;height:100%}
 .c-ok{color:var(--ok)}.c-mid{color:var(--mid)}.c-bad{color:var(--bad)}.c-blue{color:var(--blue)}
@@ -316,7 +317,7 @@ function fillSemanas(){var sel=$('#fSem'),cur=sel.value||LS.get('gpPanelSem')||'
   var tu=LS.get('gpPanelTurno')||'';$$('#fTurno button').forEach(function(b){b.classList.toggle('on',b.dataset.t===tu);b.setAttribute('aria-pressed',b.dataset.t===tu);b.onclick=function(){LS.set('gpPanelTurno',b.dataset.t);$$('#fTurno button').forEach(function(x){x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});render()}})}
 var XSET=null;
 async function excelSemana(){
-  var b=$('#btnXls');if(!XSET||!XSET.items.length){alert('No hay actividades con estos filtros.');return}
+  var b=$('#btnXls');if(!XSET||(!XSET.items.length&&!(XSET.ext||[]).length)){alert('No hay actividades con estos filtros.');return}
   b.disabled=true;var t0=b.textContent;b.textContent='Preparando…';
   try{
     if(!window.XLSX)await new Promise(function(ok,ko){var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=function(){ko(new Error('no cargó la librería de Excel'))};document.head.appendChild(sc)});
@@ -333,7 +334,11 @@ async function excelSemana(){
     var wb=XLSX.utils.book_new(),aw=function(rows,cols){var ws=XLSX.utils.json_to_sheet(rows.length?rows:[{'Sin registros':''}]);ws['!cols']=cols.map(function(w){return {wch:w}});return ws};
     XLSX.utils.book_append_sheet(wb,aw(rea,[18,22,13,10,10,46,22,20,22,22,11,14,22,40]),'Realizadas');
     XLSX.utils.book_append_sheet(wb,aw(pen,[18,22,13,10,10,46,22,20,22,22,11,40]),'Pendientes');
-    XLSX.utils.book_append_sheet(wb,aw(res,[22,13,12,12,12,14]),'Resumen');
+    var ad=(XSET.ext||[]).map(function(x){var d=new Date(x.fecha+'T12:00:00Z').getUTCDay();return {'Centro':x.centro,'Semana':snTxt(lunes(x.fecha)),'Fecha':fd(x.fecha),'Hora':x.hora,'Día':DIAS[d],'Turno':d===0||d===6?'Part time':'Full time',
+      'Tipo':(RCAT.filter(function(k){return k[0]===x.cat})[0]||['',''])[1].replace(/^\S+\s/,''),'Formulario':x.form,'Realizado por':x.rep,'ID':x.id,'Carpeta SharePoint':x.fo?SPR+x.fo.split('/').map(encodeURIComponent).join('/'):''}});
+    XLSX.utils.book_append_sheet(wb,aw(ad,[18,22,12,7,10,10,22,30,22,20,50]),'Adicionales');
+    res.forEach(function(r){r['Adicionales']=ad.filter(function(a){return a.Centro===r.Centro}).length});
+    XLSX.utils.book_append_sheet(wb,aw(res,[22,13,12,12,12,14,12]),'Resumen');
     var nom=('Actividades_'+(XSET.centro||'todos los centros')+'_'+XSET.per).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/_+$/,'');
     XLSX.writeFile(wb,nom+'.xlsx');
   }catch(e){alert('No se pudo generar el Excel: '+e.message)}
@@ -396,14 +401,19 @@ function catDe(it){var t=String(it.Title||''),ti=String(it.Tipo||''),x=t+' '+ti;
   if(/hallazgo|inspecci/i.test(x))return 'hz';
   if(/charla|capacitaci|inducci|reforzamiento|difusi/i.test(x))return 'ch';
   return 'ot'}
-function resumenSem(its,lbl){
-  var r={};RCAT.forEach(function(k){r[k[0]]={n:0,ok:0,late:0}});
+function adicTabla(ext){
+  if(!ext.length)return '';var CN={};RCAT.forEach(function(k){CN[k[0]]=k[1]});
+  return '<div class="adic"><div class="th">➕ Actividades adicionales · '+ext.length+'</div><div class="sub">Registros enviados desde la app que no estaban en el programa de trabajo'+(EXMIN?' (disponibles desde el '+fdx(EXMIN)+')':'')+'.</div><div class="tw"><table><thead><tr><th>Fecha</th><th>Centro</th><th>Tipo</th><th>Formulario</th><th>Realizado por</th><th></th></tr></thead><tbody>'+
+    ext.map(function(x){return '<tr><td>'+fdx(x.fecha)+'<div style="font-size:11px;color:var(--muted)">'+esc(x.hora)+'</div></td><td>'+esc(x.centro)+'</td><td>'+(CN[x.cat]||'')+'</td><td><b>'+esc(x.form)+'</b></td><td>'+esc(x.rep)+'</td><td>'+(x.fo?'<a target="_blank" rel="noopener" href="'+SPR+x.fo.split('/').map(encodeURIComponent).join('/')+'">Ver ↗</a>':'')+'</td></tr>'}).join('')+'</tbody></table></div></div>'}
+function fdx(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
+function resumenSem(its,lbl,ext){
+  var r={};RCAT.forEach(function(k){r[k[0]]={n:0,ok:0,late:0,ad:0}});(ext||[]).forEach(function(x){r[x.cat].ad++});
   its.forEach(function(it){var s=st(it),o=r[catDe(it)];o.n++;if(s.e==='Realizada')o.ok++;else if(s.late)o.late++});
   var tn=its.length,tok=its.filter(function(it){return st(it).e==='Realizada'}).length;
   return '<div class="rsem"><div class="th"><span>Resumen por tipo de actividad · '+esc(lbl)+'</span></div><div class="g">'+
     RCAT.map(function(k){var o=r[k[0]],pp=o.n?o.ok/o.n*100:null,kk=cls(pp);
-      return '<div class="t"><div class="k">'+k[1]+'</div><b class="c-'+kk+'">'+o.ok+'</b><small>realizadas de '+o.n+' programadas</small><div class="meter"><i class="bg-'+(kk||'ok')+'" style="width:'+(pp||0)+'%"></i></div>'+(o.late?'<small class="c-bad" style="font-weight:bold">'+o.late+' atrasada'+(o.late>1?'s':'')+'</small>':'')+'</div>'}).join('')+
-    '</div><div class="tot">Total: <b>'+tok+'</b> de '+tn+' realizadas ('+fmtP(tn?tok/tn*100:null)+'). Observaciones agrupa PARE, conducta, general y almacenamiento; Hallazgos incluye inspecciones y observaciones de condiciones.</div></div>'}
+      return '<div class="t"><div class="k">'+k[1]+'</div><b class="c-'+kk+'">'+o.ok+'</b><small>realizadas de '+o.n+' programadas</small><div class="meter"><i class="bg-'+(kk||'ok')+'" style="width:'+(pp||0)+'%"></i></div>'+(o.late?'<small class="c-bad" style="font-weight:bold">'+o.late+' atrasada'+(o.late>1?'s':'')+'</small>':'')+(o.ad?'<span class="ad">+ '+o.ad+' adicional'+(o.ad>1?'es':'')+'</span>':'')+'</div>'}).join('')+
+    '</div><div class="tot">Total: <b>'+tok+'</b> de '+tn+' realizadas ('+fmtP(tn?tok/tn*100:null)+')'+((ext||[]).length?' + <b style="color:#1f5fbf">'+ext.length+' adicionales</b> fuera del programa (no cambian el %)':'')+'. Observaciones agrupa PARE, conducta, general y almacenamiento; Hallazgos incluye inspecciones y observaciones de condiciones.</div></div>'}
 function render(){
   authBar();fillMeses();fillSemanas();syncLine();
   var mine=misCentros();centroSel(mine);$('.bar').hidden=!!(mine&&!mine.length);
@@ -414,7 +424,9 @@ function render(){
   var inMes=function(it){if(!enTurno(it,tu))return false;if(fq==='sem'&&!esSemanal(it))return false;if(fq==='men'&&esSemanal(it))return false;
     if(sw)return !!it.Fecha&&lunes(it.Fecha)===sw;return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
   var all=base.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
-  XSET={items:mine,centro:c,per:(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):'')};
+  var ok0=misCentros(),ext=EXTRA.filter(function(x){if(ok0&&ok0.indexOf(x.centro)<0)return false;if(c&&x.centro!==c)return false;if(!enTurno({Fecha:x.fecha},tu))return false;
+    if(sw)return lunes(x.fecha)===sw;if(m&&m[0]!=='@')return x.fecha.slice(0,7)===m;return true}).sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
+  XSET={ext:ext,items:mine,centro:c,per:(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):'')};
   var cnt={Realizada:0,'En proceso':0,Pendiente:0,Atrasada:0,'Por validar':0};
   mine.forEach(function(it){var s=st(it);if(s.p)cnt['Por validar']++;if(s.late)cnt.Atrasada++;else cnt[s.e]++});
   var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'del programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):'')+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
@@ -422,7 +434,7 @@ function render(){
   [['Atrasada','c-bad','Atrasadas'],['En proceso','c-mid','En proceso'],['Pendiente','','Pendientes'],['Por validar','c-blue','Por validar']].forEach(function(x){
     h+='<button type="button" class="kpi'+(filtro===x[0]?' on':'')+'" data-f="'+x[0]+'"><b class="'+x[1]+'">'+cnt[x[0]]+'</b><span>'+x[2]+'</span></button>'});
   h+='</div>';
-  h+=resumenSem(mine,(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'todo el programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):''));
+  h+=resumenSem(mine,(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'todo el programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):''),ext)+adicTabla(ext);
   if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return (!c||q.centro===c)&&(isAdmin()||base.some(function(x){return x.Centro===q.centro}))});
     if(pend.length){h+='<h2>Por validar ('+pend.length+')</h2><div class="list">'+pend.map(function(q){var it=DATA.items.filter(function(x){return x.id===q.id})[0];
       return '<div class="val"><div class="t">'+(q.auto?'📋 ':'')+esc(q.title||(it&&it.Title)||'Actividad')+'</div>'+(q.auto?'<div class="lock">Desde un formulario enviado · revisa que corresponda a esta actividad</div>':'')+'<div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
@@ -597,10 +609,17 @@ $('#xlsGo').onclick=async function(){var ok=rows.filter(function(r){return !r.er
   }catch(e){M.innerHTML='<div class="msg err">No se pudo cargar: '+esc(e.message)+'</div>';btn.disabled=false}};
 
 // ---------------- Inicio ----------------
+var EXTRA=[],EXCL=/^(HALLAZGO-CIERRE|SUG-APP|DECLARACION)$/;
+function catCode(x){var c=String(x.code||''),f=String(x.form||'');if(/^CHECKLIST|^STD-PRIME/.test(c)||/check ?list|\bchl\b|prime/i.test(f))return 'cl';if(/^OBS/.test(c)||/observaci/i.test(f))return 'obs';
+  if(/^CHARLA/.test(c)||/charla|capacitaci/i.test(f))return 'ch';if(/^HALLAZGO/.test(c)||/hallazgo|inspecci/i.test(f))return 'hz';return 'ot'}
+function loadExtra(){if(!window.gpApi||!gpApi.read)return;gpApi.read('flog',{prompt:false}).then(function(d){if(!d||!d.ok||!d.items)return;
+  EXTRA=d.items.filter(function(x){return !x.ptit&&!x.pid&&!EXCL.test(x.code||'')&&(x.fecha||x.dia)}).map(function(x){return {id:x.id,code:x.code,form:x.form||x.code,centro:x.centro||'',rep:x.rep||'',fecha:(x.fecha||x.dia).slice(0,10),hora:x.hora||'',fo:x.fo||'',cat:catCode(x)}});
+  EXMIN=d.items.reduce(function(a,x){return !a||x.dia<a?x.dia:a},'');render()}).catch(function(){})}
+var EXMIN='',SPR='https://grupoprocl.sharepoint.com/sites/PYR/ReportesPYR/';
 async function load(){
   var c=J('gpPanelData2',null);if(c&&c.items&&!DATA.items.length){DATA=Object.assign({pending:[],pinHash:{}},c);render()}
   setMsg(MODE==='ms'?'Leyendo SharePoint…':'Actualizando…');
-  try{if(MODE==='ms')await loadMs();else await loadPin();render()}
+  try{if(MODE==='ms')await loadMs();else await loadPin();render();loadExtra()}
   catch(e){render();$('#sync').insertAdjacentHTML('afterbegin','<div class="msg err" style="margin-bottom:6px">No se pudo actualizar: '+esc(e.message)+(DATA.items.length?'. Se muestra la última copia guardada.':'')+'</div>')}
 }
 initFilters();
