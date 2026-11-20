@@ -108,7 +108,7 @@ var $=function(s){return document.querySelector(s)},$$=function(s){return [].sli
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var d0=new Date(),HOY=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
-var TOKEN='',REP='',ME='',MINE=null,ROWS=[],SEG={},TAB=LS.get('gpClTab','resumen');
+var TOKEN='',REP='',ME='',MINE=null,ROWS=[],SEG={},HZ={},TAB=LS.get('gpClTab','resumen');
 function fd(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
 function encPath(p){return p.split('/').map(encodeURIComponent).join('/')}
 async function g(path,o){o=o||{};var r=await fetch('https://graph.microsoft.com/v1.0'+path,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+TOKEN},o.ct?{'Content-Type':o.ct}:{}),body:o.body});
@@ -130,7 +130,8 @@ function compact(j){
   return {id:j.recordId||'',form:form,centro:centro,fecha:String(f.fecha||'').slice(0,10)||String(j.sentAt||'').slice(0,10),hora:f.hora||'',rep:(j.reporter&&j.reporter.name)||'',
     persona:f.persona||'',area:f.area||'',lugar:f.lugar||'',maq:maq,num:String(num||'').replace(/^N[°º]?\s*/i,'').trim(),est:est,ok:esOk(est),malos:malos.slice(0,15),folder:j.folderPath||'',
     resp:f.responsable||'',lim:f.fecha_limite||'',sum:s.slice(0,4000)}}
-function seg(r){return SEG[r.id]||null}
+function seg(r){if(SEG[r.id])return SEG[r.id];var h=HZ[r.id];return h&&h.estado==='Cerrado'?{cierre:String(h.cierre||'').slice(0,10),nota:'Cerrado en Seguimiento de hallazgos',by:h.por||''}:null}
+function alDia(r){return r.ok||!!seg(r)}
 function abierto(r){return !r.ok&&!seg(r)}
 function pill(r){if(r.ok)return '<span class="pill p-ok">'+esc(r.est||'Conforme')+'</span>';return '<span class="pill p-bad">'+esc(r.est||'Con observaciones')+'</span>'}
 function pillSeg(r){if(r.ok)return '<span class="pill p-gray">No requiere</span>';var s=seg(r);if(s)return '<span class="pill p-ok">Cerrado '+esc(fd(s.cierre))+'</span>';
@@ -159,6 +160,7 @@ async function cargar(force){
     }
     LS.set('gpClCache1',out);
     try{var r=await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{raw:true});SEG=r.ok?(await r.json()||{}):{}}catch(e){SEG={}}
+    try{var hz=await gpApi.read('hz',{prompt:false});HZ={};((hz&&hz.items)||[]).forEach(function(h){HZ[h.id]=h})}catch(e){HZ={}}
     var seen={};ROWS=Object.keys(out).map(function(k){return out[k].d}).filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=1;return !MINE||MINE.indexOf(r.centro)>=0})
       .sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
     llenar();render();
@@ -179,11 +181,11 @@ function filtrados(){
     if(desde&&r.fecha<desde)return false;
     if(q&&[r.form,r.centro,r.persona,r.rep,r.lugar,r.area,r.maq,r.num,r.id,r.est].join(' ').toLowerCase().indexOf(q)<0)return false;return true})}
 function kpis(L){
-  var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(function(r){return r.ok}).length,ab=L.filter(abierto),venc=ab.filter(function(r){return r.lim&&r.lim<HOY}).length;
-  var ok=L.filter(function(r){return r.ok}).length;
+  var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(alDia).length,ab=L.filter(abierto),venc=ab.filter(function(r){return r.lim&&r.lim<HOY}).length;
+  var ok=L.filter(function(r){return r.ok}).length,cer=L.filter(function(r){return !r.ok&&seg(r)}).length;
   return '<div class="kpis"><div class="kpi"><span>Check list</span><b>'+L.length+'</b><small>en el periodo y filtros elegidos</small></div>'+
-    '<div class="kpi"><span>Conformes / operativos</span><b class="c-ok">'+(L.length?Math.round(ok/L.length*100):0)+'%</b><small>'+ok+' de '+L.length+'</small></div>'+
-    '<div class="kpi"><span>Check list de máquinas</span><b>'+eq.length+'</b><small>'+eqOk+' operativos · '+(eq.length-eqOk)+' no operativos</small></div>'+
+    '<div class="kpi"><span>Conformes o cerrados</span><b class="c-ok">'+(L.length?Math.round((ok+cer)/L.length*100):0)+'%</b><small>'+ok+' conformes al revisarse · '+cer+' cerrados después</small></div>'+
+    '<div class="kpi"><span>Check list de máquinas</span><b>'+eq.length+'</b><small>'+eqOk+' operativos · '+(eq.length-eqOk)+' sin cerrar</small></div>'+
     '<div class="kpi"><span>Abiertos</span><b class="'+(ab.length?'c-mid':'c-ok')+'">'+ab.length+'</b><small>no operativos o con observaciones sin cerrar</small></div>'+
     '<div class="kpi"><span>Abiertos vencidos</span><b class="'+(venc?'c-bad':'c-ok')+'">'+venc+'</b><small>pasaron su fecha límite</small></div></div>'}
 function tabla(L,cols){
@@ -195,19 +197,19 @@ function equipos(L){
   var by={};L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}).forEach(function(r){var k=r.centro+'|'+(r.maq||r.form)+'|'+(r.num||r.persona||r.id);if(!by[k]||(r.fecha+r.hora)>(by[k].fecha+by[k].hora))by[k]=Object.assign({n:0},r);by[k].n=(by[k].n||0)+1});
   var eqs=Object.keys(by).map(function(k){return by[k]}),cs={};eqs.forEach(function(r){(cs[r.centro]=cs[r.centro]||[]).push(r)});
   if(!eqs.length)return '<div class="empty">No hay check list de máquinas o vehículos con estos filtros.</div>';
-  var resumen='<div class="card bars"><b style="font-size:13px">Equipos operativos por centro (último check list de cada equipo)</b>'+Object.keys(cs).sort().map(function(c){var a=cs[c],o=a.filter(function(r){return r.ok}).length,n=a.length;
+  var resumen='<div class="card bars"><b style="font-size:13px">Equipos operativos por centro (último check list de cada equipo)</b>'+Object.keys(cs).sort().map(function(c){var a=cs[c],o=a.filter(alDia).length,n=a.length;
     return '<div class="b"><span>'+esc(c.replace(/^(Walmart|Líder) /,''))+'</span><span class="t"><i style="width:'+(o/n*100)+'%;background:var(--ok)"></i><i style="width:'+((n-o)/n*100)+'%;background:var(--bad)"></i></span><span class="n" style="font-size:12px"><b>'+o+'</b>/'+n+'</span></div>'}).join('')+'</div>';
-  return resumen+Object.keys(cs).sort().map(function(c){var a=cs[c].sort(function(x,y){return (x.ok-y.ok)||(x.maq+x.num).localeCompare(y.maq+y.num)});var o=a.filter(function(r){return r.ok}).length;
+  return resumen+Object.keys(cs).sort().map(function(c){var a=cs[c].sort(function(x,y){return (x.ok-y.ok)||(x.maq+x.num).localeCompare(y.maq+y.num)});var o=a.filter(alDia).length;
     return '<h2>'+esc(c)+' · '+o+' de '+a.length+' operativos</h2><div class="card tw"><table><thead><tr><th>Equipo</th><th>Tipo</th><th>Último check list</th><th>Operador / reporta</th><th>Estado</th><th>Seguimiento</th></tr></thead><tbody>'+
       a.map(function(r){return '<tr class="r" data-id="'+esc(r.id)+'"><td><b>'+esc(r.num?'N° '+r.num:'—')+'</b></td><td>'+esc(r.maq||r.form)+'</td><td>'+fd(r.fecha)+' '+esc(r.hora)+'<div class="sub">'+r.n+' check list en el periodo</div></td><td>'+esc(r.persona||'—')+'<div class="sub">'+esc(r.rep)+'</div></td><td>'+pill(r)+'</td><td>'+pillSeg(r)+'</td></tr>'}).join('')+'</tbody></table></div>'}).join('')}
 function porCentro(L){
-  var cs={};L.forEach(function(r){var c=cs[r.centro||'—']=cs[r.centro||'—']||{n:0,ok:0,ab:0,eq:0,eqok:0};c.n++;if(r.ok)c.ok++;if(abierto(r))c.ab++;if(categoria(r.form)==='Máquinas y equipos'){c.eq++;if(r.ok)c.eqok++}});
-  var tipos={};L.forEach(function(r){var t=tipos[r.form]=tipos[r.form]||{n:0,ok:0};t.n++;if(r.ok)t.ok++});
-  return '<div class="grid2"><div><h2>Por centro</h2><div class="card tw"><table><thead><tr><th>Centro</th><th class="n">Check list</th><th class="n">Conformes</th><th class="n">Máquinas operativas</th><th class="n">Abiertos</th></tr></thead><tbody>'+
+  var cs={};L.forEach(function(r){var c=cs[r.centro||'—']=cs[r.centro||'—']||{n:0,ok:0,ab:0,eq:0,eqok:0};c.n++;if(alDia(r))c.ok++;if(abierto(r))c.ab++;if(categoria(r.form)==='Máquinas y equipos'){c.eq++;if(alDia(r))c.eqok++}});
+  var tipos={};L.forEach(function(r){var t=tipos[r.form]=tipos[r.form]||{n:0,ok:0,ce:0};t.n++;if(r.ok)t.ok++;else if(seg(r))t.ce++});
+  return '<div class="grid2"><div><h2>Por centro</h2><div class="card tw"><table><thead><tr><th>Centro</th><th class="n">Check list</th><th class="n">Conformes o cerrados</th><th class="n">Máquinas operativas</th><th class="n">Abiertos</th></tr></thead><tbody>'+
     Object.keys(cs).sort().map(function(k){var c=cs[k];return '<tr class="r" data-c="'+esc(k)+'"><td><b>'+esc(k)+'</b></td><td class="n">'+c.n+'</td><td class="n">'+(c.n?Math.round(c.ok/c.n*100):0)+'%</td><td class="n">'+(c.eq?c.eqok+' de '+c.eq:'—')+'</td><td class="n '+(c.ab?'c-mid':'')+'"><b>'+c.ab+'</b></td></tr>'}).join('')+'</tbody></table></div></div>'+
     '<div><h2>Por tipo de check list</h2><div class="card bars">'+Object.keys(tipos).sort(function(a,b){return tipos[b].n-tipos[a].n}).map(function(k){var t=tipos[k];
-      return '<div class="b"><span style="font-size:12.5px">'+esc(k)+'</span><span class="t"><i style="width:'+(t.ok/t.n*100)+'%;background:var(--ok)"></i><i style="width:'+((t.n-t.ok)/t.n*100)+'%;background:var(--bad)"></i></span><span style="font-size:12px"><b>'+t.n+'</b></span></div>'}).join('')+
-    '<div class="sub" style="margin-top:8px">Verde: conforme u operativo · Rojo: con observaciones o no operativo</div></div></div></div>'}
+      return '<div class="b"><span style="font-size:12.5px">'+esc(k)+'</span><span class="t"><i style="width:'+(t.ok/t.n*100)+'%;background:var(--ok)"></i><i style="width:'+(t.ce/t.n*100)+'%;background:#7fbf9b"></i><i style="width:'+((t.n-t.ok-t.ce)/t.n*100)+'%;background:var(--bad)"></i></span><span style="font-size:12px"><b>'+t.n+'</b></span></div>'}).join('')+
+    '<div class="sub" style="margin-top:8px">Verde: conforme u operativo · Verde claro: tuvo observaciones y ya se cerró · Rojo: abierto</div></div></div></div>'}
 function render(){
   $$('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===TAB)});
   var L=filtrados(),h=kpis(L);
@@ -241,7 +243,8 @@ function abrir(id){
 async function guardar(id,val){
   TOKEN=await gpApi.msToken();var cur={};try{var r=await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{raw:true});if(r.ok)cur=await r.json()||{}}catch(e){}
   if(val)cur[id]=Object.assign({},val,{by:ME,at:new Date().toISOString()});else delete cur[id];
-  await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});SEG=cur}
+  await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});SEG=cur;
+  if(HZ[id]){try{await gpApi.post({action:'panelHz',id:id,estado:val?'Cerrado':'Abierto',nombre:ME,comentario:val?val.nota:'Reabierto desde Check list',evidencia:''});HZ[id].estado=val?'Cerrado':'Abierto'}catch(e){}}}
 $$('#tabs button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;LS.set('gpClTab',TAB);render()}});
 ['#fC','#fCat','#fF','#fE','#fP'].forEach(function(s){$(s).onchange=render});$('#fQ').oninput=render;
 $('#fX').onclick=function(){['#fC','#fCat','#fF','#fE','#fQ'].forEach(function(s){$(s).value=''});$('#fP').value='30';render()};
