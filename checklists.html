@@ -161,7 +161,7 @@ async function cargar(force){
     LS.set('gpClCache1',out);
     try{var r=await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{raw:true});SEG=r.ok?(await r.json()||{}):{}}catch(e){SEG={}}
     try{var hz=await gpApi.read('hz',{prompt:false});HZ={};((hz&&hz.items)||[]).forEach(function(h){HZ[h.id]=h})}catch(e){HZ={}}
-    var seen={};ROWS=Object.keys(out).map(function(k){return out[k].d}).filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=1;return !MINE||MINE.indexOf(r.centro)>=0})
+    var seen={};ROWS=Object.keys(out).map(function(k){return out[k].d}).filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=1;if(/cierre de hallazgo/i.test(r.form||''))return false;return !MINE||MINE.indexOf(r.centro)>=0})
       .sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
     llenar();render();
     $('#sync').innerHTML='<span>Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+' · '+ROWS.length+' check list</span><button type="button" id="rf">Actualizar</button><button type="button" id="xl">⭳ Descargar Excel</button>';
