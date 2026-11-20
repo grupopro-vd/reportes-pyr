@@ -3,6 +3,22 @@
    - Quien no tiene cuenta ingresa el PIN de su centro una vez: el servidor lo valida y entrega
      una sesión para ese centro (válida 60 días) que queda guardada en el teléfono.
    Uso: gpApi.read('panel'|'hz') · gpApi.post({action:…}) · gpApi.login(centro, pin) · gpApi.centros() */
+/* Respaldo de CDN: si una librería externa (p. ej. inicio de sesión Microsoft) no carga desde un CDN, se intenta desde el otro. */
+(function () {
+  if (window.__gpCdnFb) return; window.__gpCdnFb = 1;
+  var ALT = [['https://unpkg.com/', 'https://cdn.jsdelivr.net/npm/'], ['https://cdn.jsdelivr.net/npm/', 'https://unpkg.com/']];
+  window.addEventListener('error', function (e) {
+    var s = e.target;
+    if (!s || s.tagName !== 'SCRIPT' || !s.src || s.getAttribute('data-fb')) return;
+    var alt = null; ALT.forEach(function (p) { if (!alt && s.src.indexOf(p[0]) === 0) alt = p[1] + s.src.slice(p[0].length); });
+    if (!alt) return;
+    e.stopImmediatePropagation(); s.setAttribute('data-fb', '1');
+    var n = document.createElement('script'); n.src = alt; n.setAttribute('data-fb', '1');
+    n.onload = function () { s.dispatchEvent(new Event('load')); };
+    n.onerror = function () { s.dispatchEvent(new Event('error')); };
+    (document.head || document.documentElement).appendChild(n);
+  }, true);
+})();
 (function () {
   if (window.gpApi) return;
   var EP = 'https://script.google.com/macros/s/AKfycbzm9nT8n5zazy7ANUWsryccY5178aI7-Orp1jpUZ33Bgzg2m3h5NH6ka3PDWi1r3YEg9w/exec', KEY = 'GP-PYR-2026';
