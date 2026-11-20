@@ -23,7 +23,8 @@ html,body{margin:0;background:var(--bg);color:var(--black);font-family:Arial,Hel
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 select,input,textarea,button{font:inherit}
 .bar select,.bar input{height:42px;border:1px solid #d4d4d8;border-radius:10px;padding:0 10px;background:#fff;font-size:15px;min-width:0}
-.bar select{flex:1 1 200px}.bar input[type=month]{flex:0 1 170px}
+.bar select{flex:1 1 200px}
+.turno{display:inline-flex;background:#fff;border:1px solid #d4d4d8;border-radius:10px;padding:3px;gap:3px;margin:0 0 10px;flex-wrap:wrap}.turno button{border:0;background:none;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}.turno button.on{background:var(--black);color:#fff}.bar input[type=month]{flex:0 1 170px}
 .sync{font-size:12px;color:var(--muted);margin:-4px 2px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sync button{border:0;background:none;color:var(--red);font-weight:bold;cursor:pointer;padding:0;font-size:12px}
 .kpis{display:grid;grid-template-columns:1.3fr repeat(2,1fr);gap:10px;margin-bottom:12px}
@@ -117,6 +118,7 @@ h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted
     <select id="fSem" aria-label="Semana"></select>
     <select id="fFrec" aria-label="Frecuencia"><option value="">Semanales y mensuales</option><option value="sem">Solo semanales</option><option value="men">Solo mensuales</option></select>
   </div>
+  <div class="turno" id="fTurno" role="group" aria-label="Turno"><button type="button" data-t="">Todos los días</button><button type="button" data-t="ft">Full time · lun a vie</button><button type="button" data-t="pt">Part time · sáb y dom</button></div>
   <div class="sync" id="sync"></div>
   <div id="view"></div>
 
@@ -308,7 +310,10 @@ function fillSemanas(){var sel=$('#fSem'),cur=sel.value||LS.get('gpPanelSem')||'
   var keys=Object.keys(ws).sort();
   sel.innerHTML='<option value="">Todas las semanas</option><option value="@hoy">Esta semana · '+esc(snTxt(lunes(todayISO)))+'</option><option value="@prox">Próxima semana · '+esc(snTxt(proxL()))+'</option>'+keys.map(function(l){return '<option value="'+l+'">'+esc(snTxt(l))+'</option>'}).join('');
   sel.value=[].some.call(sel.options,function(o){return o.value===cur})?cur:'';sel.onchange=function(){LS.set('gpPanelSem',sel.value);render()};
-  var fr=$('#fFrec');fr.value=LS.get('gpPanelFrec')||'';fr.onchange=function(){LS.set('gpPanelFrec',fr.value);render()}}
+  var fr=$('#fFrec');fr.value=LS.get('gpPanelFrec')||'';fr.onchange=function(){LS.set('gpPanelFrec',fr.value);render()};
+  var tu=LS.get('gpPanelTurno')||'';$$('#fTurno button').forEach(function(b){b.classList.toggle('on',b.dataset.t===tu);b.setAttribute('aria-pressed',b.dataset.t===tu);b.onclick=function(){LS.set('gpPanelTurno',b.dataset.t);$$('#fTurno button').forEach(function(x){x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});render()}})}
+function turnoSel(){var b=document.querySelector('#fTurno button.on');return b?b.dataset.t:''}
+function enTurno(it,tu){if(!tu)return true;if(!it.Fecha)return false;var d=new Date(String(it.Fecha).slice(0,10)+'T12:00:00Z').getUTCDay(),fin=d===0||d===6;return tu==='pt'?fin:!fin}
 function semSel(){var v=$('#fSem').value;if(v==='@hoy')return lunes(todayISO);if(v==='@prox')return proxL();return v}
 function mesTxt(m){return m?MES[+m.slice(5,7)-1]+' '+m.slice(0,4):'Sin mes'}
 function fd(s){return s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):''}
@@ -379,25 +384,25 @@ function render(){
   if(mine&&!mine.length){$('#view').innerHTML=(DATA.items.length||DATA.locked)?pinBox(true):'<div class="empty">Cargando el programa…</div>';pinBind();$('#admin').hidden=true;$('#note').innerHTML='';return}
   var base=mine?DATA.items.filter(function(it){return mine.indexOf(it.Centro)>=0}):DATA.items;
   var c=$('#fCentro').value,m=$('#fMes').value;
-  var sw=semSel(),fq=$('#fFrec').value;
-  var inMes=function(it){if(fq==='sem'&&!esSemanal(it))return false;if(fq==='men'&&esSemanal(it))return false;
+  var sw=semSel(),fq=$('#fFrec').value,tu=turnoSel();
+  var inMes=function(it){if(!enTurno(it,tu))return false;if(fq==='sem'&&!esSemanal(it))return false;if(fq==='men'&&esSemanal(it))return false;
     if(sw)return !!it.Fecha&&lunes(it.Fecha)===sw;return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
   var all=base.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
   var cnt={Realizada:0,'En proceso':0,Pendiente:0,Atrasada:0,'Por validar':0};
   mine.forEach(function(it){var s=st(it);if(s.p)cnt['Por validar']++;if(s.late)cnt.Atrasada++;else cnt[s.e]++});
-  var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'del programa'))+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
+  var p=pct(mine),k=cls(p),h='<div class="kpis"><div class="kpi main"><span>Realizado '+esc(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'del programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):'')+'</span><b class="c-'+k+'">'+fmtP(p)+'</b>'+
     '<div class="meter"><i class="bg-'+(k||'ok')+'" style="width:'+(p||0)+'%"></i></div><span style="font-weight:normal;margin-top:6px">'+cnt.Realizada+' de '+mine.length+' realizadas</span></div>';
   [['Atrasada','c-bad','Atrasadas'],['En proceso','c-mid','En proceso'],['Pendiente','','Pendientes'],['Por validar','c-blue','Por validar']].forEach(function(x){
     h+='<button type="button" class="kpi'+(filtro===x[0]?' on':'')+'" data-f="'+x[0]+'"><b class="'+x[1]+'">'+cnt[x[0]]+'</b><span>'+x[2]+'</span></button>'});
   h+='</div>';
-  h+=resumenSem(mine,sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'todo el programa'));
+  h+=resumenSem(mine,(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'todo el programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):''));
   if(MODE==='ms'){var pend=DATA.pending.filter(function(q){return (!c||q.centro===c)&&(isAdmin()||base.some(function(x){return x.Centro===q.centro}))});
     if(pend.length){h+='<h2>Por validar ('+pend.length+')</h2><div class="list">'+pend.map(function(q){var it=DATA.items.filter(function(x){return x.id===q.id})[0];
       return '<div class="val"><div class="t">'+(q.auto?'📋 ':'')+esc(q.title||(it&&it.Title)||'Actividad')+'</div>'+(q.auto?'<div class="lock">Desde un formulario enviado · revisa que corresponda a esta actividad</div>':'')+'<div>'+esc(q.centro)+' · pasa a <b>'+esc(q.estado)+'</b> · '+esc(q.nombre||'sin nombre')+' · '+new Date(q.at).toLocaleDateString('es-CL')+'</div>'+
       (q.comentario?'<div>'+esc(q.comentario)+'</div>':'')+(q.evidencia?'<div class="lock">Evidencia en SharePoint: '+esc(q.evidencia)+'</div>':'')+
       '<div class="btns"><button class="btn pri" type="button" data-ok="'+q.qid+'">Aprobar</button><button class="btn" type="button" data-no="'+q.qid+'">Rechazar</button></div></div>'}).join('')+'</div>'}}
   if(!c){var cs={};all.forEach(function(it){(cs[it.Centro]=cs[it.Centro]||[]).push(it)});var names=Object.keys(cs).sort();
-    if(names.length)h+='<h2>Avance por centro</h2>'+tendChart(base.filter(function(it){return !(fq==='sem'&&!esSemanal(it))&&!(fq==='men'&&esSemanal(it))}))+'<h2>Por centro</h2><div class="centros">'+names.map(function(n){var pp=pct(cs[n]),kk=cls(pp),late=cs[n].filter(function(it){return st(it).late}).length;
+    if(names.length)h+='<h2>Avance por centro</h2>'+tendChart(base.filter(function(it){return enTurno(it,tu)&&!(fq==='sem'&&!esSemanal(it))&&!(fq==='men'&&esSemanal(it))}))+'<h2>Por centro</h2><div class="centros">'+names.map(function(n){var pp=pct(cs[n]),kk=cls(pp),late=cs[n].filter(function(it){return st(it).late}).length;
       return '<div class="crow" data-c="'+esc(n)+'"><span class="n">'+esc(n)+'</span><span class="p c-'+kk+'">'+fmtP(pp)+'</span><div class="meter"><i class="bg-'+(kk||'ok')+'" style="width:'+(pp||0)+'%"></i></div><small>'+cs[n].length+' actividades'+(late?' · <b class="c-bad">'+late+' atrasada'+(late>1?'s':'')+'</b>':'')+'</small></div>'}).join('')+'</div>'}
   var list=mine.filter(function(it){if(!filtro)return true;var s=st(it);return filtro==='Atrasada'?s.late:filtro==='Por validar'?!!s.p:(!s.late&&s.e===filtro)});
   var ord={Atrasada:0,'En proceso':1,Pendiente:2,Realizada:3};
