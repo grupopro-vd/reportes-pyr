@@ -250,25 +250,66 @@ async function guardar(id,val){
   if(val)cur[id]=Object.assign({},val,{by:ME,at:new Date().toISOString()});else delete cur[id];
   await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});SEG=cur;
   if(HZ[id]){try{await gpApi.post({action:'panelHz',id:id,estado:val?'Cerrado':'Abierto',nombre:ME,comentario:val?val.nota:'Reabierto desde Check list',evidencia:''});HZ[id].estado=val?'Cerrado':'Abierto'}catch(e){}}}
+function xlsLib(){
+  if(window.XLSX&&window.XLSX.__st)return Promise.resolve(true);
+  var srcs=['https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js','https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js'];
+  var load=function(u){return new Promise(function(ok,ko){var sc=document.createElement('script');sc.src=u;sc.setAttribute('data-fb','1');sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})};
+  return load(srcs[0]).catch(function(){return load(srcs[1])}).then(function(){window.XLSX.__st=1;return true})
+    .catch(function(){return window.XLSX?false:load('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js').then(function(){return false})})}
 async function excel(){
   var bt=$('#xl');bt.disabled=true;bt.textContent='Preparando…';
   try{
-    if(!window.XLSX)await new Promise(function(ok,ko){var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=function(){ko(new Error('no cargó la librería de Excel'))};document.head.appendChild(sc)});
-    var L=filtrados(),dt=function(x){return x?new Date(x+'T12:00:00'):''};
-    var rows=L.map(function(r){var sg=seg(r),l=limDe(r);return {'Fecha':dt(r.fecha),'Hora':r.hora,'Centro':r.centro,'Check list':r.form,'Categoría':categoria(r.form),
-      'Tipo de equipo':r.maq,'N° equipo':r.num,'Área':r.area,'Lugar':r.lugar,'Operador / persona':r.persona,'Reporta':r.rep,'Resultado':r.est,
-      'Seguimiento':r.ok?'No requiere':sg?'Cerrado':(l&&l<HOY?'Abierto · vencido':'Abierto'),'Responsable del cierre':respDe(r),'Plazo de cierre':dt(l),
-      'Fecha de cierre':sg&&sg.cierre?dt(sg.cierre):'','Cómo se cerró':sg?sg.nota||'':'','Ítems a revisar':r.malos.join(' | '),'ID':r.id,
-      'Carpeta SharePoint':r.folder?SPW+encPath(r.folder):''}});
-    var ws=XLSX.utils.json_to_sheet(rows,{cellDates:true,dateNF:'dd-mm-yyyy'});
-    ws['!cols']=[12,7,20,26,22,16,10,18,22,20,20,18,18,22,13,13,34,40,20,50].map(function(w){return {wch:w}});
-    ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(rows.length,1),c:19}})};
-    rows.forEach(function(x,i){var c=ws[XLSX.utils.encode_cell({r:i+1,c:19})];if(c&&c.v)c.l={Target:c.v}});
-    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Check list');
-    var res=[['Filtros',[$('#fC').value||'Todos los centros',$('#fCat').value||'Todas las categorías',$('#fF').value||'Todos los tipos',$('#fE').selectedOptions[0].text,$('#fP').selectedOptions[0].text].join(' · ')],['Generado',new Date().toLocaleString('es-CL')],['Check list',L.length],
-      ['Conformes al revisarse',L.filter(function(r){return r.ok}).length],['Cerrados después',L.filter(function(r){return !r.ok&&seg(r)}).length],['Abiertos',L.filter(abierto).length],['Abiertos vencidos',L.filter(function(r){var l=limDe(r);return abierto(r)&&l&&l<HOY}).length]];
-    var w2=XLSX.utils.aoa_to_sheet(res);w2['!cols']=[{wch:24},{wch:90}];XLSX.utils.book_append_sheet(wb,w2,'Resumen');
-    XLSX.writeFile(wb,'Check_list_PRO_EHS_'+HOY+'.xlsx');
+    await xlsLib();
+    var L=filtrados(),X=XLSX,ws={},merges=[],R=0,NC=14;
+    var B={top:{style:'thin',color:{rgb:'E4E4E8'}},bottom:{style:'thin',color:{rgb:'E4E4E8'}},left:{style:'thin',color:{rgb:'E4E4E8'}},right:{style:'thin',color:{rgb:'E4E4E8'}}};
+    var F='Arial',C={ok:'1D6B45',okb:'DFF3E7',bad:'B42318',badb:'FDE2E2',mid:'8A6100',midb:'FFF1CC',gray:'5C5C5C',grayb:'EEEEEE',ink:'1D1D1B',mut:'5C5C5C'};
+    var put=function(r,c,v,st){var ref=X.utils.encode_cell({r:r,c:c});ws[ref]={v:v==null?'':v,t:typeof v==='number'?'n':'s',s:st||{}};return ws[ref]};
+    var font=function(o){return Object.assign({name:F,sz:10,color:{rgb:C.ink}},o||{})};
+    // título
+    put(R,0,'Check list PRO EHS',{font:font({sz:16,bold:true})});merges.push({s:{r:R,c:0},e:{r:R,c:7}});R++;
+    put(R,0,[$('#fC').value||'Todos los centros',$('#fCat').value||'Todas las categorías',$('#fF').value||'Todos los tipos',$('#fE').selectedOptions[0].text,$('#fP').selectedOptions[0].text].join(' · ')+'  ·  generado '+new Date().toLocaleString('es-CL'),{font:font({color:{rgb:C.mut}})});
+    merges.push({s:{r:R,c:0},e:{r:R,c:NC-1}});R+=2;
+    // tarjetas KPI (mismas que en pantalla)
+    var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(alDia).length,ab=L.filter(abierto),venc=ab.filter(function(r){var l=limDe(r);return l&&l<HOY}).length;
+    var ok=L.filter(function(r){return r.ok}).length,cer=L.filter(function(r){return !r.ok&&seg(r)}).length;
+    var K=[['Check list',L.length,'en el periodo y filtros elegidos',C.ink],
+      ['Conformes o cerrados',(L.length?Math.round((ok+cer)/L.length*100):0)+'%',ok+' conformes al revisarse · '+cer+' cerrados después',C.ok],
+      ['Check list de máquinas',eq.length,eqOk+' operativos · '+(eq.length-eqOk)+' sin cerrar',C.ink],
+      ['Abiertos',ab.length,'no operativos o con observaciones sin cerrar',ab.length?C.mid:C.ok],
+      ['Abiertos vencidos',venc,'pasaron su fecha límite',venc?C.bad:C.ok]];
+    var KC=[0,2,4,6,8];
+    K.forEach(function(k,i){var c=KC[i],bx=function(extra){return Object.assign({fill:{fgColor:{rgb:'FFFFFF'}},border:B,alignment:{vertical:'top',wrapText:true,horizontal:'left'}},extra)};
+      put(R,c,k[0],bx({font:font({bold:true,color:{rgb:C.mut}})}));put(R+1,c,k[1],bx({font:font({sz:20,bold:true,color:{rgb:k[3]}})}));put(R+2,c,k[2],bx({font:font({sz:9,color:{rgb:C.mut}})}));
+      for(var j=0;j<3;j++){put(R+j,c+1,'',bx({}));merges.push({s:{r:R+j,c:c},e:{r:R+j,c:c+1}})}});
+    var rowsH={};rowsH[R+1]=30;rowsH[R+2]=26;R+=4;
+    // tabla
+    var H=['Fecha','Hora','Responsable','Centro','Check list','Realizado por','Equipo / lugar','Ítems a revisar','Resultado','Seguimiento','Cierre','Detalle del cierre','Cómo se cerró','Carpeta SharePoint'];
+    var hs={font:font({bold:true,color:{rgb:C.mut}}),fill:{fgColor:{rgb:'F7F7F8'}},border:B,alignment:{vertical:'center',wrapText:true}};
+    var HR=R;H.forEach(function(h,c){put(R,c,h.toUpperCase(),hs)});rowsH[R]=22;R++;
+    var pillS=function(fg,bg){return {font:font({bold:true,color:{rgb:fg}}),fill:{fgColor:{rgb:bg}},border:B,alignment:{vertical:'top',horizontal:'center',wrapText:true}}};
+    L.forEach(function(r){
+      var sg=seg(r),l=limDe(r),v=!r.ok&&!sg&&l&&l<HOY,cell={font:font(),border:B,alignment:{vertical:'top',wrapText:true}},sub=Object.assign({},cell,{font:font({color:{rgb:C.mut}})});
+      var eqTxt=r.maq||r.num?[r.maq,r.num?'N° '+r.num:''].filter(Boolean).join(' · '):(r.lugar||r.area||'—');
+      put(R,0,fd(r.fecha),cell);put(R,1,r.hora||'',sub);
+      put(R,2,esPrime(r)?(respDe(r)||'—'):'—',Object.assign({},cell,{font:font({bold:esPrime(r)&&!!respDe(r)})}));put(R,3,r.centro||'—',sub);
+      put(R,4,r.form,Object.assign({},cell,{font:font({bold:true})}));put(R,5,r.rep||r.persona||'',sub);
+      put(R,6,eqTxt,cell);put(R,7,r.malos.length?r.malos.join(' | '):'',Object.assign({},cell,{font:font({color:{rgb:C.bad}})}));
+      put(R,8,r.ok?(r.est||'Conforme'):(r.est||'Con observaciones'),r.ok?pillS(C.ok,C.okb):pillS(C.bad,C.badb));
+      put(R,9,r.ok?'No requiere':sg?'Cerrado'+(sg.cierre?' '+fd(sg.cierre):''):(v?'Abierto · vencido':'Abierto'),r.ok?pillS(C.gray,C.grayb):sg?pillS(C.ok,C.okb):v?pillS(C.bad,C.badb):pillS(C.mid,C.midb));
+      var ci=r.ok?['—','']:sg?[sg.cierre?fd(sg.cierre):'Cerrado','cerrado']:l?[fd(l),v?'plazo vencido':'plazo de cierre']:['sin plazo',''];
+      put(R,10,ci[0],Object.assign({},cell,{font:font({bold:!r.ok&&ci[0]!=='sin plazo',color:{rgb:r.ok||ci[0]==='sin plazo'?C.mut:sg?C.ok:v?C.bad:C.mid}})}));put(R,11,ci[1],sub);
+      put(R,12,sg?sg.nota||'':'',cell);
+      var url=r.folder?SPW+encPath(r.folder):'';var cu=put(R,13,url?'Abrir carpeta':'',Object.assign({},cell,{font:font({color:{rgb:'1F5FBF'},underline:!!url})}));if(url)cu.l={Target:url};
+      R++});
+    if(!L.length){put(R,0,'No hay check list con estos filtros.',{font:font({color:{rgb:C.mut}})});R++}
+    ws['!ref']=X.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(R-1,HR),c:NC-1}});ws['!merges']=merges;
+    ws['!cols']=[11,7,20,18,24,20,24,34,18,18,13,14,34,14].map(function(w){return {wch:w}});
+    ws['!rows']=[];Object.keys(rowsH).forEach(function(k){ws['!rows'][k]={hpt:rowsH[k]}});
+    if(L.length)ws['!autofilter']={ref:X.utils.encode_range({s:{r:HR,c:0},e:{r:R-1,c:NC-1}})};
+    ws['!freeze']={xSplit:0,ySplit:HR+1};ws['!views']=[{state:'frozen',ySplit:HR+1,topLeftCell:X.utils.encode_cell({r:HR+1,c:0})}];
+    var wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,'Check list');
+    var nom='Check_list_'+(($('#fC').value||'todos')+'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'_')+'_'+HOY;
+    X.writeFile(wb,nom+'.xlsx');
   }catch(e){alert('No se pudo generar el Excel: '+e.message)}
   bt.disabled=false;bt.textContent='⭳ Descargar Excel'}
 $$('#tabs button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;LS.set('gpClTab',TAB);render()}});
