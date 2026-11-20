@@ -164,8 +164,8 @@ async function cargar(force){
     var seen={};ROWS=Object.keys(out).map(function(k){return out[k].d}).filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=1;return !MINE||MINE.indexOf(r.centro)>=0})
       .sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
     llenar();render();
-    $('#sync').innerHTML='<span>Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+' · '+ROWS.length+' check list</span><button type="button" id="rf">Actualizar</button>';
-    $('#rf').onclick=function(){cargar(false)};
+    $('#sync').innerHTML='<span>Actualizado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+' · '+ROWS.length+' check list</span><button type="button" id="rf">Actualizar</button><button type="button" id="xl">⭳ Descargar Excel</button>';
+    $('#rf').onclick=function(){cargar(false)};$('#xl').onclick=excel;
   }catch(e){$('#view').innerHTML='<div class="msg err">No se pudieron leer los check list: '+esc(e.message)+'</div>'}
 }
 function llenar(){
@@ -250,6 +250,27 @@ async function guardar(id,val){
   if(val)cur[id]=Object.assign({},val,{by:ME,at:new Date().toISOString()});else delete cur[id];
   await g('/drives/'+REP+'/root:/'+encPath(SEGF)+':/content',{method:'PUT',ct:'application/json',body:JSON.stringify(cur,null,1)});SEG=cur;
   if(HZ[id]){try{await gpApi.post({action:'panelHz',id:id,estado:val?'Cerrado':'Abierto',nombre:ME,comentario:val?val.nota:'Reabierto desde Check list',evidencia:''});HZ[id].estado=val?'Cerrado':'Abierto'}catch(e){}}}
+async function excel(){
+  var bt=$('#xl');bt.disabled=true;bt.textContent='Preparando…';
+  try{
+    if(!window.XLSX)await new Promise(function(ok,ko){var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=function(){ko(new Error('no cargó la librería de Excel'))};document.head.appendChild(sc)});
+    var L=filtrados(),dt=function(x){return x?new Date(x+'T12:00:00'):''};
+    var rows=L.map(function(r){var sg=seg(r),l=limDe(r);return {'Fecha':dt(r.fecha),'Hora':r.hora,'Centro':r.centro,'Check list':r.form,'Categoría':categoria(r.form),
+      'Tipo de equipo':r.maq,'N° equipo':r.num,'Área':r.area,'Lugar':r.lugar,'Operador / persona':r.persona,'Reporta':r.rep,'Resultado':r.est,
+      'Seguimiento':r.ok?'No requiere':sg?'Cerrado':(l&&l<HOY?'Abierto · vencido':'Abierto'),'Responsable del cierre':respDe(r),'Plazo de cierre':dt(l),
+      'Fecha de cierre':sg&&sg.cierre?dt(sg.cierre):'','Cómo se cerró':sg?sg.nota||'':'','Ítems a revisar':r.malos.join(' | '),'ID':r.id,
+      'Carpeta SharePoint':r.folder?SPW+encPath(r.folder):''}});
+    var ws=XLSX.utils.json_to_sheet(rows,{cellDates:true,dateNF:'dd-mm-yyyy'});
+    ws['!cols']=[12,7,20,26,22,16,10,18,22,20,20,18,18,22,13,13,34,40,20,50].map(function(w){return {wch:w}});
+    ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(rows.length,1),c:19}})};
+    rows.forEach(function(x,i){var c=ws[XLSX.utils.encode_cell({r:i+1,c:19})];if(c&&c.v)c.l={Target:c.v}});
+    var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Check list');
+    var res=[['Filtros',[$('#fC').value||'Todos los centros',$('#fCat').value||'Todas las categorías',$('#fF').value||'Todos los tipos',$('#fE').selectedOptions[0].text,$('#fP').selectedOptions[0].text].join(' · ')],['Generado',new Date().toLocaleString('es-CL')],['Check list',L.length],
+      ['Conformes al revisarse',L.filter(function(r){return r.ok}).length],['Cerrados después',L.filter(function(r){return !r.ok&&seg(r)}).length],['Abiertos',L.filter(abierto).length],['Abiertos vencidos',L.filter(function(r){var l=limDe(r);return abierto(r)&&l&&l<HOY}).length]];
+    var w2=XLSX.utils.aoa_to_sheet(res);w2['!cols']=[{wch:24},{wch:90}];XLSX.utils.book_append_sheet(wb,w2,'Resumen');
+    XLSX.writeFile(wb,'Check_list_PRO_EHS_'+HOY+'.xlsx');
+  }catch(e){alert('No se pudo generar el Excel: '+e.message)}
+  bt.disabled=false;bt.textContent='⭳ Descargar Excel'}
 $$('#tabs button').forEach(function(b){b.onclick=function(){TAB=b.dataset.t;LS.set('gpClTab',TAB);render()}});
 ['#fC','#fCat','#fF','#fE','#fP'].forEach(function(s){$(s).onchange=render});$('#fQ').oninput=render;
 $('#fX').onclick=function(){['#fC','#fCat','#fF','#fE','#fQ'].forEach(function(s){$(s).value=''});$('#fP').value='30';render()};
