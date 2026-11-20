@@ -135,7 +135,7 @@ function alDia(r){return r.ok||!!seg(r)}
 function abierto(r){return !r.ok&&!seg(r)}
 function pill(r){if(r.ok)return '<span class="pill p-ok">'+esc(r.est||'Conforme')+'</span>';return '<span class="pill p-bad">'+esc(r.est||'Con observaciones')+'</span>'}
 function pillSeg(r){if(r.ok)return '<span class="pill p-gray">No requiere</span>';var s=seg(r);if(s)return '<span class="pill p-ok">Cerrado '+esc(fd(s.cierre))+'</span>';
-  var venc=r.lim&&r.lim<HOY;return '<span class="pill '+(venc?'p-bad':'p-mid')+'">'+(venc?'Abierto · vencido':'Abierto')+'</span>'}
+  var venc=limDe(r)&&limDe(r)<HOY;return '<span class="pill '+(venc?'p-bad':'p-mid')+'">'+(venc?'Abierto · vencido':'Abierto')+'</span>'}
 // ---- carga ----
 async function cargar(force){
   try{
@@ -181,18 +181,23 @@ function filtrados(){
     if(desde&&r.fecha<desde)return false;
     if(q&&[r.form,r.centro,r.persona,r.rep,r.lugar,r.area,r.maq,r.num,r.id,r.est].join(' ').toLowerCase().indexOf(q)<0)return false;return true})}
 function kpis(L){
-  var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(alDia).length,ab=L.filter(abierto),venc=ab.filter(function(r){return r.lim&&r.lim<HOY}).length;
+  var eq=L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}),eqOk=eq.filter(alDia).length,ab=L.filter(abierto),venc=ab.filter(function(r){var l=limDe(r);return l&&l<HOY}).length;
   var ok=L.filter(function(r){return r.ok}).length,cer=L.filter(function(r){return !r.ok&&seg(r)}).length;
   return '<div class="kpis"><div class="kpi"><span>Check list</span><b>'+L.length+'</b><small>en el periodo y filtros elegidos</small></div>'+
     '<div class="kpi"><span>Conformes o cerrados</span><b class="c-ok">'+(L.length?Math.round((ok+cer)/L.length*100):0)+'%</b><small>'+ok+' conformes al revisarse · '+cer+' cerrados después</small></div>'+
     '<div class="kpi"><span>Check list de máquinas</span><b>'+eq.length+'</b><small>'+eqOk+' operativos · '+(eq.length-eqOk)+' sin cerrar</small></div>'+
     '<div class="kpi"><span>Abiertos</span><b class="'+(ab.length?'c-mid':'c-ok')+'">'+ab.length+'</b><small>no operativos o con observaciones sin cerrar</small></div>'+
     '<div class="kpi"><span>Abiertos vencidos</span><b class="'+(venc?'c-bad':'c-ok')+'">'+venc+'</b><small>pasaron su fecha límite</small></div></div>'}
+function esPrime(r){return /prime/i.test(r.form)}
+function respDe(r){return r.resp||(HZ[r.id]&&HZ[r.id].responsable)||''}
+function limDe(r){return r.lim||(HZ[r.id]&&HZ[r.id].limite)||''}
+function cierreTxt(r){if(r.ok)return '<span class="sub">—</span>';var s=seg(r);if(s)return '<b class="c-ok">'+(s.cierre?fd(s.cierre):'Cerrado')+'</b><div class="sub">cerrado</div>';
+  var l=limDe(r);if(!l)return '<span class="sub">sin plazo</span>';var v=l<HOY;return '<b class="'+(v?'c-bad':'c-mid')+'">'+fd(l)+'</b><div class="sub">'+(v?'plazo vencido':'plazo de cierre')+'</div>'}
 function tabla(L,cols){
   if(!L.length)return '<div class="empty">No hay check list con estos filtros.</div>';
-  return '<div class="card tw"><table><thead><tr><th>Fecha</th><th>Centro</th><th>Check list</th><th>Equipo / lugar</th><th>Resultado</th><th>Seguimiento</th></tr></thead><tbody>'+
+  return '<div class="card tw"><table><thead><tr><th>Fecha</th><th>'+(L.every(esPrime)?'Responsable':L.some(esPrime)?'Centro / responsable':'Centro')+'</th><th>Check list</th><th>Equipo / lugar</th><th>Resultado</th><th>Seguimiento</th><th>Cierre</th></tr></thead><tbody>'+
     L.map(function(r){var eq=r.maq||r.num?esc([r.maq,r.num?'N° '+r.num:''].filter(Boolean).join(' · ')):esc(r.lugar||r.area||'—');
-      return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+fd(r.fecha)+'<div class="sub">'+esc(r.hora)+'</div></td><td>'+esc(r.centro||'—')+'</td><td><b>'+esc(r.form)+'</b><div class="sub">'+esc(r.rep||r.persona)+'</div></td><td>'+eq+(r.malos.length?'<div class="sub c-bad">'+r.malos.length+' ítem'+(r.malos.length>1?'s':'')+' a revisar</div>':'')+'</td><td>'+pill(r)+'</td><td>'+pillSeg(r)+'</td></tr>'}).join('')+'</tbody></table></div>'}
+      return '<tr class="r" data-id="'+esc(r.id)+'"><td>'+fd(r.fecha)+'<div class="sub">'+esc(r.hora)+'</div></td><td>'+(esPrime(r)&&respDe(r)?'<b>'+esc(respDe(r))+'</b><div class="sub">'+esc(r.centro||'')+'</div>':esc(r.centro||'—'))+'</td><td><b>'+esc(r.form)+'</b><div class="sub">'+esc(r.rep||r.persona)+'</div></td><td>'+eq+(r.malos.length?'<div class="sub c-bad">'+r.malos.length+' ítem'+(r.malos.length>1?'s':'')+' a revisar</div>':'')+'</td><td>'+pill(r)+'</td><td>'+pillSeg(r)+'</td><td>'+cierreTxt(r)+'</td></tr>'}).join('')+'</tbody></table></div>'}
 function equipos(L){
   var by={};L.filter(function(r){return categoria(r.form)==='Máquinas y equipos'}).forEach(function(r){var k=r.centro+'|'+(r.maq||r.form)+'|'+(r.num||r.persona||r.id);if(!by[k]||(r.fecha+r.hora)>(by[k].fecha+by[k].hora))by[k]=Object.assign({n:0},r);by[k].n=(by[k].n||0)+1});
   var eqs=Object.keys(by).map(function(k){return by[k]}),cs={};eqs.forEach(function(r){(cs[r.centro]=cs[r.centro]||[]).push(r)});
@@ -227,7 +232,7 @@ function abrir(id){
   w.innerHTML='<div class="bx"><button class="x" type="button" aria-label="Cerrar">×</button><h3>'+esc(r.form)+'</h3><div>'+pill(r)+' '+pillSeg(r)+'</div>'+
     '<div class="kv"><b>Centro</b><span>'+esc(r.centro||'—')+'</span><b>Fecha</b><span>'+fd(r.fecha)+' '+esc(r.hora)+'</span>'+(r.maq||r.num?'<b>Equipo</b><span>'+esc([r.maq,r.num?'N° '+r.num:''].filter(Boolean).join(' · '))+'</span>':'')+
     (r.persona?'<b>Operador / persona</b><span>'+esc(r.persona)+'</span>':'')+'<b>Área / lugar</b><span>'+esc([r.area,r.lugar].filter(Boolean).join(' · ')||'—')+'</span><b>Reporta</b><span>'+esc(r.rep||'—')+'</span>'+
-    (r.resp?'<b>Responsable</b><span>'+esc(r.resp)+'</span>':'')+(r.lim?'<b>Fecha límite</b><span>'+fd(r.lim)+'</span>':'')+'<b>ID</b><span>'+esc(r.id)+'</span></div>'+
+    (respDe(r)?'<b>Responsable del cierre</b><span>'+esc(respDe(r))+'</span>':'')+(limDe(r)?'<b>Plazo de cierre</b><span>'+fd(limDe(r))+'</span>':'')+'<b>ID</b><span>'+esc(r.id)+'</span></div>'+
     (r.malos.length?'<div class="msg err"><b>Ítems a revisar:</b><br>'+r.malos.map(esc).join('<br>')+'</div>':'')+
     (s?'<div class="msg ok" style="margin-top:10px"><b>Cerrado el '+esc(fd(s.cierre))+'</b>'+(s.nota?': '+esc(s.nota):'')+'<br><small>Registrado por '+esc(s.by||'')+'</small></div>':'')+
     (!r.ok&&!s?'<div class="cl"><b>Registrar cierre</b><label for="cF">Fecha de cierre</label><input id="cF" type="date" value="'+HOY+'"><label for="cN">Qué se hizo (reparación, reemplazo, corrección)</label><textarea id="cN" rows="3" placeholder="Ej.: se cambió la rueda de carga y el equipo quedó operativo"></textarea><button class="btn" type="button" id="cG">Cerrar check list</button><div id="cM"></div></div>':'')+
