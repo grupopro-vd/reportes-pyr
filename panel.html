@@ -424,7 +424,8 @@ function render(){
   var inMes=function(it){if(!enTurno(it,tu))return false;if(fq==='sem'&&!esSemanal(it))return false;if(fq==='men'&&esSemanal(it))return false;
     if(sw)return !!it.Fecha&&lunes(it.Fecha)===sw;return !m||(m==='@sin'?!it.Mes:m==='@hasta'?(!it.Mes||it.Mes<=thisMonth):it.Mes===m)};
   var all=base.filter(inMes),mine=c?all.filter(function(it){return it.Centro===c}):all;
-  var ok0=misCentros(),ext=EXTRA.filter(function(x){if(ok0&&ok0.indexOf(x.centro)<0)return false;if(c&&x.centro!==c)return false;if(!enTurno({Fecha:x.fecha},tu))return false;
+  var usados=DATA.items.map(function(it){return it.Avance+' '+it.Evidencia}).join(' ')+JSON.stringify(DATA.pending||[]);
+  var ok0=misCentros(),ext=EXTRA.filter(function(x){if(x.id&&usados.indexOf(x.id)>=0)return false;if(ok0&&ok0.indexOf(x.centro)<0)return false;if(c&&x.centro!==c)return false;if(!enTurno({Fecha:x.fecha},tu))return false;
     if(sw)return lunes(x.fecha)===sw;if(m&&m[0]!=='@')return x.fecha.slice(0,7)===m;return true}).sort(function(a,b){return (b.fecha+b.hora).localeCompare(a.fecha+a.hora)});
   XSET={ext:ext,items:mine,centro:c,per:(sw?snTxt(sw):(m&&m[0]!=='@'?mesTxt(m):'programa'))+(tu?' · '+(tu==='pt'?'part time':'full time'):'')};
   var cnt={Realizada:0,'En proceso':0,Pendiente:0,Atrasada:0,'Por validar':0};
