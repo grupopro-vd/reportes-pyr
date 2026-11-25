@@ -537,9 +537,11 @@ async function sendEvidence(it,folder,est,com,nom){
 async function applyMoves(mv){var ids=[],fe={};for(var id in mv){var it=DATA.items.filter(function(x){return x.id===String(id)})[0],m=mv[id];if(!it){ids.push(id);fe[id]=m.fecha;continue}
     try{if(it.Fecha!==m.fecha){await g(L+'/items/'+it.id+'/fields',{method:'PATCH',body:{FechaProgramada:m.fecha+'T12:00:00Z',Mes:m.fecha.slice(0,7),Avance:((it.Avance?it.Avance+'\n':'')+todayISO.split('-').reverse().join('-')+' · Día cambiado a '+m.fecha.split('-').reverse().join('-')+(m.nombre?' por '+m.nombre:'')).slice(-4000)}});it.Fecha=m.fecha;it.Mes=m.fecha.slice(0,7)}ids.push(id);fe[id]=m.fecha}catch(e){}}
   if(ids.length)await gpApi.post({action:'panelMoveAck',ids:ids,fechas:fe}).catch(function(){})}
+function hoyCL(){try{return new Date().toLocaleDateString('sv-SE',{timeZone:'America/Santiago'})}catch(e){return new Date().toISOString().slice(0,10)}}
 async function autoApply(){
   var ok=DATA.pending.filter(function(q){return q.auto&&q.conf==='alta'}),done=[];
   for(var i=0;i<ok.length;i++){var q=ok[i],it=DATA.items.filter(function(x){return x.id===q.id})[0];
+    if(it&&it.Fecha&&String(it.Fecha).slice(0,10)>hoyCL())continue; // nunca se marcan actividades futuras
     try{if(it&&it.Estado!=='Realizada'){var fields={Estado:'Realizada',FechaRealizada:q.at.slice(0,10)+'T12:00:00Z',ReportadoPor:q.nombre||'Formulario',
         Avance:((it.Avance?it.Avance+'\n':'')+new Date(q.at).toLocaleDateString('es-CL')+' · Realizada · '+q.comentario).slice(-4000)};
       if(q.evidencia){try{fields.Evidencia=(await folderUrl(q.evidencia)).slice(0,255)}catch(e){}}
