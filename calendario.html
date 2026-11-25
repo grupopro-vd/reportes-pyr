@@ -33,6 +33,7 @@ select,button{font:inherit}
 .chip i{width:10px;height:10px;border-radius:50%;background:var(--k)}
 .chip b{font-weight:normal;color:var(--muted)}
 .chip.off{opacity:.45;background:#f6f6f7}.chip.off i{background:#bbb}
+.offnote{font-size:13px;color:#8a6100;background:#fff6e0;border:1px solid #f3d48a;border-radius:8px;padding:6px 10px;margin:6px 0}.offnote button{border:0;background:none;color:#b3261e;font-weight:700;text-decoration:underline;cursor:pointer;font-size:13px;padding:0}
 .cal{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .dow div{padding:8px 6px;font-size:12px;font-weight:bold;color:var(--muted);text-align:center;background:#fafafb;border-bottom:1px solid var(--line)}
@@ -142,6 +143,7 @@ var CAT=[
   {k:'ACHS',l:'Charla ACHS',c:'#15803d',m:/achs|mutual/},
   {k:'Check list de equipos',l:'Check list de equipos',c:'#b45309',m:/equipo/},
   {k:'Check list de arnés',l:'Check list de arnés',c:'#be185d',m:/arnes/},
+  {k:'Check list de EPP',l:'Check list de EPP',c:'#ca8a04',m:/\bepp\b/},
   {k:'Protocolos',l:'Protocolos',c:'#0e7490',m:/protocolo/},
   {k:'Estadística',l:'Estadística',c:'#475569',m:/estadistic/},
   {k:'Inspecciones',l:'Inspecciones y observaciones',c:'#0f766e',m:/inspecc|observac/},
@@ -207,6 +209,8 @@ function render(){
   var usados=CAT.filter(function(k){return k.k!=='Otros'||delMes.some(function(it){return cat(it).k==='Otros'})});
   $('#chips').innerHTML=usados.map(function(k){var n=delMes.filter(function(it){return cat(it)===k}).length;return '<button type="button" class="chip'+(off[k.k]?' off':'')+'" style="--k:'+k.c+'" data-k="'+esc(k.k)+'"><i></i>'+esc(k.l)+' <b>'+n+'</b></button>'}).join('');
   [].forEach.call(document.querySelectorAll('.chip'),function(b){b.onclick=function(){var k=b.dataset.k;if(off[k])delete off[k];else off[k]=1;LS.set('gpCalOff',JSON.stringify(off));render()}});
+  var nOff=usados.filter(function(k){return off[k.k]}).length,ex=$('#offNote');if(ex)ex.remove();
+  if(nOff){var dv=document.createElement('div');dv.id='offNote';dv.className='offnote';dv.innerHTML='Hay '+nOff+' categoría'+(nOff>1?'s':'')+' oculta'+(nOff>1?'s':'')+' (en gris) · <button type="button">Mostrar todo</button>';$('#chips').after(dv);dv.querySelector('button').onclick=function(){off={};LS.set('gpCalOff','{}');render()}}
   var vis=visibles(),mesVis=vis.filter(function(it){return (it.Fecha||'').slice(0,7)===view||(!it.Fecha&&it.Mes===view)});
   var cnt={t:mesVis.length,r:0,p:0,a:0};mesVis.forEach(function(it){var s=st(it);if(s==='Realizada')cnt.r++;else if(s==='Atrasada')cnt.a++;else cnt.p++});
   $('#sum').innerHTML='<div><b>'+cnt.t+'</b><span>Programadas</span></div><div><b style="color:var(--ok)">'+cnt.r+'</b><span>Realizadas</span></div><div><b>'+cnt.p+'</b><span>Por hacer</span></div><div><b style="color:var(--bad)">'+cnt.a+'</b><span>Atrasadas</span></div>';
