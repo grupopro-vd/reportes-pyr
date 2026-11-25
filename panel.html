@@ -236,7 +236,7 @@ async function loadMs(){
   var pins={};(await g('/sites/'+CFG.site+'/lists/'+CFG.pinList+'/items?$expand=fields($select=Title,PIN)&$top=100')).value.forEach(function(p){if(p.fields.Title&&p.fields.PIN)pins[p.fields.Title]=String(p.fields.PIN).trim()});
   var ph={};for(var c in pins)ph[c]=await sha(pinKey(c,pins[c]));
   var relay=await gpApi.post({action:'read',what:'panel'}).catch(function(){return {}});
-  DATA={items:items.map(fromSP),updatedAt:new Date().toISOString(),pending:(relay&&relay.pending)||[],pinHash:ph,pins:pins,live:true};
+  DATA={items:items.map(fromSP),updatedAt:new Date().toISOString(),pending:(relay&&relay.pending)||[],pinHash:ph,pins:pins,live:true};LIVE_SES=true;
   await autoApply();
   await applyMoves((relay&&relay.moves)||{});
   save();pushSnapshot();
@@ -258,7 +258,9 @@ async function syncListas(){
   var lis=(await all(LISTAS_LIST)).map(function(it){var f=it.fields||{};return {v:f.Title||'',l:f.Lista||'',c:f.Centro||'Todos los centros',act:f.Activo!==false}}).filter(function(x){return x.act&&x.v});
   await gpApi.post({action:'listasSnap',nomina:nom.filter(function(x){return x.act&&x.n}),listas:lis,ackNuevos:ack});
 }
+var LIVE_SES=false;
 function pushSnapshot(){
+  if(!LIVE_SES||!DATA||!DATA.live)return; // solo datos leídos en vivo desde SharePoint en esta sesión
   var items=DATA.items.map(function(it){return {id:it.id,Title:it.Title,Centro:it.Centro,Programa:it.Programa,Tipo:it.Tipo,DirigidoA:it.DirigidoA,Responsable:it.Responsable,Mes:it.Mes,Fecha:it.Fecha,
     Estado:it.Estado,Avance:String(it.Avance).slice(-200),Evidencia:it.Evidencia,EvidenciaRequerida:it.EvidenciaRequerida,Observacion:String(it.Observacion).slice(0,120),FechaRealizada:it.FechaRealizada||'',ReportadoPor:it.ReportadoPor||''}});
   gpApi.post({action:'panelSnapshot',items:items,pins:DATA.pinHash,by:ACCOUNT?ACCOUNT.username:''}).catch(function(){});
@@ -291,7 +293,7 @@ async function loadPin(){
   if(!d||!d.ok)throw new Error((d&&d.error)||'sin datos');
   var mv=d.moves||{};DATA={items:(d.items||[]).map(function(x){x.id=String(x.id);var m=mv[x.id];if(m){x.Fecha=m.fecha;x.Mes=m.fecha.slice(0,7)}return x}),updatedAt:d.updatedAt,pending:d.pending||[],pinHash:d.pins||{},pins:{},live:false};save();
 }
-function save(){var c=Object.assign({},DATA);delete c.pins;LS.set('gpPanelData2',JSON.stringify(c))}
+function save(){var c=Object.assign({},DATA);delete c.pins;delete c.live;LS.set('gpPanelData2',JSON.stringify(c))}
 
 // ---------------- Estado y vista ----------------
 function pendingFor(id){return DATA.pending.filter(function(p){return p.id===String(id)}).slice(-1)[0]}
@@ -620,7 +622,7 @@ function loadExtra(){if(!window.gpApi||!gpApi.read)return;gpApi.read('flog',{pro
   EXMIN=d.items.reduce(function(a,x){return !a||x.dia<a?x.dia:a},'');render()}).catch(function(){})}
 var EXMIN='',SPR='https://grupoprocl.sharepoint.com/sites/PYR/ReportesPYR/';
 async function load(){
-  var c=J('gpPanelData2',null);if(c&&c.items&&!DATA.items.length){DATA=Object.assign({pending:[],pinHash:{}},c);render()}
+  var c=J('gpPanelData2',null);if(c&&c.items&&!DATA.items.length){DATA=Object.assign({pending:[],pinHash:{}},c);DATA.live=false;render()}
   setMsg(MODE==='ms'?'Leyendo SharePoint…':'Actualizando…');
   try{if(MODE==='ms')await loadMs();else await loadPin();render();loadExtra()}
   catch(e){render();$('#sync').insertAdjacentHTML('afterbegin','<div class="msg err" style="margin-bottom:6px">No se pudo actualizar: '+esc(e.message)+(DATA.items.length?'. Se muestra la última copia guardada.':'')+'</div>')}
