@@ -193,7 +193,7 @@ async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder
 var pinKey=function(c,p){return 'gp|'+c+'|'+p};
 // Centros que ve cada encargado (los administradores ven todos). Quien entra con PIN ve además los centros que desbloqueó.
 var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
-  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
+  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre','ICB']};
 function misCentros(){if(isAdmin())return null;var s={};
   if(ACCOUNT)(ACCESO[String(ACCOUNT.username||'').toLowerCase()]||[]).forEach(function(c){s[c]=1});
   gpApi.centros().forEach(function(c){s[c]=1});

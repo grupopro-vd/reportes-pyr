@@ -180,7 +180,7 @@ function initCentro(){var sel_=$('#fCentro'),p=J('gpPerfil',{});
 // Cada encargado ve solo sus centros (los administradores ven todos), igual que en el Panel.
 var ADMINS=['vdiaz@grupopro.cl'];
 var ACCESO={'afuentes@grupopro.cl':['Walmart Peñón'],'felipe.diaz4@walmart.com':['Walmart Peñón'],'milize.basaure@walmart.com':['Walmart Pudahuel'],'karen.donoso@walmart.com':['Walmart Pudahuel'],
-  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre']};
+  'squisbert@grupopro.cl':['Walmart La Farfana','Líder La Reina'],'nliquitay@grupopro.cl':['Walmart Lo Aguirre','ICB']};
 function cuentaMs(){try{for(var i=0;i<localStorage.length;i++){var v=localStorage.getItem(localStorage.key(i));if(v&&v.indexOf('"username"')>=0&&v.indexOf('"homeAccountId"')>=0){var o=JSON.parse(v);if(o&&o.username)return String(o.username).toLowerCase()}}}catch(e){}return ''}
 var ME=cuentaMs();
 function pinsH(){return (DATA.pins&&Object.keys(DATA.pins).length?DATA.pins:(J('gpPanelData2',{})||{}).pinHash)||{}}
